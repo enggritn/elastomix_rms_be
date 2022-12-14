@@ -1,0 +1,1 @@
+﻿<%@ Application Codebehind="Global.asax.cs" Inherits="WMS_BE.WebApiApplication" Language="C#" %>

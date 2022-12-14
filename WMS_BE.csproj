@@ -1,0 +1,805 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net45\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props" Condition="Exists('packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net45\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" />
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>
+    </ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{43E64595-36AF-4EC3-ACAD-B303BEAF4DD2}</ProjectGuid>
+    <ProjectTypeGuids>{349c5851-65df-11da-9384-00065b846f21};{fae04ec0-301f-11d3-bf4b-00c04f79efbc}</ProjectTypeGuids>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>WMS_BE</RootNamespace>
+    <AssemblyName>WMS_BE</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <MvcBuildViews>false</MvcBuildViews>
+    <UseIISExpress>false</UseIISExpress>
+    <Use64BitIISExpress>
+    </Use64BitIISExpress>
+    <IISExpressSSLPort>44330</IISExpressSSLPort>
+    <IISExpressAnonymousAuthentication />
+    <IISExpressWindowsAuthentication />
+    <IISExpressUseClassicPipelineMode />
+    <UseGlobalApplicationHostFile />
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="BCrypt.Net, Version=0.1.4141.31969, Culture=neutral, PublicKeyToken=f3bc8f8c31beeb49, processorArchitecture=MSIL">
+      <HintPath>packages\BCrypt.Net.0.1.0\lib\net35\BCrypt.Net.dll</HintPath>
+    </Reference>
+    <Reference Include="BouncyCastle.Crypto, Version=1.8.9.0, Culture=neutral, PublicKeyToken=0e99375e54769942, processorArchitecture=MSIL">
+      <HintPath>packages\Portable.BouncyCastle.1.8.9\lib\net40\BouncyCastle.Crypto.dll</HintPath>
+    </Reference>
+    <Reference Include="Common.Logging, Version=3.4.1.0, Culture=neutral, PublicKeyToken=af08829b84f0328e, processorArchitecture=MSIL">
+      <HintPath>packages\Common.Logging.3.4.1\lib\net40\Common.Logging.dll</HintPath>
+    </Reference>
+    <Reference Include="Common.Logging.Core, Version=3.4.1.0, Culture=neutral, PublicKeyToken=af08829b84f0328e, processorArchitecture=MSIL">
+      <HintPath>packages\Common.Logging.Core.3.4.1\lib\net40\Common.Logging.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <HintPath>packages\EntityFramework.6.2.0\lib\net45\EntityFramework.dll</HintPath>
+    </Reference>
+    <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <HintPath>packages\EntityFramework.6.2.0\lib\net45\EntityFramework.SqlServer.dll</HintPath>
+    </Reference>
+    <Reference Include="EPPlus, Version=4.5.3.3, Culture=neutral, PublicKeyToken=ea159fdaa78159a1, processorArchitecture=MSIL">
+      <HintPath>packages\EPPlus.4.5.3.3\lib\net40\EPPlus.dll</HintPath>
+    </Reference>
+    <Reference Include="ExcelDataReader, Version=3.6.0.0, Culture=neutral, PublicKeyToken=93517dbe6a4012fa, processorArchitecture=MSIL">
+      <HintPath>packages\ExcelDataReader.3.6.0\lib\net45\ExcelDataReader.dll</HintPath>
+    </Reference>
+    <Reference Include="ExcelDataReader.DataSet, Version=3.6.0.0, Culture=neutral, PublicKeyToken=93517dbe6a4012fa, processorArchitecture=MSIL">
+      <HintPath>packages\ExcelDataReader.DataSet.3.6.0\lib\net35\ExcelDataReader.DataSet.dll</HintPath>
+    </Reference>
+    <Reference Include="ICSharpCode.SharpZipLib, Version=1.2.0.246, Culture=neutral, PublicKeyToken=1b03e6acf1164f73, processorArchitecture=MSIL">
+      <HintPath>packages\SharpZipLib.1.2.0\lib\net45\ICSharpCode.SharpZipLib.dll</HintPath>
+    </Reference>
+    <Reference Include="itext.barcodes, Version=7.1.14.0, Culture=neutral, PublicKeyToken=8354ae6d2174ddca, processorArchitecture=MSIL">
+      <HintPath>packages\itext7.7.1.14\lib\net40\itext.barcodes.dll</HintPath>
+    </Reference>
+    <Reference Include="itext.forms, Version=7.1.14.0, Culture=neutral, PublicKeyToken=8354ae6d2174ddca, processorArchitecture=MSIL">
+      <HintPath>packages\itext7.7.1.14\lib\net40\itext.forms.dll</HintPath>
+    </Reference>
+    <Reference Include="itext.html2pdf, Version=3.0.3.0, Culture=neutral, PublicKeyToken=8354ae6d2174ddca, processorArchitecture=MSIL">
+      <HintPath>packages\itext7.pdfhtml.3.0.3\lib\net40\itext.html2pdf.dll</HintPath>
+    </Reference>
+    <Reference Include="itext.io, Version=7.1.14.0, Culture=neutral, PublicKeyToken=8354ae6d2174ddca, processorArchitecture=MSIL">
+      <HintPath>packages\itext7.7.1.14\lib\net40\itext.io.dll</HintPath>
+    </Reference>
+    <Reference Include="itext.kernel, Version=7.1.14.0, Culture=neutral, PublicKeyToken=8354ae6d2174ddca, processorArchitecture=MSIL">
+      <HintPath>packages\itext7.7.1.14\lib\net40\itext.kernel.dll</HintPath>
+    </Reference>
+    <Reference Include="itext.layout, Version=7.1.14.0, Culture=neutral, PublicKeyToken=8354ae6d2174ddca, processorArchitecture=MSIL">
+      <HintPath>packages\itext7.7.1.14\lib\net40\itext.layout.dll</HintPath>
+    </Reference>
+    <Reference Include="itext.pdfa, Version=7.1.14.0, Culture=neutral, PublicKeyToken=8354ae6d2174ddca, processorArchitecture=MSIL">
+      <HintPath>packages\itext7.7.1.14\lib\net40\itext.pdfa.dll</HintPath>
+    </Reference>
+    <Reference Include="itext.sign, Version=7.1.14.0, Culture=neutral, PublicKeyToken=8354ae6d2174ddca, processorArchitecture=MSIL">
+      <HintPath>packages\itext7.7.1.14\lib\net40\itext.sign.dll</HintPath>
+    </Reference>
+    <Reference Include="itext.styledxmlparser, Version=7.1.14.0, Culture=neutral, PublicKeyToken=8354ae6d2174ddca, processorArchitecture=MSIL">
+      <HintPath>packages\itext7.7.1.14\lib\net40\itext.styledxmlparser.dll</HintPath>
+    </Reference>
+    <Reference Include="itext.svg, Version=7.1.14.0, Culture=neutral, PublicKeyToken=8354ae6d2174ddca, processorArchitecture=MSIL">
+      <HintPath>packages\itext7.7.1.14\lib\net40\itext.svg.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="NPOI, Version=2.5.1.0, Culture=neutral, PublicKeyToken=0df73ec7942b34e1, processorArchitecture=MSIL">
+      <HintPath>packages\NPOI.2.5.1\lib\net45\NPOI.dll</HintPath>
+    </Reference>
+    <Reference Include="NPOI.OOXML, Version=2.5.1.0, Culture=neutral, PublicKeyToken=0df73ec7942b34e1, processorArchitecture=MSIL">
+      <HintPath>packages\NPOI.2.5.1\lib\net45\NPOI.OOXML.dll</HintPath>
+    </Reference>
+    <Reference Include="NPOI.OpenXml4Net, Version=2.5.1.0, Culture=neutral, PublicKeyToken=0df73ec7942b34e1, processorArchitecture=MSIL">
+      <HintPath>packages\NPOI.2.5.1\lib\net45\NPOI.OpenXml4Net.dll</HintPath>
+    </Reference>
+    <Reference Include="NPOI.OpenXmlFormats, Version=2.5.1.0, Culture=neutral, PublicKeyToken=0df73ec7942b34e1, processorArchitecture=MSIL">
+      <HintPath>packages\NPOI.2.5.1\lib\net45\NPOI.OpenXmlFormats.dll</HintPath>
+    </Reference>
+    <Reference Include="PresentationCore" />
+    <Reference Include="Swashbuckle.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=cd1bb07a5ac7c7bc, processorArchitecture=MSIL">
+      <HintPath>packages\Swashbuckle.Core.Net45.5.2.1\lib\net45\Swashbuckle.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Swashbuckle.WebHost, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>packages\Swashbuckle.Net45.5.2.1\lib\net45\Swashbuckle.WebHost.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.Security" />
+    <Reference Include="System.Threading.Tasks" />
+    <Reference Include="System.Web.Cors, Version=5.2.7.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>packages\Microsoft.AspNet.Cors.5.2.7\lib\net45\System.Web.Cors.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Web.Entity" />
+    <Reference Include="System.Web.ApplicationServices" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.Web.Http.Cors, Version=5.2.7.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>packages\Microsoft.AspNet.WebApi.Cors.5.2.7\lib\net45\System.Web.Http.Cors.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.Web.Abstractions" />
+    <Reference Include="System.Web.Routing" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="Microsoft.Web.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <Private>True</Private>
+      <HintPath>packages\Microsoft.Web.Infrastructure.1.0.0.0\lib\net40\Microsoft.Web.Infrastructure.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>packages\Newtonsoft.Json.12.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Net.Http">
+    </Reference>
+    <Reference Include="System.Net.Http.Formatting, Version=5.2.7.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>packages\Microsoft.AspNet.WebApi.Client.5.2.7\lib\net45\System.Net.Http.Formatting.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Net.Http.WebRequest">
+    </Reference>
+    <Reference Include="System.Web.Helpers, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <Private>True</Private>
+      <HintPath>packages\Microsoft.AspNet.WebPages.3.2.7\lib\net45\System.Web.Helpers.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Web.Http, Version=5.2.7.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>packages\Microsoft.AspNet.WebApi.Core.5.2.7\lib\net45\System.Web.Http.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Web.Http.WebHost, Version=5.2.7.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>packages\Microsoft.AspNet.WebApi.WebHost.5.2.7\lib\net45\System.Web.Http.WebHost.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Web.Mvc, Version=5.2.7.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <Private>True</Private>
+      <HintPath>packages\Microsoft.AspNet.Mvc.5.2.7\lib\net45\System.Web.Mvc.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Web.Optimization">
+      <HintPath>packages\Microsoft.AspNet.Web.Optimization.1.1.3\lib\net40\System.Web.Optimization.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Web.Razor, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <Private>True</Private>
+      <HintPath>packages\Microsoft.AspNet.Razor.3.2.7\lib\net45\System.Web.Razor.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Web.WebPages, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <Private>True</Private>
+      <HintPath>packages\Microsoft.AspNet.WebPages.3.2.7\lib\net45\System.Web.WebPages.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Web.WebPages.Deployment, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <Private>True</Private>
+      <HintPath>packages\Microsoft.AspNet.WebPages.3.2.7\lib\net45\System.Web.WebPages.Deployment.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Web.WebPages.Razor, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <Private>True</Private>
+      <HintPath>packages\Microsoft.AspNet.WebPages.3.2.7\lib\net45\System.Web.WebPages.Razor.dll</HintPath>
+    </Reference>
+    <Reference Include="WebActivatorEx, Version=2.0.0.0, Culture=neutral, PublicKeyToken=7b26dc2a43f6a0d4, processorArchitecture=MSIL">
+      <HintPath>packages\WebActivatorEx.2.0\lib\net40\WebActivatorEx.dll</HintPath>
+    </Reference>
+    <Reference Include="WebGrease">
+      <Private>True</Private>
+      <HintPath>packages\WebGrease.1.6.0\lib\WebGrease.dll</HintPath>
+    </Reference>
+    <Reference Include="Antlr3.Runtime">
+      <Private>True</Private>
+      <HintPath>packages\Antlr.3.5.0.2\lib\Antlr3.Runtime.dll</HintPath>
+    </Reference>
+    <Reference Include="zxing, Version=0.16.6.0, Culture=neutral, PublicKeyToken=4e88037ac681fe60, processorArchitecture=MSIL">
+      <HintPath>packages\ZXing.Net.0.16.6\lib\net45\zxing.dll</HintPath>
+    </Reference>
+    <Reference Include="zxing.presentation, Version=0.16.6.0, Culture=neutral, PublicKeyToken=4e88037ac681fe60, processorArchitecture=MSIL">
+      <HintPath>packages\ZXing.Net.0.16.6\lib\net45\zxing.presentation.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Microsoft.CodeDom.Providers.DotNetCompilerPlatform">
+      <HintPath>packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\lib\net45\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="App_Start\BundleConfig.cs" />
+    <Compile Include="App_Start\FilterConfig.cs" />
+    <Compile Include="App_Start\RouteConfig.cs" />
+    <Compile Include="App_Start\SwaggerConfig.cs" />
+    <Compile Include="App_Start\WebApiConfig.cs" />
+    <Compile Include="Controllers\Api\BinRackAreaController.cs" />
+    <Compile Include="Controllers\Api\BinRackController.cs" />
+    <Compile Include="Controllers\Api\ControlController.cs" />
+    <Compile Include="Controllers\Api\FinishGoodController.cs" />
+    <Compile Include="Controllers\Api\InboundController.cs" />
+    <Compile Include="Controllers\Api\MobilePrinterController.cs" />
+    <Compile Include="Controllers\Api\MobileReceivingSFGController.cs" />
+    <Compile Include="Controllers\Api\MobileMovementController.cs" />
+    <Compile Include="Controllers\Api\MobileStockTransformController.cs" />
+    <Compile Include="Controllers\Api\MobileStockOpnameController.cs" />
+    <Compile Include="Controllers\Api\MobileInboundController.cs" />
+    <Compile Include="Controllers\Api\MobileOutboundController.cs" />
+    <Compile Include="Controllers\Api\MobileInspectionController.cs" />
+    <Compile Include="Controllers\Api\MobileIssueSlipController.cs" />
+    <Compile Include="Controllers\Api\MobileReceivingRMController.cs" />
+    <Compile Include="Controllers\Api\TransformController.cs" />
+    <Compile Include="Controllers\Api\StockController.cs" />
+    <Compile Include="Controllers\Api\OutboundController.cs" />
+    <Compile Include="Controllers\Api\IssueSlipController - Copy.cs" />
+    <Compile Include="Controllers\Api\InspectionController.cs" />
+    <Compile Include="Controllers\Api\IssueSlipController.cs" />
+    <Compile Include="Controllers\Api\JudgementController.cs" />
+    <Compile Include="Controllers\Api\PRBoxApprovalController.cs" />
+    <Compile Include="Controllers\Api\MovementController-.cs" />
+    <Compile Include="Controllers\Api\ProductionRequestController.cs" />
+    <Compile Include="Controllers\Api\PutawayController.cs" />
+    <Compile Include="Controllers\Api\QCInspectionController.cs" />
+    <Compile Include="Controllers\Api\ReceivingController.cs" />
+    <Compile Include="Controllers\Api\ReceivingSFGController - Copy.cs" />
+    <Compile Include="Controllers\Api\ReceivingSFGController.cs" />
+    <Compile Include="Controllers\Api\ReportController.cs" />
+    <Compile Include="Controllers\Api\RMCalculatorController.cs" />
+    <Compile Include="Controllers\Api\FormulaController.cs" />
+    <Compile Include="Controllers\Api\SemiFinishGoodController.cs" />
+    <Compile Include="Controllers\Api\StockOpnameController.cs" />
+    <Compile Include="Controllers\Api\SupplierController.cs" />
+    <Compile Include="Controllers\Api\CustomerController.cs" />
+    <Compile Include="Controllers\Api\LoginController.cs" />
+    <Compile Include="Controllers\Api\InboundManualController.cs" />
+    <Compile Include="Controllers\Api\MainMenuController.cs" />
+    <Compile Include="Controllers\Api\MenuControlController.cs" />
+    <Compile Include="Controllers\Api\MenuController.cs" />
+    <Compile Include="Controllers\Api\PermissionController.cs" />
+    <Compile Include="Controllers\Api\RawMaterialController.cs" />
+    <Compile Include="Controllers\Api\RoleController.cs" />
+    <Compile Include="Controllers\Api\MovementController.cs" />
+    <Compile Include="Controllers\Api\FloorPlanController .cs" />
+    <Compile Include="Controllers\Api\TransferController.cs" />
+    <Compile Include="Controllers\Api\UsageController.cs" />
+    <Compile Include="Controllers\Api\UserController.cs" />
+    <Compile Include="Controllers\Api\ViewDataDictionary.cs" />
+    <Compile Include="Controllers\Api\WarehouseController.cs" />
+    <Compile Include="Controllers\ReceivingController.cs" />
+    <Compile Include="Controllers\PurchaseRequestController.cs" />
+    <Compile Include="Controllers\IssueSlipController.cs" />
+    <Compile Include="Controllers\HomeController.cs" />
+    <Compile Include="Controllers\Api\ProductionPlanController.cs" />
+    <Compile Include="Controllers\Api\PurchaseOrderController.cs" />
+    <Compile Include="Controllers\Api\MaterialRequestController.cs" />
+    <Compile Include="Global.asax.cs">
+      <DependentUpon>Global.asax</DependentUpon>
+    </Compile>
+    <Compile Include="Models\ApiRequestModel.cs" />
+    <Compile Include="Models\AppModels.Context.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>AppModels.Context.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\AppModels.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\AppModels.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>AppModels.edmx</DependentUpon>
+    </Compile>
+    <Compile Include="Models\BinRack.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\BinRackArea.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\BinRackAreaModel.cs" />
+    <Compile Include="Models\Control.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\Customer.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\DataTableModel.cs" />
+    <Compile Include="Models\DisposalSFG.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\FinishGood.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\FinishGoodModel.cs" />
+    <Compile Include="Models\Formula.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\FormulaDetail.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\InboundHeader.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\InboundOrder.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\InboundPutaway.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\InboundReceive.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\Inspection.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\IssueSlipHeader.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\IssueSlipOrder.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\IssueSlipPicking.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\IssueSlipPutaway.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\IssueSlipReturn.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\Judgement.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\JudgementSFG.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\LogPrintRM.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\LogReprint.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\MainMenu.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\ManualStock.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\MaterialChemical.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\Menu.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\MenuControl.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\Movement.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\OutboundHeader.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\OutboundOrder.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\OutboundPicking.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\OutboundPutaway.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\OutboundReturn.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\Permission.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\PRBoxApproval.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\ProductionPlanBreak.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\ProductionPlanDetail.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\ProductionPlanHeader.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\ProductionPlanOrder.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\ProductionRequestDetail.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\ProductionRequestHeader.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\PurchaseRequestDetail.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\PurchaseRequestHeader.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\Putaway.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\PutawaySFG.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\QCExtend.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\QCInspection.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\QCPicking.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\QCPutaway.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\QCReturn.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\RawMaterial.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\Receiving.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\ReceivingDetail.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\ReceivingSFG.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\ReceivingSFGDetail.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\RMConvertible.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\Role.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\SemiFinishGood.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\StockOpnameDetail.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\StockOpnameHeader.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\StockOpnameItem.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\StockRM.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\StockSFG.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\Supplier.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\TokenDate.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\Transfer.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\TransferDetail.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\Transform.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\TransformDetail.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\TransformModel.cs" />
+    <Compile Include="Models\OutboundModel.cs" />
+    <Compile Include="Models\InspectionModel.cs" />
+    <Compile Include="Models\IssueSlipModel.cs" />
+    <Compile Include="Models\ItemLookupModel.cs" />
+    <Compile Include="Models\JudgementModel.cs" />
+    <Compile Include="Models\MovementModel.cs" />
+    <Compile Include="Models\PRBoxApprovalModel.cs" />
+    <Compile Include="Models\InboundModel.cs" />
+    <Compile Include="Models\ProductionPlanModel.cs" />
+    <Compile Include="Models\PurchaseOrderModel.cs" />
+    <Compile Include="Models\PurchaseRequestModel.cs" />
+    <Compile Include="Models\ProductionRequestModel.cs" />
+    <Compile Include="Models\BinRackModel.cs" />
+    <Compile Include="Models\ControlModel.cs" />
+    <Compile Include="Models\PutAwayItemModel.cs" />
+    <Compile Include="Models\PutawayModel.cs" />
+    <Compile Include="Models\QCInspectionModel.cs" />
+    <Compile Include="Models\ReceivingModel.cs" />
+    <Compile Include="Models\ReceivingSFGModel.cs" />
+    <Compile Include="Models\ReportModel.cs" />
+    <Compile Include="Models\ResponseModel.cs" />
+    <Compile Include="Models\SearchItemModel.cs" />
+    <Compile Include="Models\SemiFinishGoodModel.cs" />
+    <Compile Include="Models\FormulaModel.cs" />
+    <Compile Include="Models\StockModel.cs" />
+    <Compile Include="Models\StockOpnameModel.cs" />
+    <Compile Include="Models\SupplierModel.cs" />
+    <Compile Include="Models\CustomerModel.cs" />
+    <Compile Include="Models\MainMenuModel.cs" />
+    <Compile Include="Models\MenuControlModel.cs" />
+    <Compile Include="Models\MenuModel.cs" />
+    <Compile Include="Models\PermissionModel.cs" />
+    <Compile Include="Models\CustomValidationMessage.cs" />
+    <Compile Include="Models\DataTableParameters.cs" />
+    <Compile Include="Models\InboundManualModel.cs" />
+    <Compile Include="Models\LoginModel.cs" />
+    <Compile Include="Models\RawMaterialModel.cs" />
+    <Compile Include="Models\RoleModel.cs" />
+    <Compile Include="Models\TransferModel.cs" />
+    <Compile Include="Models\UsageModel.cs" />
+    <Compile Include="Models\User.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\UserModel.cs" />
+    <Compile Include="Models\vBinRackItem.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vCustomerSupplier.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vIssueSlipOrder.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vIssueSlipOrderMobile.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vIssueSlipPicked.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vIssueSlipPickingSummary.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vIssueSlipReturnSummary.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vListBarcodeSFG.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vMaterialRequestDetail.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vOutboundPicked.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vOutboundPickingSummary.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vOutboundReturnSummary.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vProduct.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vProductionPlanOrder.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vProductionPlanProduct.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vProductionRequestOrder.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vProductMaster.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vProductMasterGetStock.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vProductStock.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vQCInspectExpired.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vQCInspectExpired2.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vQCInspectNonExpired.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vQCInspectNonExpired2.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vRawMaterialConvert.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vRawMaterialConvertOutsource.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vReceivingOld_notused.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vReceivingSFG.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vReceivingSFG2.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vReceivingSFGDataTable_notused.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vReceivingSFG_notused.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vSchedule.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vSFGCalculation.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vSFGRecipeCalculation.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vStockAll.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vStockAllv2.cs" />
+    <Compile Include="Models\vStockExpired.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vStockFifo.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vStockInpspection.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vStockNonExpired.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vStockOpname.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vStockOtherInbound.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vStockProduct.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vStockRM.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vStockSFG.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vStockWarehouse.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vTransfer.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vTransferSourceRM.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vTransferSourceSFG.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\Warehouse.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\WarehouseModel.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Utils\Constant.cs" />
+    <Compile Include="Utils\Cryptolib.cs" />
+    <Compile Include="Utils\Helper.cs" />
+    <Compile Include="Utils\Mailing.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Content\Site.css" />
+    <Content Include="favicon.ico" />
+    <Content Include="Global.asax" />
+    <Content Include="Models\1Notes.txt" />
+    <Content Include="Models\AppModels.Context.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <DependentUpon>AppModels.edmx</DependentUpon>
+      <LastGenOutput>AppModels.Context.cs</LastGenOutput>
+    </Content>
+    <Content Include="Models\AppModels.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <DependentUpon>AppModels.edmx</DependentUpon>
+      <LastGenOutput>AppModels.cs</LastGenOutput>
+    </Content>
+    <Content Include="Web.config" />
+    <Content Include="Web.Debug.config">
+      <DependentUpon>Web.config</DependentUpon>
+    </Content>
+    <Content Include="Web.Release.config">
+      <DependentUpon>Web.config</DependentUpon>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="App_Data\" />
+    <Folder Include="fonts\" />
+  </ItemGroup>
+  <ItemGroup>
+    <EntityDeploy Include="Models\AppModels.edmx">
+      <Generator>EntityModelCodeGenerator</Generator>
+      <LastGenOutput>AppModels.Designer.cs</LastGenOutput>
+    </EntityDeploy>
+    <Content Include="Models\AppModels.edmx.diagram">
+      <DependentUpon>AppModels.edmx</DependentUpon>
+    </Content>
+    <None Include="packages.config" />
+    <None Include="Properties\PublishProfiles\FolderProfile.pubxml" />
+    <Content Include="Views\Receiving\Label.cshtml" />
+    <Content Include="Views\Web.config" />
+    <Content Include="Views\_ViewStart.cshtml" />
+    <None Include="Views\Web.Debug.config">
+      <DependentUpon>Web.config</DependentUpon>
+    </None>
+    <None Include="Views\Web.Release.config">
+      <DependentUpon>Web.config</DependentUpon>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
+  </ItemGroup>
+  <PropertyGroup>
+    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
+    <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
+  </PropertyGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <Import Project="$(VSToolsPath)\WebApplications\Microsoft.WebApplication.targets" Condition="'$(VSToolsPath)' != ''" />
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v10.0\WebApplications\Microsoft.WebApplication.targets" Condition="false" />
+  <Target Name="MvcBuildViews" AfterTargets="AfterBuild" Condition="'$(MvcBuildViews)'=='true'">
+    <AspNetCompiler VirtualPath="temp" PhysicalPath="$(WebProjectOutputDir)" />
+  </Target>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net45\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net45\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props'))" />
+  </Target>
+  <ProjectExtensions>
+    <VisualStudio>
+      <FlavorProperties GUID="{349c5851-65df-11da-9384-00065b846f21}">
+        <WebProjectProperties>
+          <UseIIS>True</UseIIS>
+          <AutoAssignPort>True</AutoAssignPort>
+          <DevelopmentServerPort>53853</DevelopmentServerPort>
+          <DevelopmentServerVPath>/</DevelopmentServerVPath>
+          <IISUrl>http://localhost/WMS_BE/</IISUrl>
+          <NTLMAuthentication>False</NTLMAuthentication>
+          <UseCustomServer>False</UseCustomServer>
+          <CustomServerUrl>
+          </CustomServerUrl>
+          <SaveServerSettingsInUserFile>False</SaveServerSettingsInUserFile>
+        </WebProjectProperties>
+      </FlavorProperties>
+    </VisualStudio>
+  </ProjectExtensions>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target> -->
+</Project>

@@ -1,0 +1,1 @@
+﻿vStockAll column Indate and Expdate not update automattically to nullable value
