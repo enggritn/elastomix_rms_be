@@ -24,7 +24,6 @@ namespace WMS_BE.Controllers.Api
     {
         private EIN_WMSEntities db = new EIN_WMSEntities();
 
-
         [HttpPost]
         public async Task<IHttpActionResult> DatatableHeader(string transactionStatus)
         {
@@ -110,7 +109,6 @@ namespace WMS_BE.Controllers.Api
 
                 if (list != null && list.Count() > 0)
                 {
-
                     pagedData = from x in list
                                 select new PurchaseRequestHeaderDTO
                                 {
@@ -335,8 +333,6 @@ namespace WMS_BE.Controllers.Api
 
                 if (list != null && list.Count() > 0)
                 {
-
-
                     pagedData = from x in list
                                 select new RawMaterialDTO
                                 {
@@ -447,11 +443,8 @@ namespace WMS_BE.Controllers.Api
 
                 list = list.Skip(start).Take(length).ToList();
 
-
                 if (list != null && list.Count() > 0)
                 {
-
-
                     pagedData = from x in list
                                 select new ActualStockDTO
                                 {
@@ -849,9 +842,6 @@ namespace WMS_BE.Controllers.Api
                                     ModelState.AddModelError("PurchaseRequest.SourceCode", "Origin can not be the same as Destination.");
                                 }
                             }
-
-
-
                         }
                         else if (purchaseRequestHeaderVM.SourceType.Equals("CUSTOMER"))
                         {
@@ -867,7 +857,6 @@ namespace WMS_BE.Controllers.Api
 
                             if (temp == null)
                                 ModelState.AddModelError("PurchaseRequest.SourceCode", "Supplier is not recognized.");
-
                         }
                     }
                     else
@@ -986,8 +975,6 @@ namespace WMS_BE.Controllers.Api
                     else if (purchaseRequestHeader.SourceType.ToUpper().Equals("OUTSOURCE"))
                     {
                         //purchaseRequestHeader.RefNumber = "DO-" + CreatedAt.Year.ToString() + "-" + CreatedAt.Month.ToString("d2") + "-";
-
-
                         Warehouse wh = await db.Warehouses.Where(s => s.Code.Equals(purchaseRequestHeaderVM.SourceCode)).FirstOrDefaultAsync();
 
                         purchaseRequestHeader.SourceCode = wh.Code;
@@ -1023,8 +1010,6 @@ namespace WMS_BE.Controllers.Api
 
                     //}
 
-
-
                     if (purchaseRequestHeader.SourceType.ToUpper().Equals("CUSTOMER") || purchaseRequestHeader.SourceType.ToUpper().Equals("MANUAL"))
                     {
                         // Check Ref Number Last
@@ -1044,15 +1029,10 @@ namespace WMS_BE.Controllers.Api
                         // Ref Number format completion
                         purchaseRequestHeader.RefNumber = string.Format("{0}{1}", purchaseRequestHeader.RefNumber, runningNumber);
                     }
-
                     else
                     {
                         purchaseRequestHeader.RefNumber = "";
                     }
-
-
-
-
 
                     Warehouse warehouse = await db.Warehouses.Where(s => s.Code.Equals(purchaseRequestHeaderVM.DestinationCode) && s.IsActive).FirstOrDefaultAsync();
 
@@ -1068,7 +1048,6 @@ namespace WMS_BE.Controllers.Api
 
                     status = true;
                     message = "Create data succeeded.";
-
                 }
                 else
                 {
@@ -1158,9 +1137,6 @@ namespace WMS_BE.Controllers.Api
                                         ModelState.AddModelError("PurchaseRequest.SourceCode", "Origin can not be the same as Destination.");
                                     }
                                 }
-
-
-
                             }
                             else if (purchaseRequestHeader.SourceType.Equals("CUSTOMER"))
                             {
@@ -1176,7 +1152,6 @@ namespace WMS_BE.Controllers.Api
 
                                 if (temp == null)
                                     ModelState.AddModelError("PurchaseRequest.SourceCode", "Supplier is not recognized.");
-
                             }
                         }
                         else
@@ -1673,7 +1648,6 @@ namespace WMS_BE.Controllers.Api
                         }
                     }
 
-
                     await db.SaveChangesAsync();
 
                     status = true;
@@ -1752,13 +1726,11 @@ namespace WMS_BE.Controllers.Api
                             db.Receivings.Remove(receiving);
                         }
 
-
                         await db.SaveChangesAsync();
 
                         status = true;
                         message = "Remove receiving plan succeeded.";
                     }
-
                 }
                 else
                 {
@@ -1783,7 +1755,6 @@ namespace WMS_BE.Controllers.Api
 
             return Ok(obj);
         }
-
 
         public async Task<IHttpActionResult> UpdateStatus(string id, string transactionStatus)
         {
@@ -2086,7 +2057,6 @@ namespace WMS_BE.Controllers.Api
                                     tStatus = "CLOSED";
                                 }
 
-
                                 #region outbound
                                 var CreatedAt = transactionDate;
                                 var TransactionId = Helper.CreateGuid("OUT");
@@ -2114,7 +2084,6 @@ namespace WMS_BE.Controllers.Api
                                 // Ref Number necessities
                                 string yearMonth = CreatedAt.Year.ToString() + month.ToString();
 
-
                                 OutboundHeader outbound = new OutboundHeader
                                 {
                                     ID = TransactionId,
@@ -2126,7 +2095,6 @@ namespace WMS_BE.Controllers.Api
                                     WarehouseCode = origin.Code,
                                     WarehouseName = origin.Name
                                 };
-
 
                                 db.OutboundHeaders.Add(outbound);
 
@@ -2199,8 +2167,7 @@ namespace WMS_BE.Controllers.Api
                                                     picking.BinRackCode = stockAll.BinRackCode;
                                                     picking.BinRackName = stockAll.BinRackName;
                                                     picking.BagQty = Convert.ToInt32(remainder / remainder);
-                                                    picking.QtyPerBag = remainder;
-                                                   
+                                                    picking.QtyPerBag = remainder;                                                   
 
                                                     db.OutboundPickings.Add(picking);
                                                 }
@@ -2217,10 +2184,7 @@ namespace WMS_BE.Controllers.Api
                                                     StockSFG stock = db.StockSFGs.Where(m => m.ID.Equals(stockAll.ID)).FirstOrDefault();
                                                     stock.Quantity -= pickQty;
                                                 }
-
-                                            }
-
-                                       
+                                            }                                       
                                         }
                                     }
                                 }
@@ -2232,7 +2196,6 @@ namespace WMS_BE.Controllers.Api
                                 //destination will create other inbound
                                 //if emix, create inbound status confirmed, putaway only
                                 //if outsource, create inbound status closed, autoputaway (update stock automatically)
-
 
                                 if (!destination.Type.Equals("EMIX"))
                                 {
@@ -2291,7 +2254,6 @@ namespace WMS_BE.Controllers.Api
                                                 CreatedOn = transactionDate
                                             };
 
-
                                             db.InboundOrders.Add(order);
 
                                             InboundReceive rec = new InboundReceive();
@@ -2311,7 +2273,6 @@ namespace WMS_BE.Controllers.Api
                                             //check if have remainder
                                             int bagQty = Convert.ToInt32(availableQty / order.QtyPerBag);
                                             decimal remainder = availableQty - (bagQty * order.QtyPerBag);
-
 
                                             InboundPutaway putaway = new InboundPutaway();
                                             putaway.ID = Helper.CreateGuid("Ip");
@@ -2534,11 +2495,6 @@ namespace WMS_BE.Controllers.Api
                         throw new Exception("Material Request Status is not valid.");
                     }
 
-                    //if (!string.IsNullOrEmpty(header.RefNumber))
-                    //{
-                    //    throw new Exception("Ref Number cannot be updated.");
-                    //}
-
                     if (string.IsNullOrEmpty(dataVM.RefNumber))
                     {
                         ModelState.AddModelError("PurchaseRequest.PONumber", "Ref Number is required.");
@@ -2551,21 +2507,18 @@ namespace WMS_BE.Controllers.Api
                             if (itemDetails.TransactionStatus == "CLOSED")
                             {
                                 isAllClosed = true;
-
                             }
                             else
                             {
                                 isAllClosed = false;
                                 break;
                             }
-
                         }
                     }
                     if (isAllClosed)
                     {
                         throw new Exception("Ref Number cannot be updated. Receiving already closed.");
                     }
-
 
                     if (!ModelState.IsValid)
                     {
@@ -2579,7 +2532,6 @@ namespace WMS_BE.Controllers.Api
                         throw new Exception("Input is not valid");
                     }
 
-
                     header.ModifiedBy = activeUser;
                     header.RefNumber = dataVM.RefNumber;
 
@@ -2589,12 +2541,10 @@ namespace WMS_BE.Controllers.Api
                     var receivings = db.Receivings.Where(m => detailList.Contains(m.PurchaseRequestID)).ToList();
                     receivings.ForEach(a => a.RefNumber = dataVM.RefNumber);
 
-
                     await db.SaveChangesAsync();
 
                     status = true;
                     message = "Update Ref Number succeeded.";
-
                 }
                 else
                 {
@@ -2686,8 +2636,6 @@ namespace WMS_BE.Controllers.Api
 
                 if (list != null && list.Count() > 0)
                 {
-
-
                     pagedData = from x in list
                                 select new SupplierDTO
                                 {
@@ -2761,7 +2709,6 @@ namespace WMS_BE.Controllers.Api
             int recordsFiltered = 0;
             try
             {
-
                 query = query
                         .Where(m => m.Code.Contains(search)
                         || m.Name.Contains(search)
@@ -2798,8 +2745,6 @@ namespace WMS_BE.Controllers.Api
 
                 if (list != null && list.Count() > 0)
                 {
-
-
                     pagedData = from x in list
                                 select new CustomerDTO
                                 {
@@ -2900,8 +2845,6 @@ namespace WMS_BE.Controllers.Api
 
                 if (list != null && list.Count() > 0)
                 {
-
-
                     pagedData = from x in list
                                 select new WarehouseDTO
                                 {
@@ -2961,7 +2904,6 @@ namespace WMS_BE.Controllers.Api
                 }
 
                 vMaterialRequestDetail vMaterialRequestDetail = await db.vMaterialRequestDetails.Where(m => m.ID.Equals(id)).FirstOrDefaultAsync();
-
                 if (vMaterialRequestDetail == null)
                 {
                     throw new Exception("Data not found.");
@@ -2976,7 +2918,6 @@ namespace WMS_BE.Controllers.Api
                     RequestBagQty = Helper.FormatThousand(vMaterialRequestDetail.RequestBagQty),
                     ReceivedBagQty = Helper.FormatThousand(vMaterialRequestDetail.ReceivedBagQty),
                 };
-
               
                 status = true;
                 message = "Fetch data succeded.";
@@ -3028,9 +2969,7 @@ namespace WMS_BE.Controllers.Api
 
                 if (activeUser != null)
                 {
-
-                    PurchaseRequestDetail requestDetail = null;
-                    
+                    PurchaseRequestDetail requestDetail = null;                    
                     if (string.IsNullOrEmpty(purchaseRequestDetailVM.ID))
                     {
                         throw new Exception("Detail ID is required.");
@@ -3046,11 +2985,9 @@ namespace WMS_BE.Controllers.Api
 
                     vMaterialRequestDetail vMaterialRequestDetail = db.vMaterialRequestDetails.Where(m => m.ID.Equals(purchaseRequestDetailVM.ID)).FirstOrDefault();
 
-
                     // Cek Stock OUTSOURCE
                     // Start
                     PurchaseRequestHeader requestHeader = await db.PurchaseRequestHeaders.Where(s => s.ID.Equals(requestDetail.HeaderID)).FirstOrDefaultAsync();
-
                     if (requestHeader.SourceType.Equals("OUTSOURCE"))
                     {
                         Warehouse wh = await db.Warehouses.Where(s => s.Code.Equals(requestHeader.SourceCode)).FirstOrDefaultAsync();
@@ -3077,7 +3014,6 @@ namespace WMS_BE.Controllers.Api
                     }
                     // End
 
-
                     if (purchaseRequestDetailVM.Qty >= 0)
                     {
                         int? receivedQty = vMaterialRequestDetail.ReceivedBagQty;
@@ -3086,7 +3022,6 @@ namespace WMS_BE.Controllers.Api
                             ModelState.AddModelError("PurchaseRequest.BagQty", string.Format("Bag Qty cannot below {0} Bag", receivedQty));
                         }
                     }
-
 
                     if (!ModelState.IsValid)
                     {

@@ -53,7 +53,7 @@ namespace WMS_BE.Controllers.Api
             }
             else if (transactionStatus.Equals("OPEN/CONFIRMED"))
             {
-                query = db.StockOpnameHeaders.Where(s => s.TransactionStatus.Equals("OPEN") || s.TransactionStatus.Equals("CONFIRMED")).AsQueryable();
+                query = db.StockOpnameHeaders.Where(s => s.TransactionStatus.Equals("OPEN") || s.TransactionStatus.Equals("CONFIRMED") || s.TransactionStatus.Equals("CLOSED")).AsQueryable();
             }
             else
             {
@@ -244,7 +244,10 @@ namespace WMS_BE.Controllers.Api
 
                     if(stockOpname != null) 
                     {
-                        throw new Exception("Stock Opname still on progress.");
+                        //throw new Exception("Stock Opname still on progress.");
+                        stockOpname.TransactionStatus = "CLOSED";
+                        stockOpname.ModifiedOn = CreatedAt;
+                        stockOpname.ModifiedBy = activeUser;
                     }
 
                     
@@ -652,6 +655,7 @@ namespace WMS_BE.Controllers.Api
                 {
                     vStockOpnameDTO data = new vStockOpnameDTO();
                     data.ID = rec.ID;
+                    data.Code = rec.Code;
                     data.BinRackCode = rec.BinRackCode;
                     data.MaterialCode = rec.MaterialCode;
                     data.MaterialName = rec.MaterialName;
@@ -659,8 +663,8 @@ namespace WMS_BE.Controllers.Api
                     data.InDate = rec.InDate;
                     data.ExpDate = rec.ExpDate;
                     data.BagQty = Helper.FormatThousand(Convert.ToInt32(rec.BagQty));
-                    data.QtyPerBag = Helper.FormatThousand(Convert.ToDecimal(rec.QtyPerBag));
-                    data.TotalQty = Helper.FormatThousand(Convert.ToDecimal(rec.TotalQty));
+                    data.QtyPerBag = Helper.FormatThousand(rec.QtyPerBag);
+                    data.TotalQty = Helper.FormatThousand(rec.TotalQty);
                     data.MaterialType = rec.MaterialType;
                     data.ScannedBy = rec.ScannedBy;
                     data.ScannedOn = rec.ScannedOn;

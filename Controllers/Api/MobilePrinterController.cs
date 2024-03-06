@@ -166,65 +166,69 @@ namespace WMS_BE.Controllers.Api
                         throw new Exception("Material tidak dikenali.");
                     }
 
-                    // update quantity barcode and actual stock - Mei 2022
-                    DateTime dtin = Convert.ToDateTime(stk1.InDate.Value);
-                    DateTime dtexp = Convert.ToDateTime(stk1.ExpiredDate.Value);
-                    //decimal TotalQty = Convert.ToDecimal(req.Qty.Replace('.',','));
-                    decimal TotalQty = req.Qty; //(req.Qty.Replace('.', ','));
-                    string qtybag = "";
-                    if (stk1.QtyPerBag == material.QtyPerBag)
+                    if (material.QtyPerBag > 0)
                     {
-                        qtybag = "full";
-                        if (TotalQty < material.QtyPerBag)
+                        // update quantity barcode and actual stock - Mei 2022
+                        DateTime dtin = Convert.ToDateTime(stk1.InDate.Value);
+                        DateTime dtexp = Convert.ToDateTime(stk1.ExpiredDate.Value);
+                        //decimal TotalQty = Convert.ToDecimal(req.Qty.Replace('.',','));
+                        decimal TotalQty = req.Qty; //(req.Qty.Replace('.', ','));
+                        string qtybag = "";
+                        if (stk1.QtyPerBag == material.QtyPerBag)
                         {
-                            throw new Exception(string.Format("Quantity tidak boleh lebih kecil dari quantity full bag, quantity full bag {0}", Helper.FormatThousand(material.QtyPerBag)));
+                            qtybag = "full";
+                            if (TotalQty < material.QtyPerBag)
+                            {
+                                throw new Exception(string.Format("Quantity tidak boleh lebih kecil dari quantity full bag, quantity full bag {0}", Helper.FormatThousand(material.QtyPerBag)));
+                            }
                         }
-                    }
-                    else
-                    {
-                        if (TotalQty >= material.QtyPerBag)
+                        else
                         {
-                            throw new Exception(string.Format("Quantity remainder tidak boleh melebihi quantity full bag, quantity full bag {0}", Helper.FormatThousand(material.QtyPerBag)));
+                            if (TotalQty >= material.QtyPerBag)
+                            {
+                                throw new Exception(string.Format("Quantity remainder tidak boleh melebihi quantity full bag, quantity full bag {0}", Helper.FormatThousand(material.QtyPerBag)));
+                            }
                         }
-                    }
 
-                    int BagQty = Convert.ToInt32(TotalQty / material.QtyPerBag);
-                    decimal RemainderQty = TotalQty % material.QtyPerBag; 
-                    if (BagQty < 1)
-                    {
-                        if (RemainderQty > 0)
+                        int BagQty = Convert.ToInt32(TotalQty / material.QtyPerBag);
+                        decimal RemainderQty = TotalQty % material.QtyPerBag;
+                        if (BagQty < 1)
                         {
+                            if (RemainderQty > 0)
+                            {
 
-                        }else
-                        {
-                            throw new Exception("Quantity tidak boleh kosong atau tidak boleh 0.");
+                            }
+                            else
+                            {
+                                throw new Exception("Quantity tidak boleh kosong atau tidak boleh 0.");
+                            }
                         }
-                    }
-                    if (qtybag == "full" && BagQty >= 1 && RemainderQty > 0)
-                    {
-                        throw new Exception(string.Format("Reminder quantity tidak diperbolehkan, total quantity melebihi {0} full bag", Helper.FormatThousand(BagQty)));
-                    }
+                        if (qtybag == "full" && BagQty >= 1 && RemainderQty > 0)
+                        {
+                            throw new Exception(string.Format("Reminder quantity tidak diperbolehkan, total quantity melebihi {0} full bag", Helper.FormatThousand(BagQty)));
+                        }
 
-                    if (stk1.Type.Equals("RM"))
-                    {
-                        StockRM stock = db.StockRMs.Where(m => m.MaterialCode.Equals(stk1.MaterialCode) && m.LotNumber.Equals(stk1.LotNumber) && DbFunctions.TruncateTime(m.InDate.Value) == DbFunctions.TruncateTime(dtin) && DbFunctions.TruncateTime(m.ExpiredDate.Value) == DbFunctions.TruncateTime(dtexp) && m.Quantity.Equals(stk1.Quantity) && m.BinRackCode.Equals(stk1.BinRackCode)).FirstOrDefault();
-                        stock.Quantity = TotalQty;
-                        if (RemainderQty > 0)
+                        if (stk1.Type.Equals("RM"))
                         {
-                            stock.QtyPerBag = TotalQty;
+                            StockRM stock = db.StockRMs.Where(m => m.MaterialCode.Equals(stk1.MaterialCode) && m.LotNumber.Equals(stk1.LotNumber) && DbFunctions.TruncateTime(m.InDate.Value) == DbFunctions.TruncateTime(dtin) && DbFunctions.TruncateTime(m.ExpiredDate.Value) == DbFunctions.TruncateTime(dtexp) && m.Quantity.Equals(stk1.Quantity) && m.BinRackCode.Equals(stk1.BinRackCode)).FirstOrDefault();
+                            stock.Quantity = TotalQty;
+                            if (RemainderQty > 0)
+                            {
+                                stock.QtyPerBag = TotalQty;
+                            }
                         }
-                    }
-                    else if (stk1.Type.Equals("SFG"))
-                    {
-                        StockSFG stock = db.StockSFGs.Where(m => m.MaterialCode.Equals(stk1.MaterialCode) && m.LotNumber.Equals(stk1.LotNumber) && DbFunctions.TruncateTime(m.InDate.Value) == DbFunctions.TruncateTime(dtin) && DbFunctions.TruncateTime(m.ExpiredDate.Value) == DbFunctions.TruncateTime(dtexp) && m.Quantity.Equals(stk1.Quantity) && m.BinRackCode.Equals(stk1.BinRackCode)).FirstOrDefault();
-                        stock.Quantity = TotalQty; 
-                        if (RemainderQty > 0)
+                        else if (stk1.Type.Equals("SFG"))
                         {
-                            stock.QtyPerBag = TotalQty;
+                            StockSFG stock = db.StockSFGs.Where(m => m.MaterialCode.Equals(stk1.MaterialCode) && m.LotNumber.Equals(stk1.LotNumber) && DbFunctions.TruncateTime(m.InDate.Value) == DbFunctions.TruncateTime(dtin) && DbFunctions.TruncateTime(m.ExpiredDate.Value) == DbFunctions.TruncateTime(dtexp) && m.Quantity.Equals(stk1.Quantity) && m.BinRackCode.Equals(stk1.BinRackCode)).FirstOrDefault();
+                            stock.Quantity = TotalQty;
+                            if (RemainderQty > 0)
+                            {
+                                stock.QtyPerBag = TotalQty;
+                            }
                         }
-                    }
 
-                    await db.SaveChangesAsync();
+                        await db.SaveChangesAsync();
+                    }
 
                     vStockAll stk = db.vStockAlls.Where(m => m.ID.Equals(req.StockId)).FirstOrDefault();
                     string Maker = "";

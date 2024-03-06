@@ -246,7 +246,7 @@ namespace WMS_BE.Controllers.Api
                     job_count = db.IssueSlipHeaders.Where(m => (m.TransactionStatus.Equals("OPEN") || m.TransactionStatus.Equals("PROGRESS"))).Count();
                     break;
                 case "receiving_sfg":
-                    job_count = 0;
+                    job_count = db.vReceivingSFG2.AsQueryable().Count(); ;
                     break;
                 case "qc_inspection":
                     job_count = db.QCInspections.Where(m => !m.TransactionStatus.Equals("CLOSED") && !m.TransactionStatus.Equals("CANCELLED")).AsQueryable().Count();

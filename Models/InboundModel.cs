@@ -103,6 +103,44 @@ namespace WMS_BE.Models
         public string BarcodeRight { get; set; }
     }
 
+    public class InboundReceiveDTOReport
+    {
+        public string ID { get; set; }
+        public string ReceiptDate { get; set; }
+        public string ReceiptNo { get; set; }
+        public string WarehouseCode { get; set; }
+        public string WarehouseName { get; set; }
+        public string MaterialCode { get; set; }
+        public string MaterialName { get; set; }
+        public string InboundOrderID { get; set; }
+        public string StockCode { get; set; }
+        public string LotNo { get; set; }
+        public string InDate { get; set; }
+        public string ExpDate { get; set; }
+        public string Uom { get; set; }
+        public string QtyL { get; set; }
+        public string Qty { get; set; }
+        public string Memo { get; set; }
+        public string QtyPerBag { get; set; }
+        public string BagQty { get; set; }
+        public string ReceivedBy { get; set; }
+        public string ReceivedOn { get; set; }
+        public string LastSeries { get; set; }
+        public bool BarcodeExist { get; set; }
+
+        public string PutawayQty { get; set; }
+        public string PutawayBagQty { get; set; }
+
+        public string OutstandingQty { get; set; }
+        public string OutstandingBagQty { get; set; }
+
+        public bool PrintBarcodeAction { get; set; }
+        public bool PutawayAction { get; set; }
+
+        public string BarcodeLeft { get; set; }
+        public string BarcodeRight { get; set; }
+    }
+
     public class InboundPutawayDTO
     {
         public string ID { get; set; }

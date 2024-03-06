@@ -412,5 +412,109 @@ namespace WMS_BE.Controllers.Api
 
             return Ok(obj);
         }
+
+
+        [HttpGet]
+        public async Task<IHttpActionResult> GetDataReportActualStock(string warehouse, string area, string rack)
+        {
+            Dictionary<string, object> obj = new Dictionary<string, object>();
+            string message = "";
+            bool status = false;
+
+            IEnumerable<vStockAll> list = Enumerable.Empty<vStockAll>();
+            IEnumerable<ActualStockDTO> pagedData = Enumerable.Empty<ActualStockDTO>();
+
+            IQueryable<vStockAll> query = db.vStockAlls.Where(m => m.Quantity > 0).AsQueryable();
+
+            if (!string.IsNullOrEmpty(warehouse))
+            {
+                query = query.Where(m => m.WarehouseCode.Equals(warehouse));
+            }
+
+            if (!string.IsNullOrEmpty(area))
+            {
+                query = query.Where(m => m.BinRackAreaCode.Equals(area));
+            }
+
+            if (!string.IsNullOrEmpty(rack))
+            {
+                query = query.Where(m => m.BinRackCode.Equals(rack));
+            }
+
+            int recordsTotal = query.Count();
+            int recordsFiltered = 0;
+
+            try
+            {
+
+                Dictionary<string, Func<vStockAll, object>> cols = new Dictionary<string, Func<vStockAll, object>>();
+                cols.Add("Code", x => x.Code);
+                cols.Add("LotNo", x => x.LotNumber);
+                cols.Add("BinRackCode", x => x.BinRackCode);
+                cols.Add("BinRackName", x => x.BinRackName);
+                cols.Add("BinRackAreaCode", x => x.BinRackAreaCode);
+                cols.Add("BinRackAreaName", x => x.BinRackAreaName);
+                cols.Add("WarehouseCode", x => x.WarehouseCode);
+                cols.Add("WarehouseName", x => x.WarehouseName);
+                cols.Add("MaterialCode", x => x.MaterialCode);
+                cols.Add("MaterialName", x => x.MaterialName);
+                cols.Add("InDate", x => Helper.NullDateToString(x.InDate));
+                cols.Add("ExpDate", x => Helper.NullDateToString(x.ExpiredDate));
+                cols.Add("BagQty", x => x.BagQty);
+                cols.Add("QtyPerBag", x => x.QtyPerBag);
+                cols.Add("TotalQty", x => x.BagQty * x.QtyPerBag);
+                cols.Add("IsExpired", x => x.IsExpired);
+
+                recordsFiltered = list.Count();
+                list = query.ToList();
+
+                if (list != null && list.Count() > 0)
+                {
+                    pagedData = from x in list
+                                select new ActualStockDTO
+                                {
+                                    Barcode = x.Code,
+                                    LotNo = x.LotNumber,
+                                    BinRackCode = x.BinRackCode,
+                                    BinRackName = x.BinRackName,
+                                    BinRackAreaCode = x.BinRackAreaCode,
+                                    BinRackAreaName = x.BinRackAreaName,
+                                    WarehouseCode = x.WarehouseCode,
+                                    WarehouseName = x.WarehouseName,
+                                    MaterialCode = x.MaterialCode,
+                                    MaterialName = x.MaterialName,
+                                    InDate = Helper.NullDateToString(x.InDate),
+                                    ExpDate = Helper.NullDateToString(x.ExpiredDate),
+                                    BagQty = Helper.FormatThousand(x.BagQty),
+                                    QtyPerBag = Helper.FormatThousand(x.QtyPerBag),
+                                    TotalQty = Helper.FormatThousand(x.BagQty * x.QtyPerBag),
+                                    IsExpired = Convert.ToBoolean(x.IsExpired)
+                                };
+                }
+
+                status = true;
+                message = "Fetch data succeeded.";
+            }
+            catch (HttpRequestException reqpEx)
+            {
+                message = reqpEx.Message;
+                return BadRequest();
+            }
+            catch (HttpResponseException respEx)
+            {
+                message = respEx.Message;
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
+
+            obj.Add("list", pagedData);
+            obj.Add("status", status);
+            obj.Add("message", message);
+
+            return Ok(obj);
+        }
     }
 }

@@ -6,23 +6,19 @@ using iText.Layout;
 using NPOI.Util;
 using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Configuration;
 using System.Data.Entity;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.Http;
-using System.Web.Http.ModelBinding;
 using System.Web.Routing;
 using WMS_BE.Models;
 using WMS_BE.Utils;
@@ -161,7 +157,6 @@ namespace WMS_BE.Controllers.Api
                         //check status already closed
                     }
 
-
                     if (req.PrintQty <= 0)
                     {
                         throw new Exception("Bag Qty tidak boleh kosong atau tidak boleh kurang dari 1.");
@@ -196,7 +191,6 @@ namespace WMS_BE.Controllers.Api
                             throw new Exception("Printer tidak ditemukan.");
                         }
                     }
-
 
                     //create pdf file to specific printer folder for middleware printing
                     decimal totalQty = 0;
@@ -247,20 +241,16 @@ namespace WMS_BE.Controllers.Api
                         throw new Exception("Type not recognized.");
                     }
 
-
                     int seq = 0;
-
 
                     int fullBag = req.PrintQty;
                     seq = Convert.ToInt32(data.StartSeries);
-
 
                     List<string> bodies = new List<string>();
 
                     int series = req.UseSeries ? 1 : 0;
 
                     string Domain = HttpContext.Current.Request.Url.Scheme + "://" + HttpContext.Current.Request.Url.Authority + HttpContext.Current.Request.ApplicationPath.TrimEnd('/');
-
                     for (int i = 0; i < fullBag; i++)
                     {
                         string runningNumber = "";
@@ -286,7 +276,6 @@ namespace WMS_BE.Controllers.Api
                         {
                             try
                             {
-
                                 DateTime dt = DateTime.ParseExact(data.InDate, "dd/MM/yyyy", null);
                                 dto.Field4 = dt.ToString("MMMM").ToUpper();
                                 inDate = dt.ToString("yyyyMMdd").Substring(1);
@@ -304,7 +293,6 @@ namespace WMS_BE.Controllers.Api
                         {
                             try
                             {
-
                                 DateTime dt = DateTime.ParseExact(data.ExpDate, "dd/MM/yyyy", null);
                                 expiredDate = dt.ToString("yyyyMMdd").Substring(2);
                                 expiredDate2 = dt.ToString("yyyy-MM-dd");
@@ -328,7 +316,6 @@ namespace WMS_BE.Controllers.Api
                         String body = RenderViewToString("Values", "~/Views/Receiving/Label.cshtml", dto);
                         bodies.Add(body);
                     }
-
 
                     using (MemoryStream stream = new MemoryStream())
                     {
@@ -392,7 +379,6 @@ namespace WMS_BE.Controllers.Api
 
                     status = true;
                     message = "Print barcode berhasil. Mohon menunggu.";
-
                 }
                 else
                 {
@@ -475,13 +461,10 @@ namespace WMS_BE.Controllers.Api
                 else
                 {
                     throw new Exception("Type not recognized.");
-                }
-
-               
+                }                             
 
                 status = true;
                 message = "Fetch data succeded.";
-
             }
             catch (HttpRequestException reqpEx)
             {
@@ -576,7 +559,6 @@ namespace WMS_BE.Controllers.Api
             bool status = false;
             IEnumerable<ReceivingDTO> list = Enumerable.Empty<ReceivingDTO>();
 
-
             DateTime filterDate = Convert.ToDateTime(req.Date);
 
             try
@@ -586,12 +568,10 @@ namespace WMS_BE.Controllers.Api
                                 && (s.TransactionStatus.Equals("OPEN") || s.TransactionStatus.Equals("PROGRESS"))
                                 && !string.IsNullOrEmpty(s.RefNumber)).AsQueryable();
 
-
                 if (!string.IsNullOrEmpty(req.SourceName))
                 {
                     query = query.Where(s => s.PurchaseRequestDetail.PurchaseRequestHeader.SourceName.Contains(req.SourceName));
                 }
-
 
                 if (!string.IsNullOrEmpty(req.MaterialName))
                 {
@@ -680,7 +660,6 @@ namespace WMS_BE.Controllers.Api
                     throw new Exception("Data is not recognized.");
                 }
 
-
                 receivingDTO = new ReceivingDTO
                 {
                     ID = receiving.ID,
@@ -718,12 +697,10 @@ namespace WMS_BE.Controllers.Api
                 {
                     QtyPerBag = receiving.QtyPerBag * rm.PoRate;
                     Qty2 = Convert.ToInt32(receiving.Qty / receiving.QtyPerBag) * QtyPerBag;
-                    //Qty2 = receiving.Qty;
                 }
                 else
                 {
                     QtyPerBag = receiving.QtyPerBag;
-                    //Qty2 = receiving.Qty * receiving.QtyPerBag;
                     Qty2 = receiving.Qty;
                 }
 
@@ -735,24 +712,17 @@ namespace WMS_BE.Controllers.Api
 
                 AvailableBagQty = Convert.ToInt32(AvailableQty / QtyPerBag);
 
-
                 receivingDTO.ReceivedQty = Helper.FormatThousand(ReceivedQty);
                 receivingDTO.ReceivedBagQty = Helper.FormatThousand(ReceivedBagQty);
-
-
 
                 receivingDTO.AvailableQty = Helper.FormatThousand(AvailableQty);
                 receivingDTO.AvailableBagQty = Helper.FormatThousand(AvailableBagQty);
 
                 receivingDTO.OutstandingBagQty = Helper.FormatThousand(Convert.ToInt32(receiving.Qty / receiving.QtyPerBag) - ReceivedBagQty);
 
-
                 receivingDTO.DefaultLot = DateTime.Now.ToString("yyyMMdd").Substring(1);
 
-                //get list detail
-
-              
-
+                //get list detail            
                 IEnumerable<ReceivingDetail> tempList = await db.ReceivingDetails.Where(s => s.HeaderID.Equals(id)).OrderBy(m => m.ReceivedOn).ToListAsync();
                     list = from detail in tempList
                            select new ReceivingDataRMResp
@@ -780,7 +750,6 @@ namespace WMS_BE.Controllers.Api
                                JudgementAction = detail.NGQty > 0 ? true : false,
                                PutawayAction = Convert.ToInt32(((detail.Qty - detail.NGQty) - detail.Putaways.Sum(i => i.PutawayQty)) / detail.QtyPerBag) > 0 && detail.Inspections.Count() > 0,
                            };
-
 
                 if (list.Count() > 0)
                 {
@@ -816,7 +785,6 @@ namespace WMS_BE.Controllers.Api
             return Ok(obj);
         }
 
-
         [HttpPost]
         public async Task<IHttpActionResult> Receive(ReceivingRMReq req)
         {
@@ -838,7 +806,6 @@ namespace WMS_BE.Controllers.Api
                 }
 
                 string activeUser = await db.Users.Where(x => x.Token.Equals(token)).Select(x => x.Username).FirstOrDefaultAsync();
-
                 if (activeUser != null)
                 {
                     if (string.IsNullOrEmpty(req.ReceivingHeaderId))
@@ -846,9 +813,7 @@ namespace WMS_BE.Controllers.Api
                         throw new Exception("ReceivingHeaderId is required.");
                     }
 
-
                     Receiving receiving = await db.Receivings.Where(s => s.ID.Equals(req.ReceivingHeaderId)).FirstOrDefaultAsync();
-
                     if (receiving == null)
                     {
                         throw new Exception("Data tidak dikenali.");
@@ -859,7 +824,6 @@ namespace WMS_BE.Controllers.Api
                     }
 
                     RawMaterial rm = await db.RawMaterials.Where(s => s.MaterialCode.Equals(receiving.MaterialCode)).FirstOrDefaultAsync();
-
                     if (rm == null)
                     {
                         throw new Exception("Material tidak dikenali.");
@@ -887,7 +851,6 @@ namespace WMS_BE.Controllers.Api
                             throw new Exception(string.Format("Bag Qty melewati jumlah tersedia. Bag Qty tersedia : {0}", availableBagQty));
                         }
                     }
-
 
                     receivingDetail = new ReceivingDetail();
                     receivingDetail.ID = Helper.CreateGuid("RCd");
@@ -926,16 +889,10 @@ namespace WMS_BE.Controllers.Api
                         days = ShelfLife - 1;
                     }
 
-
                     receivingDetail.ExpDate = receivingDetail.InDate.AddDays(days);
-
                     receivingDetail.LotNo = req.LotNo.Trim().ToString();
-
                     receivingDetail.StockCode = string.Format("{0}{1}{2}{3}{4}", receiving.MaterialCode, Helper.FormatThousand(receivingDetail.QtyPerBag), receivingDetail.LotNo, receivingDetail.InDate.ToString("yyyyMMdd").Substring(1), receivingDetail.ExpDate.Value.ToString("yyyyMMdd").Substring(2));
-
-
                     receivingDetail.DoNo = req.DoNo;
-
                     receivingDetail.ReceivedBy = activeUser;
                     receivingDetail.ReceivedOn = now;
                     receivingDetail.COA = false;
@@ -1022,10 +979,114 @@ namespace WMS_BE.Controllers.Api
                             stockRM.ReceivedAt = putaway.PutOn;
 
                             db.StockRMs.Add(stockRM);
-
                         }
 
                         receiving.TransactionStatus = "CLOSED";
+                    }
+
+                    if (receiving.PurchaseRequestDetail.PurchaseRequestHeader.SourceType == "OUTSOURCE")
+                    {
+                        var source = receiving.PurchaseRequestDetail.PurchaseRequestHeader.SourceCode;
+                        BinRack binRack1 = db.BinRacks.Where(x => x.WarehouseCode == source).FirstOrDefault();
+
+                        List<vStockAll> stocks = db.vStockAlls.Where(m => m.Quantity > 0 && m.BinRackAreaCode == binRack1.BinRackAreaCode && m.MaterialCode == receiving.MaterialCode).OrderBy(m => m.ReceivedAt).ToList();
+
+                        decimal countqty = receivingDetail.Qty;
+                        decimal pickQty = receivingDetail.Qty;
+                        foreach (vStockAll stock in stocks)
+                        {
+                            if (countqty > 0)
+                            {
+                                if (stock.Type.Equals("RM"))
+                                {
+                                    StockRM stockrm = db.StockRMs.Where(m => m.ID.Equals(stock.ID)).FirstOrDefault();
+                                    if (pickQty >= countqty)
+                                    {
+                                        decimal qty = stockrm.Quantity;
+                                        decimal stockrmqty;
+                                        if (countqty < pickQty)
+                                        {
+                                            stockrmqty = stockrm.Quantity - countqty;
+                                        }
+                                        else
+                                        {
+                                            stockrmqty = stockrm.Quantity - pickQty;
+                                        }
+
+                                        if (stockrmqty > 0)
+                                        {
+                                            stockrm.Quantity = stockrmqty;
+                                            countqty = countqty - stockrmqty;
+                                        }
+                                        else
+                                        {
+                                            if (stockrm.Quantity > countqty)
+                                            {
+                                                stockrm.Quantity = stockrm.Quantity - countqty;
+                                                countqty = countqty - stockrm.Quantity;
+                                            }
+                                            else
+                                            {
+                                                if (stockrm.Quantity > 0)
+                                                {
+                                                    stockrm.Quantity = 0;
+                                                    countqty = countqty - (pickQty - qty);
+                                                }
+                                                else
+                                                {
+                                                    stockrm.Quantity = 0;
+                                                    countqty = countqty - (pickQty - stockrm.Quantity);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                else if (stock.Type.Equals("SFG"))
+                                {
+                                    StockSFG stockfg = db.StockSFGs.Where(m => m.ID.Equals(stock.ID)).FirstOrDefault();
+                                    if (pickQty >= countqty)
+                                    {
+                                        decimal qty = stockfg.Quantity;
+                                        decimal stockfgqty;
+                                        if (countqty < pickQty)
+                                        {
+                                            stockfgqty = stockfg.Quantity - countqty;
+                                        }
+                                        else
+                                        {
+                                            stockfgqty = stockfg.Quantity - pickQty;
+                                        }
+
+                                        if (stockfgqty > 0)
+                                        {
+                                            stockfg.Quantity = stockfgqty;
+                                            countqty = countqty - stockfgqty;
+                                        }
+                                        else
+                                        {
+                                            if (stockfg.Quantity > countqty)
+                                            {
+                                                stockfg.Quantity = stockfg.Quantity - countqty;
+                                                countqty = countqty - stockfg.Quantity;
+                                            }
+                                            else
+                                            {
+                                                if (stockfg.Quantity > 0)
+                                                {
+                                                    stockfg.Quantity = 0;
+                                                    countqty = countqty - (pickQty - qty);
+                                                }
+                                                else
+                                                {
+                                                    stockfg.Quantity = 0;
+                                                    countqty = countqty - (pickQty - stockfg.Quantity);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
 
                     await db.SaveChangesAsync();
@@ -1033,7 +1094,6 @@ namespace WMS_BE.Controllers.Api
                     ReceiveId = receivingDetail.ID;
                     status = true;
                     message = "Receiving berhasil.";
-
                 }
                 else
                 {
@@ -1084,7 +1144,6 @@ namespace WMS_BE.Controllers.Api
                     throw new Exception("Data is not recognized.");
                 }
 
-
                 dataDTO = new ReceivingDataRMResp
                 {
                     ID = receivingDetail.ID,
@@ -1119,7 +1178,6 @@ namespace WMS_BE.Controllers.Api
                     BarcodeLeft = receivingDetail.Receiving.MaterialCode.PadRight(7) + receivingDetail.InDate.ToString("yyyyMMdd").Substring(1) + receivingDetail.ExpDate.Value.ToString("yyyyMMdd").Substring(2)
                 };
 
-
                 status = true;
                 message = "Fetch data succeded.";
 
@@ -1145,7 +1203,6 @@ namespace WMS_BE.Controllers.Api
 
             return Ok(obj);
         }
-
 
         [HttpPost]
         public async Task<IHttpActionResult> Inspection(InspectionRMReq req)
@@ -1251,14 +1308,10 @@ namespace WMS_BE.Controllers.Api
 
                     receivingDetail.NGQty = NGBagQty * receivingDetail.QtyPerBag;
 
-
-
                     int startSeries = receivingDetail.LastSeries - Convert.ToInt32(receivingDetail.Qty / receivingDetail.QtyPerBag);
+
                     //insert to inspection log
-
                     int OKBagQty = Convert.ToInt32(req.OKBagQty);
-
-
                     Inspection inspection = new Inspection();
                     inspection.ID = Helper.CreateGuid("I");
                     inspection.ReceivingDetailID = receivingDetail.ID;
@@ -1272,13 +1325,11 @@ namespace WMS_BE.Controllers.Api
                     inspection.InspectionQty = OKBagQty * receivingDetail.QtyPerBag;
 
                     db.Inspections.Add(inspection);
-
                     
                     await db.SaveChangesAsync();
 
                     status = true;
                     message = "Inspection berhasil.";
-
                 }
                 else
                 {
@@ -1303,9 +1354,7 @@ namespace WMS_BE.Controllers.Api
 
             return Ok(obj);
         }
-
-
-       
+               
         [HttpPost]
         public async Task<IHttpActionResult> Putaway(PutawayRMReq req)
         {
@@ -1329,13 +1378,10 @@ namespace WMS_BE.Controllers.Api
 
                 if (activeUser != null)
                 {
-
-
                     if (string.IsNullOrEmpty(req.ReceivingDetailId))
                     {
                         throw new Exception("ReceivingDetailId is required.");
                     }
-
 
                     if (string.IsNullOrEmpty(req.BarcodeLeft) || string.IsNullOrEmpty(req.BarcodeRight))
                     {
@@ -1350,14 +1396,12 @@ namespace WMS_BE.Controllers.Api
 
                     string StockCode = string.Format("{0}{1}{2}{3}{4}", MaterialCode.Trim(), QtyPerBag, LotNumber, InDate, ExpiredDate);
 
-
                     ReceivingDetail receivingDetail = await db.ReceivingDetails.Where(s => s.StockCode.Equals(StockCode) && s.ID.Equals(req.ReceivingDetailId)).FirstOrDefaultAsync();
 
                     if (receivingDetail == null)
                     {
                         throw new Exception("Data tidak ditemukan.");
                     }
-
 
                     if (req.BagQty <= 0)
                     {
@@ -1377,7 +1421,6 @@ namespace WMS_BE.Controllers.Api
                     if (string.IsNullOrEmpty(req.BinRackCode))
                     {
                         throw new Exception("BinRack harus diisi.");
-
                     }
                     else
                     {
@@ -1398,7 +1441,6 @@ namespace WMS_BE.Controllers.Api
                         }
                     }
 
-
                     Putaway putaway = new Putaway();
                     putaway.ID = Helper.CreateGuid("P");
                     putaway.ReceivingDetailID = receivingDetail.ID;
@@ -1414,7 +1456,6 @@ namespace WMS_BE.Controllers.Api
 
                     //insert to Stock if not exist, update quantity if barcode, indate and location is same
 
-                    //StockRM stockRM = await db.StockRMs.Where(m => m.Code.Equals(receivingDetail.StockCode) && m.InDate.Equals(receivingDetail.InDate.Date) && m.BinRackCode.Equals(putaway.BinRackCode)).FirstOrDefaultAsync();
                     StockRM stockRM = await db.StockRMs.Where(m => m.Code.Equals(receivingDetail.StockCode) && m.BinRackCode.Equals(putaway.BinRackCode)).FirstOrDefaultAsync();
                     if (stockRM != null)
                     {
@@ -1440,14 +1481,12 @@ namespace WMS_BE.Controllers.Api
                         db.StockRMs.Add(stockRM);
                     }
 
-
                     await db.SaveChangesAsync();
 
                     //update receiving plan status if all quantity have been received and putaway
                     Receiving rec = await db.Receivings.Where(s => s.ID.Equals(receivingDetail.HeaderID)).FirstOrDefaultAsync();
 
                     decimal totalReceive = rec.Qty;
-
                     decimal totalPutaway = 0;
 
                     foreach (ReceivingDetail recDetail in rec.ReceivingDetails)
@@ -1455,21 +1494,20 @@ namespace WMS_BE.Controllers.Api
                         totalPutaway += recDetail.Putaways.Sum(i => i.PutawayQty);
                     }
 
-                    //decimal totalPutaway = receivingDetail.Putaways.Sum(i => i.PutawayQty);
+                    RawMaterial rm = await db.RawMaterials.Where(s => s.MaterialCode.Equals(rec.MaterialCode)).FirstOrDefaultAsync();
 
-                    int OutstandingQty = Convert.ToInt32(rec.Qty / rec.QtyPerBag) - Convert.ToInt32(totalPutaway / rec.QtyPerBag);
+                    int OutstandingQty = Convert.ToInt32(rec.Qty / rec.QtyPerBag) - Convert.ToInt32(totalPutaway / rm.Qty);
 
-                    if (totalReceive == totalPutaway || OutstandingQty < 1)
+                    if (totalReceive == totalPutaway)
                     {
                         rec.TransactionStatus = "CLOSED";
                     }
-                    else if (totalReceive == totalPutaway && rec.UoM == "L")
-                    {
-                        rec.TransactionStatus = "CLOSED";
+                    else if (OutstandingQty < 1)
+                    { 
+                        rec.TransactionStatus = "CLOSED"; 
                     }
 
                     await db.SaveChangesAsync();
-
 
                     decimal availQty = (receivingDetail.Qty - receivingDetail.NGQty) - receivingDetail.Putaways.Sum(i => i.PutawayQty);
                     int availBagQty = Convert.ToInt32(availQty / receivingDetail.QtyPerBag);
@@ -1479,7 +1517,6 @@ namespace WMS_BE.Controllers.Api
 
                     status = true;
                     message = "Putaway berhasil.";
-
                 }
                 else
                 {
@@ -1560,8 +1597,7 @@ namespace WMS_BE.Controllers.Api
                             var prev_path = System.IO.Path.Combine(
                             HttpContext.Current.Server.MapPath("~/Content/captureCOA"),
                             stcode.FotoCOA
-                      );
-
+                            );
                         }
 
                         if (Directory.Exists(HttpContext.Current.Server.MapPath("~/Content/captureCOA")))
@@ -1601,128 +1637,5 @@ namespace WMS_BE.Controllers.Api
 
             return Ok(obj);
         }
-        //[HttpPost]
-        //public async Task<IHttpActionResult> JudgementMobile(JudgementReq req)
-        //{
-        //    Dictionary<string, object> obj = new Dictionary<string, object>();
-        //    List<CustomValidationMessage> customValidationMessages = new List<CustomValidationMessage>();
-
-        //    string message = "";
-        //    bool status = false;
-        //    var re = Request;
-        //    var headers = re.Headers;
-
-        //    try
-        //    {
-        //        string token = "";
-
-        //        if (headers.Contains("token"))
-        //        {
-        //            token = headers.GetValues("token").First();
-        //        }
-
-        //        string activeUser = await db.Users.Where(x => x.Token.Equals(token)).Select(x => x.Username).FirstOrDefaultAsync();
-
-        //        if (activeUser != null)
-        //        {
-        //            ReceivingDetail receivingDetail = await db.ReceivingDetails.Where(s => s.ID.Equals(req.ReceivingDetailId)).FirstOrDefaultAsync();
-
-        //            if (receivingDetail == null)
-        //            {
-        //                throw new Exception("Data is not recognized.");
-        //            }
-        //            else
-        //            {
-        //                //check status already closed
-        //            }
-
-
-        //            if (req.OKBagQty <= 0)
-        //            {
-        //                ModelState.AddModelError("Receiving.JudgementQTY", "Bag Qty can not be empty or below zero.");
-        //            }
-        //            else
-        //            {
-        //                int availableBagQty = Convert.ToInt32(receivingDetail.NGQty / receivingDetail.QtyPerBag);
-        //                if (req.OKBagQty > availableBagQty)
-        //                {
-        //                    ModelState.AddModelError("Receiving.JudgementQTY", string.Format("Bag Qty exceeded. Available Bag Qty : {0}", availableBagQty));
-        //                }
-        //            }
-
-
-        //            if (!ModelState.IsValid)
-        //            {
-        //                foreach (var state in ModelState)
-        //                {
-        //                    string field = state.Key.Split('.')[1];
-        //                    string value = state.Value.Errors.Select(x => x.ErrorMessage).ToArray()[0];
-        //                    customValidationMessages.Add(new CustomValidationMessage(field, value));
-        //                }
-
-        //                throw new Exception("Kesalahan input");
-        //            }
-
-
-        //            int lastSeries = await db.Judgements.Where(m => m.ReceivingDetailID.Equals(receivingDetail.ID)).OrderByDescending(m => m.JudgeOn).Select(m => m.LastSeries).FirstOrDefaultAsync();
-        //            if (lastSeries == 0)
-        //            {
-        //                lastSeries = await db.Inspections.Where(m => m.ReceivingDetailID.Equals(receivingDetail.ID)).OrderByDescending(m => m.InspectedOn).Select(m => m.LastSeries).FirstOrDefaultAsync();
-        //            }
-
-
-
-        //            lastSeries += req.OKBagQty;
-
-        //            //insert log judgement
-
-        //            Judgement judgement = new Judgement();
-        //            judgement.ID = Helper.CreateGuid("J");
-        //            judgement.ReceivingDetailID = receivingDetail.ID;
-        //            judgement.JudgementMethod = "SCAN";
-
-        //            DateTime now = DateTime.Now;
-        //            DateTime transactionDate = now;
-        //            judgement.JudgeOn = transactionDate;
-        //            judgement.JudgeBy = activeUser;
-        //            judgement.LastSeries = lastSeries;
-        //            judgement.JudgementQty = req.OKBagQty * receivingDetail.QtyPerBag;
-
-        //            db.Judgements.Add(judgement);
-
-
-        //            receivingDetail.NGQty -= judgement.JudgementQty;
-
-        //            await db.SaveChangesAsync();
-
-        //            status = true;
-        //            message = "Judgement succeeded.";
-
-        //        }
-        //        else
-        //        {
-        //            message = "Token sudah berakhir, silahkan login kembali.";
-        //        }
-        //    }
-        //    catch (HttpRequestException reqpEx)
-        //    {
-        //        message = reqpEx.Message;
-        //    }
-        //    catch (HttpResponseException respEx)
-        //    {
-        //        message = respEx.Message;
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        message = ex.Message;
-        //    }
-
-        //    obj.Add("status", status);
-        //    obj.Add("message", message);
-        //    obj.Add("error_validation", customValidationMessages);
-
-        //    return Ok(obj);
-        //}
-
     }
 }

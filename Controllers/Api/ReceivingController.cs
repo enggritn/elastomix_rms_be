@@ -6,23 +6,19 @@ using iText.Layout;
 using NPOI.Util;
 using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Configuration;
 using System.Data.Entity;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.Http;
-using System.Web.Http.ModelBinding;
 using System.Web.Routing;
 using WMS_BE.Models;
 using WMS_BE.Utils;
@@ -169,6 +165,851 @@ namespace WMS_BE.Controllers.Api
             obj.Add("recordsTotal", recordsTotal);
             obj.Add("recordsFiltered", recordsFiltered);
             obj.Add("data", pagedData);
+            obj.Add("status", status);
+            obj.Add("message", message);
+
+            return Ok(obj);
+        }
+
+        [HttpPost]
+        public async Task<IHttpActionResult> DatatableDetailReceiving()
+        {
+            int draw = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("draw")[0]);
+            int start = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("start")[0]);
+            int length = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("length")[0]);
+            string search = HttpContext.Current.Request.Form.GetValues("search[value]")[0];
+            string orderCol = HttpContext.Current.Request.Form.GetValues("order[0][column]")[0];
+            string sortName = HttpContext.Current.Request.Form.GetValues("columns[" + orderCol + "][name]")[0];
+            string sortDirection = HttpContext.Current.Request.Form.GetValues("order[0][dir]")[0];
+
+            Dictionary<string, object> obj = new Dictionary<string, object>();
+            string message = "";
+            bool status = false;
+            HttpRequest request = HttpContext.Current.Request;
+
+            string date = request["date"].ToString();
+            string warehouseCode = request["warehouseCode"].ToString();
+            string sourceType = request["sourceType"].ToString();
+
+            IEnumerable<ReceivingDetail> list = Enumerable.Empty<ReceivingDetail>();
+            IEnumerable<ReceivingDetailDTO> pagedData = Enumerable.Empty<ReceivingDetailDTO>();
+
+            DateTime filterDate = Convert.ToDateTime(date);
+            IQueryable<ReceivingDetail> query;
+
+            if (!string.IsNullOrEmpty(sourceType) && !string.IsNullOrEmpty(warehouseCode))
+            {
+                query = db.ReceivingDetails.Where(s => DbFunctions.TruncateTime(s.ReceivedOn) == DbFunctions.TruncateTime(filterDate)
+                        && s.Receiving.PurchaseRequestDetail.PurchaseRequestHeader.SourceCode.Equals(warehouseCode)
+                        && s.Receiving.PurchaseRequestDetail.PurchaseRequestHeader.SourceType.Equals(sourceType));
+            }
+            else
+            {
+                if (!string.IsNullOrEmpty(sourceType))
+                {
+                    query = db.ReceivingDetails.Where(s => DbFunctions.TruncateTime(s.ReceivedOn) == DbFunctions.TruncateTime(filterDate)
+                            && s.Receiving.PurchaseRequestDetail.PurchaseRequestHeader.SourceType.Equals(sourceType));
+                }
+                else if (!string.IsNullOrEmpty(warehouseCode))
+                {
+                    query = db.ReceivingDetails.Where(s => DbFunctions.TruncateTime(s.ReceivedOn) == DbFunctions.TruncateTime(filterDate)
+                            && s.Receiving.PurchaseRequestDetail.PurchaseRequestHeader.SourceCode.Equals(warehouseCode));
+                }
+                else
+                {
+                    query = db.ReceivingDetails.Where(s => DbFunctions.TruncateTime(s.ReceivedOn) == DbFunctions.TruncateTime(filterDate));
+                }
+            }
+
+            int recordsTotal = query.Count();
+
+            //IQueryable<ReceivingDetail> query = db.ReceivingDetails.Where(s => s.HeaderID.Equals("")).AsQueryable();
+
+            //int recordsTotal = db.ReceivingDetails.Where(s => s.HeaderID.Equals("")).Count();
+            int recordsFiltered = 0;
+
+            try
+            {
+                query = query
+                        .Where(m => m.DoNo.Contains(search)
+                        || m.LotNo.Contains(search)
+                        || m.StockCode.Contains(search)
+                        );
+
+                Dictionary<string, Func<ReceivingDetail, object>> cols = new Dictionary<string, Func<ReceivingDetail, object>>();
+                cols.Add("SourceName", x => x.Receiving.PurchaseRequestDetail.PurchaseRequestHeader.SourceName); 
+                cols.Add("DocumentNo", x => x.Receiving.PurchaseRequestDetail.PurchaseRequestHeader.Code);
+                cols.Add("MaterialCode", x => x.Receiving.MaterialCode);
+                cols.Add("MaterialName", x => x.Receiving.MaterialName);
+                cols.Add("DoNo", x => x.DoNo);
+                cols.Add("LotNo", x => x.LotNo);
+                cols.Add("InDate", x => x.InDate);
+                cols.Add("ExpDate", x => x.ExpDate);
+                cols.Add("Qty", x => x.Qty);
+                cols.Add("QtyPerBag", x => x.QtyPerBag);
+                cols.Add("BagQty", x => x.Qty / x.QtyPerBag);
+                cols.Add("UoM", x => x.UoM);
+                cols.Add("ATA", x => x.ATA);
+                cols.Add("Remarks", x => x.Remarks);
+                cols.Add("COA", x => x.COA);
+                cols.Add("ReceivedBy", x => x.ReceivedBy);
+                cols.Add("ReceivedOn", x => x.ReceivedOn);
+
+
+                if (sortDirection.Equals("asc"))
+                    list = query.OrderBy(cols[sortName]);
+                else
+                    list = query.OrderByDescending(cols[sortName]);
+
+                recordsFiltered = list.Count();
+
+                list = list.Skip(start).Take(length).ToList();
+
+                if (list != null && list.Count() > 0)
+                {
+
+                    pagedData = from detail in list
+                                select new ReceivingDetailDTO
+                                {
+                                    ID = detail.ID,
+                                    SourceName = detail.Receiving.PurchaseRequestDetail.PurchaseRequestHeader.SourceName,
+                                    DocumentNo = detail.Receiving.PurchaseRequestDetail.PurchaseRequestHeader.Code,
+                                    MaterialCode = detail.Receiving.MaterialCode,
+                                    MaterialName = detail.Receiving.MaterialName,
+                                    DoNo = detail.DoNo != null ? detail.DoNo : "",
+                                    LotNo = detail.LotNo != null ? detail.LotNo : "",
+                                    InDate = Helper.NullDateToString2(detail.InDate),
+                                    ExpDate = Helper.NullDateToString2(detail.ExpDate),
+                                    Qty = Helper.FormatThousand(detail.Qty),
+                                    QtyPerBag = Helper.FormatThousand(detail.QtyPerBag),
+                                    BagQty = Helper.FormatThousand(Convert.ToInt32(detail.Qty / detail.QtyPerBag)),
+                                    ATA = Helper.NullDateToString2(detail.ATA),
+                                    UoM = detail.UoM,
+                                    Remarks = detail.Remarks,
+                                    ReceivedBy = detail.ReceivedBy,
+                                    ReceivedOn = Helper.NullDateTimeToString(detail.ReceivedOn),
+                                    COA = detail.COA,
+                                    CoaAction = !detail.COA ? true : false,
+                                    InspectionAction = detail.Inspections.Count() > 0 || detail.Receiving.PurchaseRequestDetail.PurchaseRequestHeader.DestinationCode == "2003" || detail.Receiving.PurchaseRequestDetail.PurchaseRequestHeader.DestinationCode == "2004" ? false : true,
+                                    JudgementAction = detail.NGQty > 0 ? true : false,
+                                    PutawayAction = detail.Qty == detail.Putaways.Sum(i => i.PutawayQty) ? false : true,
+                                    OKQty = Helper.FormatThousand(detail.Qty - detail.NGQty),
+                                    OKBagQty = Helper.FormatThousand(Convert.ToInt32((detail.Qty - detail.NGQty) / detail.QtyPerBag)),
+                                    NGQty = Helper.FormatThousand(detail.NGQty),
+                                    NGBagQty = Helper.FormatThousand(Convert.ToInt32(detail.NGQty / detail.QtyPerBag)),
+                                    PutawayTotalQty = Helper.FormatThousand(detail.Putaways.Sum(i => i.PutawayQty)),
+                                    PutawayTotalBagQty = Helper.FormatThousand(Convert.ToInt32(detail.Putaways.Sum(i => i.PutawayQty) / detail.QtyPerBag)),
+                                    PutawayAvailableQty = Helper.FormatThousand((detail.Qty - detail.NGQty) - detail.Putaways.Sum(i => i.PutawayQty)),
+                                    PutawayAvailableBagQty = Helper.FormatThousand(Convert.ToInt32(((detail.Qty - detail.NGQty) - detail.Putaways.Sum(i => i.PutawayQty)) / detail.QtyPerBag)),
+                                    DestinationCode = detail.Receiving.PurchaseRequestDetail.PurchaseRequestHeader.DestinationCode,
+                                    EditAction = detail.Putaways.Sum(i => i.PutawayQty) == 0
+                                };
+                }
+
+                status = true;
+                message = "Fetch data succeeded.";
+            }
+            catch (HttpRequestException reqpEx)
+            {
+                message = reqpEx.Message;
+                return BadRequest();
+            }
+            catch (HttpResponseException respEx)
+            {
+                message = respEx.Message;
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
+
+            obj.Add("draw", draw);
+            obj.Add("recordsTotal", recordsTotal);
+            obj.Add("recordsFiltered", recordsFiltered);
+            obj.Add("data", pagedData);
+            obj.Add("status", status);
+            obj.Add("message", message);
+
+            return Ok(obj);
+        }
+
+        [HttpPost]
+        public async Task<IHttpActionResult> DatatableDetailReceiving2()
+        {
+            int draw = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("draw")[0]);
+            int start = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("start")[0]);
+            int length = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("length")[0]);
+            string search = HttpContext.Current.Request.Form.GetValues("search[value]")[0];
+            string orderCol = HttpContext.Current.Request.Form.GetValues("order[0][column]")[0];
+            string sortName = HttpContext.Current.Request.Form.GetValues("columns[" + orderCol + "][name]")[0];
+            string sortDirection = HttpContext.Current.Request.Form.GetValues("order[0][dir]")[0];
+
+            HttpRequest request = HttpContext.Current.Request;
+            string date = request["date"].ToString();
+            string warehouseCode = request["warehouseCode"].ToString();
+            string sourceType = request["sourceType"].ToString();
+
+            Dictionary<string, object> obj = new Dictionary<string, object>();
+            string message = "";
+            bool status = false;
+
+
+            IEnumerable<vReceivingReport2> list = Enumerable.Empty<vReceivingReport2>();
+            IEnumerable<ReceivingDetailDTOReport> pagedData = Enumerable.Empty<ReceivingDetailDTOReport>();
+
+            DateTime filterDate = Convert.ToDateTime(date);
+            IQueryable<vReceivingReport2> query;
+
+            if (!string.IsNullOrEmpty(sourceType) && !string.IsNullOrEmpty(warehouseCode))
+            {
+                query = db.vReceivingReport2.Where(s => DbFunctions.TruncateTime(s.ATA) == DbFunctions.TruncateTime(filterDate)
+                        && s.SourceCode.Equals(warehouseCode)
+                        && s.SourceType.Equals(sourceType));
+            }
+            else
+            {
+                if (!string.IsNullOrEmpty(sourceType))
+                {
+                    query = db.vReceivingReport2.Where(s => DbFunctions.TruncateTime(s.ATA) == DbFunctions.TruncateTime(filterDate)
+                            && s.SourceType.Equals(sourceType));
+                }
+                else if (!string.IsNullOrEmpty(warehouseCode))
+                {
+                    query = db.vReceivingReport2.Where(s => DbFunctions.TruncateTime(s.ATA) == DbFunctions.TruncateTime(filterDate)
+                            && s.SourceCode.Equals(warehouseCode));
+                }
+                else
+                {
+                    query = db.vReceivingReport2.Where(s => DbFunctions.TruncateTime(s.ATA) == DbFunctions.TruncateTime(filterDate));
+                }
+            }
+
+            int recordsTotal = query.Count();
+            int recordsFiltered = 0;
+
+            try
+            {
+                query = query
+                        .Where(m => m.MaterialCode.Contains(search)
+                        || m.MaterialName.Contains(search)
+                        );
+
+                Dictionary<string, Func<vReceivingReport2, object>> cols = new Dictionary<string, Func<vReceivingReport2, object>>();
+                cols.Add("DestinationName", x => x.DestinationName);
+                cols.Add("RefNumber", x => x.RefNumber);
+                cols.Add("SourceName", x => x.SourceName);
+                cols.Add("MaterialCode", x => x.MaterialCode);
+                cols.Add("MaterialName", x => x.MaterialName);
+                cols.Add("InDate", x => x.InDate);
+                cols.Add("ExpDate", x => x.ExpDate);
+                cols.Add("LotNo", x => x.LotNo);
+                cols.Add("PerBag", x => x.PerBag);
+                cols.Add("FullBag", x => x.FullBag);
+                cols.Add("Total", x => x.Total);
+                cols.Add("DoNo", x => x.DoNo);
+                cols.Add("ATA", x => x.ATA);
+                cols.Add("TransactionStatus", x => x.TransactionStatus);
+
+                if (sortDirection.Equals("asc"))
+                    list = query.OrderBy(cols[sortName]);
+                else
+                    list = query.OrderByDescending(cols[sortName]);
+
+                recordsFiltered = list.Count();
+
+                list = list.Skip(start).Take(length).ToList();
+
+                if (list != null && list.Count() > 0)
+                {
+                    pagedData = from detail in list
+                                select new ReceivingDetailDTOReport
+                                {
+                                    DestinationName = detail.DestinationName,
+                                    RefNumber = detail.RefNumber,
+                                    SourceCode = detail.SourceCode,
+                                    SourceType = detail.SourceType,
+                                    SourceName = detail.SourceName,
+                                    MaterialCode = detail.MaterialCode,
+                                    MaterialName = detail.MaterialName,
+                                    InDate = Helper.NullDateToString2(detail.InDate),
+                                    ExpDate = Helper.NullDateToString2(detail.ExpDate),
+                                    LotNo = detail.LotNo != null ? detail.LotNo : "",
+                                    PerBag = Helper.FormatThousand(detail.PerBag),
+                                    FullBag = Helper.FormatThousand(detail.FullBag),
+                                    Total = Helper.FormatThousand(Convert.ToInt32(detail.Total)),
+                                    Area = detail.Area != null ? detail.Area : "",
+                                    RackNo = detail.RackNo != null ? detail.RackNo : "",
+                                    DoNo = detail.DoNo,
+                                    ATA = Helper.NullDateToString2(detail.ATA),
+                                    TransactionStatus = detail.TransactionStatus,
+                                };
+                }
+
+                status = true;
+                message = "Fetch data succeeded.";
+            }
+            catch (HttpRequestException reqpEx)
+            {
+                message = reqpEx.Message;
+                return BadRequest();
+            }
+            catch (HttpResponseException respEx)
+            {
+                message = respEx.Message;
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
+
+            obj.Add("draw", draw);
+            obj.Add("recordsTotal", recordsTotal);
+            obj.Add("recordsFiltered", recordsFiltered);
+            obj.Add("data", pagedData);
+            obj.Add("status", status);
+            obj.Add("message", message);
+
+            return Ok(obj);
+        }
+
+        [HttpPost]
+        public async Task<IHttpActionResult> DatatableDetailReceiving3()
+        {
+            int draw = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("draw")[0]);
+            int start = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("start")[0]);
+            int length = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("length")[0]);
+            string search = HttpContext.Current.Request.Form.GetValues("search[value]")[0];
+            string orderCol = HttpContext.Current.Request.Form.GetValues("order[0][column]")[0];
+            string sortName = HttpContext.Current.Request.Form.GetValues("columns[" + orderCol + "][name]")[0];
+            string sortDirection = HttpContext.Current.Request.Form.GetValues("order[0][dir]")[0];
+
+            HttpRequest request = HttpContext.Current.Request;
+            string date = request["date"].ToString();
+            string warehouseCode = request["warehouseCode"].ToString();
+            string sourceType = request["sourceType"].ToString();
+
+            Dictionary<string, object> obj = new Dictionary<string, object>();
+            string message = "";
+            bool status = false;
+
+
+            IEnumerable<vReceivingReport3> list = Enumerable.Empty<vReceivingReport3>();
+            IEnumerable<ReceivingDetailDTOReport3> pagedData = Enumerable.Empty<ReceivingDetailDTOReport3>();
+
+            DateTime filterDate = Convert.ToDateTime(date);
+            IQueryable<vReceivingReport3> query;
+
+            if (!string.IsNullOrEmpty(sourceType) && !string.IsNullOrEmpty(warehouseCode))
+            {
+                query = db.vReceivingReport3.Where(s => DbFunctions.TruncateTime(s.Schedule) == DbFunctions.TruncateTime(filterDate)
+                        && s.SourceCode.Equals(warehouseCode)
+                        && s.SourceType.Equals(sourceType));
+            }
+            else
+            {
+                if (!string.IsNullOrEmpty(sourceType))
+                {
+                    query = db.vReceivingReport3.Where(s => DbFunctions.TruncateTime(s.Schedule) == DbFunctions.TruncateTime(filterDate)
+                            && s.SourceType.Equals(sourceType));
+                }
+                else if (!string.IsNullOrEmpty(warehouseCode))
+                {
+                    query = db.vReceivingReport3.Where(s => DbFunctions.TruncateTime(s.Schedule) == DbFunctions.TruncateTime(filterDate)
+                            && s.SourceCode.Equals(warehouseCode));
+                }
+                else
+                {
+                    query = db.vReceivingReport3.Where(s => DbFunctions.TruncateTime(s.Schedule) == DbFunctions.TruncateTime(filterDate));
+                }
+            }
+
+            int recordsTotal = query.Count();
+            int recordsFiltered = 0;
+
+            try
+            {
+                query = query
+                        .Where(m => m.MaterialCode.Contains(search)
+                        || m.MaterialName.Contains(search)
+                        );
+
+                Dictionary<string, Func<vReceivingReport3, object>> cols = new Dictionary<string, Func<vReceivingReport3, object>>();
+                cols.Add("RefNumber", x => x.RefNumber);
+                cols.Add("SourceName", x => x.SourceName);
+                cols.Add("MaterialCode", x => x.MaterialCode);
+                cols.Add("MaterialName", x => x.MaterialName);
+                cols.Add("Schedule", x => x.Schedule);
+                cols.Add("TotalQtyPo", x => x.TotalQtyPo);
+                cols.Add("InDate", x => x.InDate);
+                cols.Add("ExpDate", x => x.ExpDate);
+                cols.Add("LotNo", x => x.LotNo);
+                cols.Add("QtyPerBag", x => x.QtyPerBag);
+                cols.Add("QtyBag", x => x.QtyBag);
+                cols.Add("Total", x => x.Total);
+                cols.Add("DoNo", x => x.DoNo);
+                cols.Add("Ok", x => x.Ok);
+                cols.Add("NgDamage", x => x.NgDamage);
+                cols.Add("COA", x => x.COA);
+                cols.Add("StatusPo", x => x.StatusPo);
+                cols.Add("ReceivedBy", x => x.ReceivedBy);
+                cols.Add("ReceivedOn", x => x.ReceivedOn);
+                cols.Add("QtyPutaway", x => x.QtyPutaway);
+                cols.Add("Area", x => x.Area);
+                cols.Add("RackNo", x => x.RackNo);
+                cols.Add("Status", x => x.Status);
+
+                if (sortDirection.Equals("asc"))
+                    list = query.OrderBy(cols[sortName]);
+                else
+                    list = query.OrderByDescending(cols[sortName]);
+
+                recordsFiltered = list.Count();
+
+                list = list.Skip(start).Take(length).ToList();
+
+                if (list != null && list.Count() > 0)
+                {
+                    pagedData = from detail in list
+                                select new ReceivingDetailDTOReport3
+                                {
+                                    DestinationName = detail.DestinationName,
+                                    RefNumber = detail.RefNumber,
+                                    SourceCode = detail.SourceCode,
+                                    SourceType = detail.SourceType,
+                                    SourceName = detail.SourceName,
+                                    MaterialCode = detail.MaterialCode,
+                                    MaterialName = detail.MaterialName,
+                                    Schedule = Helper.NullDateToString2(detail.Schedule),
+                                    TotalQtyPo = Helper.FormatThousand(detail.TotalQtyPo),
+                                    InDate = Helper.NullDateToString2(detail.InDate),
+                                    ExpDate = Helper.NullDateToString2(detail.ExpDate),
+                                    LotNo = detail.LotNo != null ? detail.LotNo : "",
+                                    QtyPerBag = Helper.FormatThousand(detail.QtyPerBag),
+                                    QtyBag = Helper.FormatThousand(detail.QtyBag),
+                                    Total = Helper.FormatThousand(Convert.ToInt32(detail.Total)),
+                                    DoNo = detail.DoNo,
+                                    Ok = Helper.FormatThousand(detail.Ok),
+                                    NgDamage = Helper.FormatThousand(detail.NgDamage),
+                                    COA = detail.COA,
+                                    StatusPo = detail.StatusPo,
+                                    ReceivedBy = detail.ReceivedBy,
+                                    ReceivedOn = detail.ReceivedOn,
+                                    QtyPutaway = Helper.FormatThousand(detail.QtyPutaway),
+                                    Area = detail.Area != null ? detail.Area : "",
+                                    RackNo = detail.RackNo != null ? detail.RackNo : "",
+                                    Status = detail.Status,
+                                };
+                }
+
+                status = true;
+                message = "Fetch data succeeded.";
+            }
+            catch (HttpRequestException reqpEx)
+            {
+                message = reqpEx.Message;
+                return BadRequest();
+            }
+            catch (HttpResponseException respEx)
+            {
+                message = respEx.Message;
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
+
+            obj.Add("draw", draw);
+            obj.Add("recordsTotal", recordsTotal);
+            obj.Add("recordsFiltered", recordsFiltered);
+            obj.Add("data", pagedData);
+            obj.Add("status", status);
+            obj.Add("message", message);
+
+            return Ok(obj);
+        }
+
+        [HttpGet]
+        public async Task<IHttpActionResult> GetDataReportReceiving(string date, string warehouse, string sourcetype)
+        {
+            Dictionary<string, object> obj = new Dictionary<string, object>();
+            string message = "";
+            bool status = false;
+            HttpRequest request = HttpContext.Current.Request;
+
+
+            if (string.IsNullOrEmpty(date) && string.IsNullOrEmpty(warehouse) && string.IsNullOrEmpty(sourcetype))
+            {
+                throw new Exception("Parameter is required.");
+            }
+
+            IEnumerable<ReceivingDetail> list = Enumerable.Empty<ReceivingDetail>();
+            IEnumerable<ReceivingDetailDTO> pagedData = Enumerable.Empty<ReceivingDetailDTO>(); 
+            
+            DateTime filterDate = Convert.ToDateTime(date);
+            IQueryable<ReceivingDetail> query;
+
+            if (!string.IsNullOrEmpty(sourcetype) && !string.IsNullOrEmpty(warehouse))
+            {
+                query = db.ReceivingDetails.Where(s => DbFunctions.TruncateTime(s.ATA) == DbFunctions.TruncateTime(filterDate)
+                        && s.Receiving.PurchaseRequestDetail.PurchaseRequestHeader.SourceCode.Equals(warehouse)
+                        && s.Receiving.PurchaseRequestDetail.PurchaseRequestHeader.SourceType.Equals(sourcetype));
+            }
+            else
+            {
+                if (!string.IsNullOrEmpty(sourcetype))
+                {
+                    query = db.ReceivingDetails.Where(s => DbFunctions.TruncateTime(s.ATA) == DbFunctions.TruncateTime(filterDate)
+                            && s.Receiving.PurchaseRequestDetail.PurchaseRequestHeader.SourceType.Equals(sourcetype));
+                }
+                else if (!string.IsNullOrEmpty(warehouse))
+                {
+                    query = db.ReceivingDetails.Where(s => DbFunctions.TruncateTime(s.ATA) == DbFunctions.TruncateTime(filterDate)                    
+                            && s.Receiving.PurchaseRequestDetail.PurchaseRequestHeader.SourceCode.Equals(warehouse));
+                }
+                else
+                {
+                    query = db.ReceivingDetails.Where(s => DbFunctions.TruncateTime(s.ATA) == DbFunctions.TruncateTime(filterDate));
+                }
+            }
+
+            int recordsTotal = query.Count();
+            int recordsFiltered = 0;
+
+            try
+            {
+                Dictionary<string, Func<ReceivingDetail, object>> cols = new Dictionary<string, Func<ReceivingDetail, object>>();
+                cols.Add("DoNo", x => x.DoNo);
+                cols.Add("LotNo", x => x.LotNo);
+                cols.Add("InDate", x => x.InDate);
+                cols.Add("ExpDate", x => x.ExpDate);
+                cols.Add("Qty", x => x.Qty);
+                cols.Add("QtyPerBag", x => x.QtyPerBag);
+                cols.Add("BagQty", x => x.Qty / x.QtyPerBag);
+                cols.Add("UoM", x => x.UoM);
+                cols.Add("ATA", x => x.ATA);
+                cols.Add("Remarks", x => x.Remarks);
+                cols.Add("COA", x => x.COA);
+                cols.Add("ReceivedBy", x => x.ReceivedBy);
+                cols.Add("ReceivedOn", x => x.ReceivedOn);
+
+                recordsFiltered = list.Count();
+                list = query.ToList();
+
+                if (list != null && list.Count() > 0)
+                {
+                    pagedData = from detail in list
+                                select new ReceivingDetailDTO
+                                {
+                                    ID = detail.ID,
+                                    SourceName = detail.Receiving.PurchaseRequestDetail.PurchaseRequestHeader.SourceName,
+                                    DocumentNo = detail.Receiving.PurchaseRequestDetail.PurchaseRequestHeader.Code,
+                                    MaterialCode = detail.Receiving.MaterialCode,
+                                    MaterialName = detail.Receiving.MaterialName,
+                                    DoNo = detail.DoNo != null ? detail.DoNo : "",
+                                    LotNo = detail.LotNo != null ? detail.LotNo : "",
+                                    InDate = Helper.NullDateToString2(detail.InDate),
+                                    ExpDate = Helper.NullDateToString2(detail.ExpDate),
+                                    Qty = Helper.FormatThousand(detail.Qty),
+                                    QtyPerBag = Helper.FormatThousand(detail.QtyPerBag),
+                                    BagQty = Helper.FormatThousand(Convert.ToInt32(detail.Qty / detail.QtyPerBag)),
+                                    ATA = Helper.NullDateToString2(detail.ATA),
+                                    UoM = detail.UoM,
+                                    Remarks = detail.Remarks,
+                                    ReceivedBy = detail.ReceivedBy,
+                                    ReceivedOn = Helper.NullDateTimeToString(detail.ReceivedOn),
+                                    COA = detail.COA,
+                                    CoaAction = !detail.COA ? true : false,
+                                    InspectionAction = detail.Inspections.Count() > 0 || detail.Receiving.PurchaseRequestDetail.PurchaseRequestHeader.DestinationCode == "2003" || detail.Receiving.PurchaseRequestDetail.PurchaseRequestHeader.DestinationCode == "2004" ? false : true,
+                                    JudgementAction = detail.NGQty > 0 ? true : false,
+                                    PutawayAction = detail.Qty == detail.Putaways.Sum(i => i.PutawayQty) ? false : true,
+                                    OKQty = Helper.FormatThousand(detail.Qty - detail.NGQty),
+                                    OKBagQty = Helper.FormatThousand(Convert.ToInt32((detail.Qty - detail.NGQty) / detail.QtyPerBag)),
+                                    NGQty = Helper.FormatThousand(detail.NGQty),
+                                    NGBagQty = Helper.FormatThousand(Convert.ToInt32(detail.NGQty / detail.QtyPerBag)),
+                                    PutawayTotalQty = Helper.FormatThousand(detail.Putaways.Sum(i => i.PutawayQty)),
+                                    PutawayTotalBagQty = Helper.FormatThousand(Convert.ToInt32(detail.Putaways.Sum(i => i.PutawayQty) / detail.QtyPerBag)),
+                                    PutawayAvailableQty = Helper.FormatThousand((detail.Qty - detail.NGQty) - detail.Putaways.Sum(i => i.PutawayQty)),
+                                    PutawayAvailableBagQty = Helper.FormatThousand(Convert.ToInt32(((detail.Qty - detail.NGQty) - detail.Putaways.Sum(i => i.PutawayQty)) / detail.QtyPerBag)),
+                                    DestinationCode = detail.Receiving.PurchaseRequestDetail.PurchaseRequestHeader.DestinationCode,
+                                    EditAction = detail.Putaways.Sum(i => i.PutawayQty) == 0
+                                };
+                }
+
+                status = true;
+                message = "Fetch data succeeded.";
+            }
+            catch (HttpRequestException reqpEx)
+            {
+                message = reqpEx.Message;
+                return BadRequest();
+            }
+            catch (HttpResponseException respEx)
+            {
+                message = respEx.Message;
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
+
+            obj.Add("list", pagedData);
+            obj.Add("status", status);
+            obj.Add("message", message);
+
+            return Ok(obj);
+        }
+
+        [HttpGet]
+        public async Task<IHttpActionResult> GetDataReportReceiving2(string date, string warehouse, string sourcetype)
+        {
+            Dictionary<string, object> obj = new Dictionary<string, object>();
+            string message = "";
+            bool status = false;
+            HttpRequest request = HttpContext.Current.Request;
+
+
+            if (string.IsNullOrEmpty(date) && string.IsNullOrEmpty(warehouse) && string.IsNullOrEmpty(sourcetype))
+            {
+                throw new Exception("Parameter is required.");
+            }
+
+            IEnumerable<vReceivingReport2> list = Enumerable.Empty<vReceivingReport2>();
+            IEnumerable<ReceivingDetailDTOReport> pagedData = Enumerable.Empty<ReceivingDetailDTOReport>();
+
+            DateTime filterDate = Convert.ToDateTime(date);
+            IQueryable<vReceivingReport2> query;
+
+            if (!string.IsNullOrEmpty(sourcetype) && !string.IsNullOrEmpty(warehouse))
+            {
+                query = db.vReceivingReport2.Where(s => DbFunctions.TruncateTime(s.ATA) == DbFunctions.TruncateTime(filterDate)
+                        && s.SourceCode.Equals(warehouse)
+                        && s.SourceType.Equals(sourcetype));
+            }
+            else
+            {
+                if (!string.IsNullOrEmpty(sourcetype))
+                {
+                    query = db.vReceivingReport2.Where(s => DbFunctions.TruncateTime(s.ATA) == DbFunctions.TruncateTime(filterDate)
+                            && s.SourceType.Equals(sourcetype));
+                }
+                else if (!string.IsNullOrEmpty(warehouse))
+                {
+                    query = db.vReceivingReport2.Where(s => DbFunctions.TruncateTime(s.ATA) == DbFunctions.TruncateTime(filterDate)
+                            && s.SourceCode.Equals(warehouse));
+                }
+                else
+                {
+                    query = db.vReceivingReport2.Where(s => DbFunctions.TruncateTime(s.ATA) == DbFunctions.TruncateTime(filterDate));
+                }
+            }
+
+            int recordsTotal = query.Count();
+            int recordsFiltered = 0;
+
+            try
+            {
+                Dictionary<string, Func<vReceivingReport2, object>> cols = new Dictionary<string, Func<vReceivingReport2, object>>();
+                cols.Add("InDate", x => x.InDate);
+                cols.Add("ExpDate", x => x.ExpDate);
+                cols.Add("LotNo", x => x.LotNo);
+                cols.Add("PerBag", x => x.PerBag);
+                cols.Add("FullBag", x => x.FullBag);
+                cols.Add("Total", x => x.Total);
+                cols.Add("DoNo", x => x.DoNo);
+                cols.Add("ATA", x => x.ATA);
+                cols.Add("TransactionStatus", x => x.TransactionStatus);
+
+                recordsFiltered = list.Count();
+                list = query.ToList();
+
+                if (list != null && list.Count() > 0)
+                {
+                    pagedData = from detail in list
+                                select new ReceivingDetailDTOReport
+                                {
+                                    DestinationName = detail.DestinationName,
+                                    RefNumber = detail.RefNumber != null ? detail.RackNo : "",
+                                    SourceCode = detail.SourceCode,
+                                    SourceType = detail.SourceType,
+                                    SourceName = detail.SourceName,
+                                    MaterialCode = detail.MaterialCode,
+                                    MaterialName = detail.MaterialName,
+                                    InDate = Helper.NullDateToString2(detail.InDate),
+                                    ExpDate = Helper.NullDateToString2(detail.ExpDate),
+                                    LotNo = detail.LotNo != null ? detail.LotNo : "",
+                                    PerBag = Helper.FormatThousand(detail.PerBag),
+                                    FullBag = Helper.FormatThousand(detail.FullBag),
+                                    Total = Helper.FormatThousand(Convert.ToInt32(detail.Total)),
+                                    Area = detail.Area != null ? detail.Area : "",
+                                    RackNo = detail.RackNo != null ? detail.RackNo : "",
+                                    DoNo = detail.DoNo != null ? detail.RackNo : "",
+                                    ATA = Helper.NullDateToString2(detail.ATA),
+                                    TransactionStatus = detail.TransactionStatus,
+                                };
+                }
+
+                status = true;
+                message = "Fetch data succeeded.";
+            }
+            catch (HttpRequestException reqpEx)
+            {
+                message = reqpEx.Message;
+                return BadRequest();
+            }
+            catch (HttpResponseException respEx)
+            {
+                message = respEx.Message;
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
+
+            obj.Add("list2", pagedData);
+            obj.Add("status", status);
+            obj.Add("message", message);
+
+            return Ok(obj);
+        }
+
+
+        [HttpGet]
+        public async Task<IHttpActionResult> GetDataReportReceiving3(string date, string warehouse, string sourcetype)
+        {
+            Dictionary<string, object> obj = new Dictionary<string, object>();
+            string message = "";
+            bool status = false;
+            HttpRequest request = HttpContext.Current.Request;
+
+
+            if (string.IsNullOrEmpty(date) && string.IsNullOrEmpty(warehouse) && string.IsNullOrEmpty(sourcetype))
+            {
+                throw new Exception("Parameter is required.");
+            }
+
+            IEnumerable<vReceivingReport3> list = Enumerable.Empty<vReceivingReport3>();
+            IEnumerable<ReceivingDetailDTOReport3> pagedData = Enumerable.Empty<ReceivingDetailDTOReport3>();
+
+            DateTime filterDate = Convert.ToDateTime(date);
+            IQueryable<vReceivingReport3> query;
+
+            if (!string.IsNullOrEmpty(sourcetype) && !string.IsNullOrEmpty(warehouse))
+            {
+                query = db.vReceivingReport3.Where(s => DbFunctions.TruncateTime(s.Schedule) == DbFunctions.TruncateTime(filterDate)
+                        && s.SourceCode.Equals(warehouse)
+                        && s.SourceType.Equals(sourcetype));
+            }
+            else
+            {
+                if (!string.IsNullOrEmpty(sourcetype))
+                {
+                    query = db.vReceivingReport3.Where(s => DbFunctions.TruncateTime(s.Schedule) == DbFunctions.TruncateTime(filterDate)
+                            && s.SourceType.Equals(sourcetype));
+                }
+                else if (!string.IsNullOrEmpty(warehouse))
+                {
+                    query = db.vReceivingReport3.Where(s => DbFunctions.TruncateTime(s.Schedule) == DbFunctions.TruncateTime(filterDate)
+                            && s.SourceCode.Equals(warehouse));
+                }
+                else
+                {
+                    query = db.vReceivingReport3.Where(s => DbFunctions.TruncateTime(s.Schedule) == DbFunctions.TruncateTime(filterDate));
+                }
+            }
+
+            int recordsTotal = query.Count();
+            int recordsFiltered = 0;
+
+            try
+            {
+                Dictionary<string, Func<vReceivingReport3, object>> cols = new Dictionary<string, Func<vReceivingReport3, object>>();
+                cols.Add("RefNumber", x => x.RefNumber);
+                cols.Add("SourceName", x => x.SourceName);
+                cols.Add("MaterialCode", x => x.MaterialCode);
+                cols.Add("MaterialName", x => x.MaterialName);
+                cols.Add("Schedule", x => x.Schedule);
+                cols.Add("TotalQtyPo", x => x.TotalQtyPo);
+                cols.Add("InDate", x => x.InDate);
+                cols.Add("ExpDate", x => x.ExpDate);
+                cols.Add("LotNo", x => x.LotNo);
+                cols.Add("QtyPerBag", x => x.QtyPerBag);
+                cols.Add("QtyBag", x => x.QtyBag);
+                cols.Add("Total", x => x.Total);
+                cols.Add("DoNo", x => x.DoNo);
+                cols.Add("Ok", x => x.Ok);
+                cols.Add("NgDamage", x => x.NgDamage);
+                cols.Add("COA", x => x.COA);
+                cols.Add("StatusPo", x => x.StatusPo);
+                cols.Add("ReceivedBy", x => x.ReceivedBy);
+                cols.Add("ReceivedOn", x => x.ReceivedOn);
+                cols.Add("QtyPutaway", x => x.QtyPutaway);
+                cols.Add("Area", x => x.Area);
+                cols.Add("RackNo", x => x.RackNo);
+                cols.Add("Status", x => x.Status);
+                cols.Add("Remarks", x => x.Remarks);
+
+                recordsFiltered = list.Count();
+                list = query.ToList();
+
+                if (list != null && list.Count() > 0)
+                {
+                    pagedData = from detail in list
+                                select new ReceivingDetailDTOReport3
+                                {
+                                    DestinationName = detail.DestinationName,
+                                    RefNumber = detail.RefNumber,
+                                    SourceCode = detail.SourceCode,
+                                    SourceType = detail.SourceType,
+                                    SourceName = detail.SourceName,
+                                    MaterialCode = detail.MaterialCode,
+                                    MaterialName = detail.MaterialName,
+                                    Schedule = Helper.NullDateToString2(detail.Schedule),
+                                    TotalQtyPo = Helper.FormatThousand(detail.TotalQtyPo),
+                                    InDate = Helper.NullDateToString2(detail.InDate),
+                                    ExpDate = Helper.NullDateToString2(detail.ExpDate),
+                                    LotNo = detail.LotNo != null ? detail.LotNo : "",
+                                    QtyPerBag = Helper.FormatThousand(detail.QtyPerBag),
+                                    QtyBag = Helper.FormatThousand(detail.QtyBag),
+                                    Total = Helper.FormatThousand(Convert.ToInt32(detail.Total)),
+                                    DoNo = detail.DoNo,
+                                    Ok = Helper.FormatThousand(detail.Ok),
+                                    NgDamage = Helper.FormatThousand(detail.NgDamage),
+                                    COA = detail.COA,
+                                    StatusPo = detail.StatusPo,
+                                    ReceivedBy = detail.ReceivedBy,
+                                    ReceivedOn = detail.ReceivedOn,
+                                    QtyPutaway = Helper.FormatThousand(detail.QtyPutaway),
+                                    Area = detail.Area != null ? detail.Area : "",
+                                    RackNo = detail.RackNo != null ? detail.RackNo : "",
+                                    Status = detail.Status,
+                                    Remarks = detail.Remarks,
+                                };
+                }
+
+                status = true;
+                message = "Fetch data succeeded.";
+            }
+            catch (HttpRequestException reqpEx)
+            {
+                message = reqpEx.Message;
+                return BadRequest();
+            }
+            catch (HttpResponseException respEx)
+            {
+                message = respEx.Message;
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
+
+            obj.Add("list3", pagedData);
             obj.Add("status", status);
             obj.Add("message", message);
 
@@ -561,7 +1402,6 @@ namespace WMS_BE.Controllers.Api
                         throw new Exception("Input is not valid");
                     }
 
-
                     ReceivingDetail receivingDetail = new ReceivingDetail();
                     receivingDetail.ID = Helper.CreateGuid("RCd");
                     receivingDetail.HeaderID = receiving.ID;
@@ -587,7 +1427,6 @@ namespace WMS_BE.Controllers.Api
                     int days = 0;
 
                     string LifeRange = Regex.Replace(rm.ShelfLife, @"[\d-]", string.Empty).ToString();
-
 
                     if (LifeRange.ToLower().Contains("year"))
                     {
@@ -692,8 +1531,6 @@ namespace WMS_BE.Controllers.Api
                         db.Putaways.Add(putaway);
 
                         //insert to Stock if not exist, update quantity if barcode, indate and location is same
-
-                        //StockRM stockRM = await db.StockRMs.Where(m => m.Code.Equals(receivingDetail.StockCode) && m.InDate.Equals(receivingDetail.InDate.Date) && m.BinRackCode.Equals(putaway.BinRackCode)).FirstOrDefaultAsync();
                         StockRM stockRM = await db.StockRMs.Where(m => m.Code.Equals(receivingDetail.StockCode) && m.BinRackCode.Equals(putaway.BinRackCode)).FirstOrDefaultAsync();
                         if (stockRM != null)
                         {
@@ -706,9 +1543,7 @@ namespace WMS_BE.Controllers.Api
                             stockRM.MaterialCode = receivingDetail.Receiving.MaterialCode;
                             stockRM.MaterialName = receivingDetail.Receiving.MaterialName;
                             stockRM.Code = receivingDetail.StockCode;
-                            //stockRM.LotNumber = receivingDetail.LotNo;
                             stockRM.InDate = receivingDetail.InDate;
-                            //stockRM.ExpiredDate = receivingDetail.ExpDate;
                             stockRM.Quantity = putaway.PutawayQty;
                             stockRM.QtyPerBag = receivingDetail.QtyPerBag;
                             stockRM.BinRackID = putaway.BinRackID;
@@ -719,6 +1554,7 @@ namespace WMS_BE.Controllers.Api
                             db.StockRMs.Add(stockRM);
 
                         }
+
                         #region pemotongan stock sourcenya dipindahin ke materq langsung
                         //var source = receiving.PurchaseRequestDetail.PurchaseRequestHeader.SourceCode;
                         //BinRack binRack1 = db.BinRacks.Where(x => x.WarehouseCode == source).FirstOrDefault();
@@ -746,9 +1582,112 @@ namespace WMS_BE.Controllers.Api
                         receiving.TransactionStatus = "CLOSED";
                     }
 
+                    if (receiving.PurchaseRequestDetail.PurchaseRequestHeader.SourceType == "OUTSOURCE")
+                    {
+                        var source = receiving.PurchaseRequestDetail.PurchaseRequestHeader.SourceCode;
+                        BinRack binRack1 = db.BinRacks.Where(x => x.WarehouseCode == source).FirstOrDefault();
+
+                        List<vStockAll> stocks = db.vStockAlls.Where(m => m.Quantity > 0 && m.BinRackAreaCode == binRack1.BinRackAreaCode && m.MaterialCode == receiving.MaterialCode).OrderBy(m => m.ReceivedAt).ToList();
+
+                        decimal countqty = receivingDetail.Qty;
+                        decimal pickQty = receivingDetail.Qty;
+                        foreach (vStockAll stock in stocks)
+                        {
+                            if (countqty > 0)
+                            {
+                                if (stock.Type.Equals("RM"))
+                                {
+                                    StockRM stockrm = db.StockRMs.Where(m => m.ID.Equals(stock.ID)).FirstOrDefault();
+                                    if (pickQty >= countqty)
+                                    {
+                                        decimal qty = stockrm.Quantity;
+                                        decimal stockrmqty;
+                                        if (countqty < pickQty)
+                                        {
+                                            stockrmqty = stockrm.Quantity - countqty;
+                                        }
+                                        else
+                                        {
+                                            stockrmqty = stockrm.Quantity - pickQty;
+                                        }
+
+                                        if (stockrmqty > 0)
+                                        {
+                                            stockrm.Quantity = stockrmqty;
+                                            countqty = countqty - stockrmqty;
+                                        }
+                                        else 
+                                        { 
+                                            if (stockrm.Quantity > countqty)
+                                            {
+                                                stockrm.Quantity = stockrm.Quantity - countqty;
+                                                countqty = countqty - stockrm.Quantity;
+                                            }
+                                            else
+                                            {
+                                                if (stockrm.Quantity > 0)
+                                                {
+                                                    stockrm.Quantity = 0;
+                                                    countqty = countqty - (pickQty - qty);
+                                                }
+                                                else
+                                                {
+                                                    stockrm.Quantity = 0;
+                                                    countqty = countqty - (pickQty - stockrm.Quantity);
+                                                }
+                                            }
+                                        }                                        
+                                    }                                    
+                                }
+                                else if (stock.Type.Equals("SFG"))
+                                {
+                                    StockSFG stockfg = db.StockSFGs.Where(m => m.ID.Equals(stock.ID)).FirstOrDefault();
+                                    if (pickQty >= countqty)
+                                    {
+                                        decimal qty = stockfg.Quantity;
+                                        decimal stockfgqty;
+                                        if (countqty < pickQty)
+                                        {
+                                            stockfgqty = stockfg.Quantity - countqty;
+                                        }
+                                        else
+                                        {
+                                            stockfgqty = stockfg.Quantity - pickQty;
+                                        }
+
+                                        if (stockfgqty > 0)
+                                        {
+                                            stockfg.Quantity = stockfgqty;
+                                            countqty = countqty - stockfgqty;
+                                        }
+                                        else
+                                        {
+                                            if (stockfg.Quantity > countqty)
+                                            {
+                                                stockfg.Quantity = stockfg.Quantity - countqty;
+                                                countqty = countqty - stockfg.Quantity;
+                                            }
+                                            else
+                                            {
+                                                if (stockfg.Quantity > 0)
+                                                {
+                                                    stockfg.Quantity = 0;
+                                                    countqty = countqty - (pickQty - qty);
+                                                }
+                                                else
+                                                {
+                                                    stockfg.Quantity = 0;
+                                                    countqty = countqty - (pickQty - stockfg.Quantity);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }                               
+                        }
+                    }
 
                     await db.SaveChangesAsync();
-
 
                     status = true;
                     message = "Receiving succeeded.";
@@ -1122,12 +2061,10 @@ namespace WMS_BE.Controllers.Api
 
                     receivingDetail.COA = coaVM.IsChecked;
 
-
                     await db.SaveChangesAsync();
 
                     status = true;
                     message = "Update COA succeeded.";
-
                 }
                 else
                 {
@@ -1471,7 +2408,6 @@ namespace WMS_BE.Controllers.Api
 
                 if (activeUser != null)
                 {
-
                     ReceivingDetail receivingDetail = await db.ReceivingDetails.Where(s => s.ID.Equals(putawayVM.ID)).FirstOrDefaultAsync();
 
                     if (receivingDetail == null)
@@ -1507,7 +2443,6 @@ namespace WMS_BE.Controllers.Api
                         }
                     }
 
-
                     if (!ModelState.IsValid)
                     {
                         foreach (var state in ModelState)
@@ -1539,8 +2474,7 @@ namespace WMS_BE.Controllers.Api
 
                     //insert to Stock if not exist, update quantity if barcode, indate and location is same
 
-                    //StockRM stockRM = await db.StockRMs.Where(m => m.Code.Equals(receivingDetail.StockCode) && m.InDate.Equals(receivingDetail.InDate.Date) && m.BinRackCode.Equals(putaway.BinRackCode)).FirstOrDefaultAsync();
-                    StockRM stockRM = await db.StockRMs.Where(m => m.Code.Equals(receivingDetail.StockCode) && m.BinRackCode.Equals(putaway.BinRackCode)).FirstOrDefaultAsync();
+                     StockRM stockRM = await db.StockRMs.Where(m => m.Code.Equals(receivingDetail.StockCode) && m.BinRackCode.Equals(putaway.BinRackCode)).FirstOrDefaultAsync();
                     if (stockRM != null)
                     {
                         stockRM.Quantity += putaway.PutawayQty;
@@ -1564,6 +2498,7 @@ namespace WMS_BE.Controllers.Api
 
                         db.StockRMs.Add(stockRM);
                     }
+
                     //update receiving plan status if all quantity have been received and putaway
                     //pindahin pemotongan stock pindah di matreq
                     Receiving rec = await db.Receivings.Where(s => s.ID.Equals(receivingDetail.HeaderID)).FirstOrDefaultAsync();
@@ -1590,11 +2525,9 @@ namespace WMS_BE.Controllers.Api
 
                     await db.SaveChangesAsync();
 
-
                     rec = await db.Receivings.Where(s => s.ID.Equals(receivingDetail.HeaderID)).FirstOrDefaultAsync();
 
                     decimal totalReceive = rec.Qty;
-
                     decimal totalPutaway = 0;
 
                     foreach(ReceivingDetail recDetail in rec.ReceivingDetails)
@@ -1602,13 +2535,15 @@ namespace WMS_BE.Controllers.Api
                         totalPutaway += recDetail.Putaways.Sum(i => i.PutawayQty);
                     }
 
-                    int OutstandingQty = Convert.ToInt32(rec.Qty / rec.QtyPerBag) - Convert.ToInt32(totalPutaway / rec.QtyPerBag);
+                    RawMaterial rm = await db.RawMaterials.Where(s => s.MaterialCode.Equals(rec.MaterialCode)).FirstOrDefaultAsync();
 
-                    if (totalReceive == totalPutaway || OutstandingQty < 1)
+                    int OutstandingQty = Convert.ToInt32(rec.Qty / rec.QtyPerBag) - Convert.ToInt32(totalPutaway / rec.Qty);
+
+                    if (totalReceive == totalPutaway)
                     {
                         rec.TransactionStatus = "CLOSED";
                     }
-                    else if (totalReceive == totalPutaway && rec.UoM == "L")
+                    else if (OutstandingQty < 1)
                     {
                         rec.TransactionStatus = "CLOSED";
                     }
@@ -1623,7 +2558,6 @@ namespace WMS_BE.Controllers.Api
 
                     status = true;
                     message = "Putaway succeeded.";
-
                 }
                 else
                 {
@@ -1807,7 +2741,6 @@ namespace WMS_BE.Controllers.Api
                         }
                     }
 
-
                     if (!ModelState.IsValid)
                     {
                         foreach (var state in ModelState)
@@ -1820,9 +2753,7 @@ namespace WMS_BE.Controllers.Api
                         throw new Exception("Input is not valid");
                     }
 
-
                     //create pdf file to specific printer folder for middleware printing
-
                     decimal totalQty = 0;
                     decimal qtyPerBag = 0;
 
@@ -1842,7 +2773,6 @@ namespace WMS_BE.Controllers.Api
                         data.Qty = Helper.FormatThousand(dat.InspectionQty);
                         data.UoM = dat.ReceivingDetail.UoM;
                         data.StartSeries = string.Format("{0}", dat.LastSeries - Convert.ToInt32(dat.InspectionQty / dat.ReceivingDetail.QtyPerBag) + 1);
-                        //data.StartSeries = string.Format("{0}", dat.LastSeries - Convert.ToInt32(dat.InspectionQty / dat.ReceivingDetail.QtyPerBag) + 1);
 
                         totalQty = dat.InspectionQty;
                         qtyPerBag = dat.ReceivingDetail.QtyPerBag;
@@ -1863,7 +2793,6 @@ namespace WMS_BE.Controllers.Api
                         data.Qty = Helper.FormatThousand(dat.JudgementQty);
                         data.UoM = dat.ReceivingDetail.UoM;
                         data.StartSeries = string.Format("{0}", dat.LastSeries - Convert.ToInt32(dat.JudgementQty / dat.ReceivingDetail.QtyPerBag) + 1);
-                        //data.StartSeries = string.Format("{0}", dat.LastSeries - Convert.ToInt32(dat.JudgementQty / dat.ReceivingDetail.QtyPerBag) + 1);
 
                         totalQty = dat.JudgementQty;
                         qtyPerBag = dat.ReceivingDetail.QtyPerBag;
@@ -1873,13 +2802,10 @@ namespace WMS_BE.Controllers.Api
                         throw new Exception("Type not recognized.");
                     }
 
-
                     int seq = 0;
-
 
                     int fullBag = receivingPrintVM.PrintQty;
                     seq = Convert.ToInt32(data.StartSeries);
-
 
                     List<string> bodies = new List<string>();
 
@@ -1912,7 +2838,6 @@ namespace WMS_BE.Controllers.Api
                         {
                             try
                             {
-
                                 DateTime dt = DateTime.ParseExact(data.InDate, "dd/MM/yyyy", null);
                                 dto.Field4 = dt.ToString("MMMM").ToUpper();
                                 inDate = dt.ToString("yyyyMMdd").Substring(1);
@@ -1930,7 +2855,6 @@ namespace WMS_BE.Controllers.Api
                         {
                             try
                             {
-
                                 DateTime dt = DateTime.ParseExact(data.ExpDate, "dd/MM/yyyy", null);
                                 expiredDate = dt.ToString("yyyyMMdd").Substring(2);
                                 expiredDate2 = dt.ToString("yyyy-MM-dd");
@@ -1960,7 +2884,6 @@ namespace WMS_BE.Controllers.Api
                     {
                         using (var pdfWriter = new PdfWriter(stream))
                         {
-
                             PdfDocument pdf = new PdfDocument(pdfWriter);
                             PdfMerger merger = new PdfMerger(pdf);
                             //loop in here, try
@@ -2018,7 +2941,6 @@ namespace WMS_BE.Controllers.Api
 
                     status = true;
                     message = "Print succeeded. Please wait.";
-
                 }
                 else
                 {
@@ -2197,7 +3119,6 @@ namespace WMS_BE.Controllers.Api
             }
             return imagePath;
         }
-
     }
 
 

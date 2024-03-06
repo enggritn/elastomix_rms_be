@@ -2324,5 +2324,236 @@ namespace WMS_BE.Controllers.Api
             return Ok(obj);
         }
 
+
+        [HttpPost]
+        public async Task<IHttpActionResult> DatatableDetailOtherInbound()
+        {
+            int draw = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("draw")[0]);
+            int start = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("start")[0]);
+            int length = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("length")[0]);
+            string search = HttpContext.Current.Request.Form.GetValues("search[value]")[0];
+            string orderCol = HttpContext.Current.Request.Form.GetValues("order[0][column]")[0];
+            string sortName = HttpContext.Current.Request.Form.GetValues("columns[" + orderCol + "][name]")[0];
+            string sortDirection = HttpContext.Current.Request.Form.GetValues("order[0][dir]")[0];
+
+            Dictionary<string, object> obj = new Dictionary<string, object>();
+            string message = "";
+            bool status = false;
+            HttpRequest request = HttpContext.Current.Request;
+
+            string date = request["date"].ToString();
+            string warehouseCode = request["warehouseCode"].ToString();
+
+            IEnumerable<InboundReceive> list = Enumerable.Empty<InboundReceive>();
+            IEnumerable<InboundReceiveDTOReport> pagedData = Enumerable.Empty<InboundReceiveDTOReport>();
+
+            DateTime filterDate = Convert.ToDateTime(date);
+            IQueryable<InboundReceive> query;
+
+            if (!string.IsNullOrEmpty(warehouseCode))
+            {
+                query = db.InboundReceives.Where(s => DbFunctions.TruncateTime(s.ReceivedOn) == DbFunctions.TruncateTime(filterDate)
+                        && s.InboundOrder.InboundHeader.WarehouseCode.Equals(warehouseCode));
+            }
+            else
+            {
+                query = db.InboundReceives.Where(s => DbFunctions.TruncateTime(s.ReceivedOn) == DbFunctions.TruncateTime(filterDate));
+            }
+
+            int recordsTotal = query.Count();
+            int recordsFiltered = 0;
+
+            try
+            {
+                query = query
+                        .Where(m => m.InboundOrder.MaterialCode.Contains(search)
+                        || m.InboundOrder.MaterialName.Contains(search)
+                        || m.StockCode.Contains(search)
+                        );
+
+                Dictionary<string, Func<InboundReceive, object>> cols = new Dictionary<string, Func<InboundReceive, object>>();
+                cols.Add("InboundOrderID", x => x.InboundOrderID); 
+                cols.Add("StockCode", x => x.StockCode);
+                cols.Add("MaterialCode", x => x.InboundOrder.MaterialCode);
+                cols.Add("MaterialName", x => x.InboundOrder.MaterialName);
+                cols.Add("LotNo", x => x.LotNo);
+                cols.Add("InDate", x => x.InDate);
+                cols.Add("ExpDate", x => x.ExpDate);
+                cols.Add("Qty", x => x.Qty);
+                cols.Add("QtyPerBag", x => x.QtyPerBag);
+                cols.Add("BagQty", x => Convert.ToInt32(Math.Floor(x.Qty / x.QtyPerBag)));
+                cols.Add("ReceivedBy", x => x.ReceivedBy);
+                cols.Add("ReceivedOn", x => x.ReceivedOn);
+                cols.Add("PutawayQty", x => x.InboundPutaways.Sum(m => m.PutawayQty));
+                cols.Add("PutawayBagQty", x => x.InboundPutaways.Sum(m => m.PutawayQty / m.QtyPerBag));
+                cols.Add("OutstandingQty", x => x.Qty - x.InboundPutaways.Sum(m => m.PutawayQty));
+                cols.Add("OutstandingBagQty", x => x.Qty - x.InboundPutaways.Sum(m => m.PutawayQty));
+                cols.Add("PutawayAction", x => x.Qty > x.InboundPutaways.Sum(m => m.PutawayQty));
+
+                if (sortDirection.Equals("asc"))
+                    list = query.OrderBy(cols[sortName]);
+                else
+                    list = query.OrderByDescending(cols[sortName]);
+
+                recordsFiltered = list.Count();
+
+                list = list.Skip(start).Take(length).ToList();
+
+                if (list != null && list.Count() > 0)
+                {
+                    pagedData = from data in list
+                                select new InboundReceiveDTOReport
+                                {
+                                    ID = data.ID,
+                                    ReceiptDate = Helper.NullDateTimeToString(data.ReceivedOn),
+                                    ReceiptNo = data.InboundOrder.InboundHeader.Code,
+                                    WarehouseCode = data.InboundOrder.InboundHeader.WarehouseCode,
+                                    WarehouseName = data.InboundOrder.InboundHeader.WarehouseName,
+                                    MaterialCode = data.InboundOrder.MaterialCode,
+                                    MaterialName = data.InboundOrder.MaterialName,
+                                    Uom = data.InboundOrder.InboundHeader.Remarks,
+                                    QtyL = Helper.FormatThousand(data.Qty),
+                                    Qty = Helper.FormatThousand(data.Qty),
+                                    Memo = data.InboundOrder.InboundHeader.Remarks,
+                                    InboundOrderID = data.InboundOrderID,
+                                    StockCode = data.StockCode,
+                                    LotNo = data.LotNo,
+                                    InDate = Helper.NullDateToString(data.InDate),
+                                    ExpDate = Helper.NullDateToString(data.ExpDate),
+                                    QtyPerBag = Helper.FormatThousand(data.QtyPerBag),
+                                    BagQty = Helper.FormatThousand(data.Qty / data.QtyPerBag),
+                                    ReceivedBy = data.ReceivedBy,
+                                    ReceivedOn = Helper.NullDateTimeToString(data.ReceivedOn),
+                                    PutawayQty = Helper.FormatThousand(data.InboundPutaways.Sum(m => m.PutawayQty)),
+                                    PutawayBagQty = Helper.FormatThousand(data.InboundPutaways.Sum(m => m.PutawayQty / m.QtyPerBag)),
+                                    OutstandingQty = Helper.FormatThousand(data.Qty - data.InboundPutaways.Sum(m => m.PutawayQty)),
+                                    OutstandingBagQty = Helper.FormatThousand(data.Qty - data.InboundPutaways.Sum(m => m.PutawayQty) / data.QtyPerBag),
+                                    //PrintBarcodeAction = data.LastSeries > 0 && data.Qty > data.InboundPutaways.Sum(m => m.PutawayQty),
+                                    PutawayAction = data.Qty > data.InboundPutaways.Sum(m => m.PutawayQty),
+                                    PrintBarcodeAction = data.LastSeries > 0 && data.InboundOrder.InboundHeader.WarehouseCode != "2003" && data.InboundOrder.InboundHeader.WarehouseCode != "2004",
+                                    LastSeries = data.LastSeries.ToString()
+                                };
+                }
+
+                status = true;
+                message = "Fetch data succeeded.";
+            }
+            catch (HttpRequestException reqpEx)
+            {
+                message = reqpEx.Message;
+                return BadRequest();
+            }
+            catch (HttpResponseException respEx)
+            {
+                message = respEx.Message;
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
+
+            obj.Add("draw", draw);
+            obj.Add("recordsTotal", recordsTotal);
+            obj.Add("recordsFiltered", recordsFiltered);
+            obj.Add("data", pagedData);
+            obj.Add("status", status);
+            obj.Add("message", message);
+
+            return Ok(obj);
+        }
+
+
+        [HttpGet]
+        public async Task<IHttpActionResult> GetDataReportOtherInbound(string date, string warehouse)
+        {
+            Dictionary<string, object> obj = new Dictionary<string, object>();
+            string message = "";
+            bool status = false;
+            HttpRequest request = HttpContext.Current.Request;
+
+
+            if (string.IsNullOrEmpty(date) && string.IsNullOrEmpty(warehouse))
+            {
+                throw new Exception("Parameter is required.");
+            }
+
+            IEnumerable<vOtherInbound> list = Enumerable.Empty<vOtherInbound>();
+            IEnumerable<InboundReceiveDTOReport> pagedData = Enumerable.Empty<InboundReceiveDTOReport>();
+
+            DateTime filterDate = Convert.ToDateTime(date);
+            IQueryable<vOtherInbound> query;
+
+            if (!string.IsNullOrEmpty(warehouse))
+            {
+                query = db.vOtherInbounds.Where(s => DbFunctions.TruncateTime(s.ReceivedOn) == DbFunctions.TruncateTime(filterDate)
+                        && s.WarehouseCode.Equals(warehouse));
+            }
+            else
+            {
+                query = db.vOtherInbounds.Where(s => DbFunctions.TruncateTime(s.ReceivedOn) == DbFunctions.TruncateTime(filterDate));
+            }
+
+            int recordsTotal = query.Count();
+            int recordsFiltered = 0;
+
+            try
+            {
+                Dictionary<string, Func<vOtherInbound, object>> cols = new Dictionary<string, Func<vOtherInbound, object>>();
+                cols.Add("ReceiptNo", x => x.Code);
+                cols.Add("WarehouseCode", x => x.WarehouseCode);
+                cols.Add("WarehouseName", x => x.WarehouseName);
+                cols.Add("MaterialCode", x => x.MaterialCode);
+                cols.Add("MaterialName", x => x.MaterialName);
+                cols.Add("Uom", x => x.Uom);
+                cols.Add("QtyL", x => x.QtyL);
+                cols.Add("Qty", x => x.Qty);
+                cols.Add("Memo", x => x.Remarks);
+
+                recordsFiltered = list.Count();
+                list = query.ToList();
+
+                if (list != null && list.Count() > 0)
+                {
+                    pagedData = from data in list
+                                select new InboundReceiveDTOReport
+                                {
+                                    ReceiptDate = data.ReceivedOn.ToString("yyyy-MM-dd"),
+                                    ReceiptNo = data.Code != null ? data.Code : "",
+                                    WarehouseCode = data.WarehouseCode,
+                                    WarehouseName = data.WarehouseName,
+                                    MaterialCode = data.MaterialCode,
+                                    MaterialName = data.MaterialName,
+                                    Uom = data.Uom,
+                                    QtyL = Helper.FormatThousand(data.QtyL),
+                                    Qty = Helper.FormatThousand(data.Qty),
+                                    Memo = data.Remarks != null ? data.Remarks : "",
+                                };
+                }
+
+                status = true;
+                message = "Fetch data succeeded.";
+            }
+            catch (HttpRequestException reqpEx)
+            {
+                message = reqpEx.Message;
+                return BadRequest();
+            }
+            catch (HttpResponseException respEx)
+            {
+                message = respEx.Message;
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
+
+            obj.Add("list", pagedData);
+            obj.Add("status", status);
+            obj.Add("message", message);
+
+            return Ok(obj);
+        }
     }
 }

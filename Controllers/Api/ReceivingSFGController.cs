@@ -699,9 +699,7 @@ namespace WMS_BE.Controllers.Api
                         {
                             ModelState.AddModelError("ReceivingSFG.ReceiveOKQty", string.Format("Qty exceeded. Available Qty : {0}", availableQty));
                         }
-                    }
-
-                  
+                    }                  
 
                     if (!ModelState.IsValid)
                     {
@@ -727,7 +725,6 @@ namespace WMS_BE.Controllers.Api
                     bcd = bcd + sisa.ToString();
 
                     // tambahan disini
-                    Guid guid1 = Guid.NewGuid();
                     string barcodeOK = "";
                     int actBag = Decimal.ToInt32(receivingVM.OKQty / receiving.QtyPerBag);
                     //if (actBag < 1)
@@ -753,8 +750,7 @@ namespace WMS_BE.Controllers.Api
 
                     if (actBag > 0)
                     {
-                        barcodeOK = string.Format("{0}{1}{2}{3}{4}", receiving.ProductCode.PadRight(7), Helper.FormatThousand(receiving.QtyPerBag).PadLeft(6), receiving.LotNo, receiving.InDate.ToString("yyyyMMdd").Substring(1), receiving.ExpDate.ToString("yyyyMMdd").Substring(1));
-
+                        barcodeOK = string.Format("{0}{1}{2}{3}{4}", receiving.ProductCode.PadRight(7), Helper.FormatThousand(receiving.QtyPerBag).PadLeft(6), receiving.LotNo, receiving.InDate.ToString("yyyyMMdd").Substring(1), receiving.ExpDate.ToString("yyyyMMdd").Substring(2));
                         int startSeries = 0;
                         int lastSeries = await db.ReceivingSFGDetails.Where(m => m.StockCode.Equals(barcodeOK.Replace(" ", ""))).OrderByDescending(m => m.LastSeries).Select(m => m.LastSeries).FirstOrDefaultAsync();
                         if (lastSeries == 0)
@@ -768,14 +764,13 @@ namespace WMS_BE.Controllers.Api
                         lastSeries = startSeries + actBag - 1;
 
                         ReceivingSFGDetail receivingSFGDetail = new ReceivingSFGDetail();
-                        string strID = guid1.ToString();
+                        string strID = Helper.CreateGuid("RCd");
                         receivingSFGDetail.ID = strID;
                         receivingSFGDetail.StockCode = barcodeOK.Replace(" ", "");
                         receivingSFGDetail.ProductCode = receiving.ProductCode;
                         receivingSFGDetail.LotNo = receiving.LotNo;
                         receivingSFGDetail.InDate = DateTime.ParseExact(iDate, "yyyy-MM-dd", null);
                         receivingSFGDetail.ExpDate = DateTime.ParseExact(eDate, "yyyy-MM-dd", null);
-                        //receivingSFGDetail.ReceivingID = receiving.ID;
                         receivingSFGDetail.LastSeries = lastSeries;
                         receivingSFGDetail.Qty = receivingVM.OKQty - sisa;
                         receivingSFGDetail.ReceivedBy = activeUser;
@@ -786,9 +781,8 @@ namespace WMS_BE.Controllers.Api
 
                     if (sisa > 0)
                     {
-                        Guid guid = Guid.NewGuid();
-                        string barcodeReceh = string.Format("{0}{1}{2}{3}{4}", receiving.ProductCode.PadRight(7), Helper.FormatThousand(sisa).PadLeft(6), receiving.LotNo, receiving.InDate.ToString("yyyyMMdd").Substring(1), receiving.ExpDate.ToString("yyyyMMdd").Substring(1));
-                        string strID_receh = guid.ToString();
+                        string barcodeReceh = string.Format("{0}{1}{2}{3}{4}", receiving.ProductCode.PadRight(7), Helper.FormatThousand(sisa).PadLeft(6), receiving.LotNo, receiving.InDate.ToString("yyyyMMdd").Substring(1), receiving.ExpDate.ToString("yyyyMMdd").Substring(2));
+                        string strID_receh = Helper.CreateGuid("RCd");
 
                         int startSeries1 = 0;
                         int lastSeries1 = await db.ReceivingSFGDetails.Where(m => m.StockCode.Equals(barcodeReceh.Replace(" ", ""))).OrderByDescending(m => m.LastSeries).Select(m => m.LastSeries).FirstOrDefaultAsync();
@@ -809,7 +803,6 @@ namespace WMS_BE.Controllers.Api
                         receivingSFGDetail_receh.LotNo = receiving.LotNo;
                         receivingSFGDetail_receh.InDate = DateTime.ParseExact(iDate, "yyyy-MM-dd", null);
                         receivingSFGDetail_receh.ExpDate = DateTime.ParseExact(eDate, "yyyy-MM-dd", null);
-                        //receivingSFGDetail_receh.ReceivingID = receiving.ID;
                         receivingSFGDetail_receh.LastSeries = lastSeries1;
                         receivingSFGDetail_receh.Qty = sisa;
                         receivingSFGDetail_receh.ReceivedBy = activeUser;

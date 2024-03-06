@@ -12,21 +12,17 @@ namespace WMS_BE.Models
     using System;
     using System.Collections.Generic;
     
-    public partial class vStockOpname
+    public partial class vOtherInbound
     {
-        public string ID { get; set; }
+        public System.DateTime ReceivedOn { get; set; }
         public string Code { get; set; }
-        public string BinRackCode { get; set; }
+        public string WarehouseCode { get; set; }
+        public string WarehouseName { get; set; }
         public string MaterialCode { get; set; }
         public string MaterialName { get; set; }
-        public string LotNo { get; set; }
-        public System.DateTime InDate { get; set; }
-        public System.DateTime ExpDate { get; set; }
-        public int BagQty { get; set; }
-        public decimal QtyPerBag { get; set; }
-        public Nullable<decimal> TotalQty { get; set; }
-        public string MaterialType { get; set; }
-        public string ScannedBy { get; set; }
-        public System.DateTime ScannedOn { get; set; }
+        public string Uom { get; set; }
+        public Nullable<decimal> QtyL { get; set; }
+        public Nullable<decimal> Qty { get; set; }
+        public string Remarks { get; set; }
     }
 }

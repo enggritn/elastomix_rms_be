@@ -2306,6 +2306,31 @@ namespace WMS_BE.Controllers.Api
                         {
                             ModelState.AddModelError("IssueSlip.BinRackID", "BinRack is not recognized.");
                         }
+
+                        vProductMaster vProductMaster = await db.vProductMasters.Where(m => m.MaterialCode.Equals(summary.MaterialCode)).FirstOrDefaultAsync();
+                        if (vProductMaster == null)
+                        {
+                            throw new Exception("Material tidak dikenali.");
+                        }
+
+                        BinRackArea binRackArea = await db.BinRackAreas.Where(m => m.ID.Equals(binRack.BinRackAreaID)).FirstOrDefaultAsync();
+                        if (binRackArea == null)
+                        {
+                            ModelState.AddModelError("IssueSlip.BinRackID", "BinRackArea tidak ditemukan.");
+                        }
+                        if (binRackArea.Type == "PRODUCTION" && summary.PutawayQty >= vProductMaster.QtyPerBag)
+                        {
+                            ModelState.AddModelError("IssueSlip.BinRackID", "Quantity full bag harus dikembalikan ke warehouse.");
+                        }
+
+                        vStockAll cekmaterial = await db.vStockAlls.Where(m => m.MaterialCode.Equals(summary.MaterialCode) && m.Quantity > 0 && !m.OnInspect && m.QtyPerBag < vProductMaster.QtyPerBag && m.BinRackAreaType == "PRODUCTION").FirstOrDefaultAsync();
+                        if (cekmaterial != null)
+                        {
+                            if (binRackArea.Type == "LOGISTIC" && summary.PutawayQty < vProductMaster.QtyPerBag)
+                            {
+                                ModelState.AddModelError("IssueSlip.BinRackID", "Quantity remaining harus dikembalikan ke production.");
+                            }
+                        }
                     }
 
                     if (!ModelState.IsValid)
@@ -2432,6 +2457,213 @@ namespace WMS_BE.Controllers.Api
             obj.Add("status", status);
             obj.Add("message", message);
             obj.Add("error_validation", customValidationMessages);
+
+            return Ok(obj);
+        }
+
+        [HttpPost]
+        public async Task<IHttpActionResult> DatatableIssueSlip()
+        {
+            int draw = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("draw")[0]);
+            int start = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("start")[0]);
+            int length = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("length")[0]);
+            string search = HttpContext.Current.Request.Form.GetValues("search[value]")[0];
+            string orderCol = HttpContext.Current.Request.Form.GetValues("order[0][column]")[0];
+            string sortName = HttpContext.Current.Request.Form.GetValues("columns[" + orderCol + "][name]")[0];
+            string sortDirection = HttpContext.Current.Request.Form.GetValues("order[0][dir]")[0];
+
+            Dictionary<string, object> obj = new Dictionary<string, object>();
+            string message = "";
+            bool status = false;
+            HttpRequest request = HttpContext.Current.Request;
+
+            string date = request["date"].ToString();
+
+            IEnumerable<vIssueSlipReport> list = Enumerable.Empty<vIssueSlipReport>();
+            IEnumerable<IssueSlipDTOReport> pagedData = Enumerable.Empty<IssueSlipDTOReport>();
+
+            DateTime filterDate = Convert.ToDateTime(date);
+            IQueryable<vIssueSlipReport> query;
+
+            query = db.vIssueSlipReports.Where(s => DbFunctions.TruncateTime(s.Header_ProductionDate) == DbFunctions.TruncateTime(filterDate));
+
+            int recordsTotal = query.Count();
+            int recordsFiltered = 0;
+
+            try
+            {
+                query = query
+                        .Where(m => m.RM_Code.Contains(search)
+                        || m.RM_Name.Contains(search)
+                        || m.RM_VendorName.Contains(search)
+                        || m.FromBinRackCode.Contains(search)
+                        || m.PickedBy.Contains(search)
+                        //|| m.ToBinRackCode.Contains(search)
+                        //|| m.PutBy.Contains(search)
+                        );
+
+                Dictionary<string, Func<vIssueSlipReport, object>> cols = new Dictionary<string, Func<vIssueSlipReport, object>>();
+                cols.Add("RM_Code", x => x.RM_Code);
+                cols.Add("RM_Name", x => x.RM_Name);
+                cols.Add("RM_VendorName", x => x.RM_VendorName);
+                cols.Add("Wt_Request", x => x.Wt_Request);
+                cols.Add("SupplyQty", x => x.SupplyQty);
+                cols.Add("FromBinRackCode", x => x.FromBinRackCode);
+                cols.Add("ExpDate", x => x.ExpDate);
+                cols.Add("PickedBy", x => x.PickedBy);
+                cols.Add("ReturnQty", x => x.ReturnQty);
+                cols.Add("ToBinRackCode", x => x.ToBinRackCode);
+                cols.Add("PutBy", x => x.PutBy);
+
+                if (sortDirection.Equals("asc"))
+                    list = query.OrderBy(cols[sortName]);
+                else
+                    list = query.OrderByDescending(cols[sortName]);
+
+                recordsFiltered = list.Count();
+
+                list = list.Skip(start).Take(length).ToList();
+
+                if (list != null && list.Count() > 0)
+                {
+                    pagedData = from detail in list
+                                select new IssueSlipDTOReport
+                                {
+                                    ID_Header = detail.ID_Header,
+                                    ID_Order = detail.ID_Order,
+                                    Header_Code = detail.Header_Code,
+                                    Header_Name = detail.Header_Name,
+                                    Header_ProductionDate = Helper.NullDateToString2(detail.Header_ProductionDate),
+                                    RM_Code = detail.RM_Code,
+                                    RM_Name = detail.RM_Name,
+                                    RM_VendorName = detail.RM_VendorName,
+                                    Wt_Request = Helper.FormatThousand(detail.Wt_Request),
+                                    SupplyQty = Helper.FormatThousand(detail.SupplyQty),
+                                    FromBinRackCode = detail.FromBinRackCode != null ? detail.FromBinRackCode : "",
+                                    ExpDate = Helper.NullDateToString2(detail.ExpDate),
+                                    PickedBy = detail.PickedBy != null ? detail.PickedBy : "",
+                                    ReturnQty = Helper.FormatThousand(detail.ReturnQty),
+                                    ToBinRackCode = detail.ToBinRackCode != null ? detail.ToBinRackCode : "",
+                                    PutBy = detail.PutBy != null ? detail.PutBy : "",
+                                };
+                }
+
+                status = true;
+                message = "Fetch data succeeded.";
+            }
+            catch (HttpRequestException reqpEx)
+            {
+                message = reqpEx.Message;
+                return BadRequest();
+            }
+            catch (HttpResponseException respEx)
+            {
+                message = respEx.Message;
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
+
+            obj.Add("draw", draw);
+            obj.Add("recordsTotal", recordsTotal);
+            obj.Add("recordsFiltered", recordsFiltered);
+            obj.Add("data", pagedData);
+            obj.Add("status", status);
+            obj.Add("message", message);
+
+            return Ok(obj);
+        }
+
+        [HttpGet]
+        public async Task<IHttpActionResult> GetDataReportIssueSlip(string date)
+        {
+            Dictionary<string, object> obj = new Dictionary<string, object>();
+            string message = "";
+            bool status = false;
+            HttpRequest request = HttpContext.Current.Request;
+
+
+            if (string.IsNullOrEmpty(date))
+            {
+                throw new Exception("Parameter is required.");
+            }
+
+            IEnumerable<vIssueSlipReport> list = Enumerable.Empty<vIssueSlipReport>();
+            IEnumerable<IssueSlipDTOReport> pagedData = Enumerable.Empty<IssueSlipDTOReport>();
+
+            DateTime filterDate = Convert.ToDateTime(date);
+            IQueryable<vIssueSlipReport> query;
+
+            query = db.vIssueSlipReports.Where(s => DbFunctions.TruncateTime(s.Header_ProductionDate) == DbFunctions.TruncateTime(filterDate));
+
+            int recordsTotal = query.Count();
+            int recordsFiltered = 0;
+
+            try
+            {
+                Dictionary<string, Func<vIssueSlipReport, object>> cols = new Dictionary<string, Func<vIssueSlipReport, object>>();
+                cols.Add("RM_Code", x => x.RM_Code);
+                cols.Add("RM_Name", x => x.RM_Name);
+                cols.Add("RM_VendorName", x => x.RM_VendorName);
+                cols.Add("Wt_Request", x => x.Wt_Request);
+                cols.Add("SupplyQty", x => x.SupplyQty);
+                cols.Add("FromBinRackCode", x => x.FromBinRackCode);
+                cols.Add("ExpDate", x => x.ExpDate);
+                cols.Add("PickedBy", x => x.PickedBy);
+                cols.Add("ReturnQty", x => x.ReturnQty);
+                cols.Add("ToBinRackCode", x => x.ToBinRackCode);
+                cols.Add("PutBy", x => x.PutBy);
+
+                recordsFiltered = list.Count();
+                list = query.ToList();
+
+                if (list != null && list.Count() > 0)
+                {
+                    pagedData = from detail in list
+                                select new IssueSlipDTOReport
+                                {
+                                    ID_Header = detail.ID_Header,
+                                    ID_Order = detail.ID_Order,
+                                    Header_Code = detail.Header_Code,
+                                    Header_Name = detail.Header_Name,
+                                    Header_ProductionDate = Helper.NullDateToString2(detail.Header_ProductionDate),
+                                    RM_Code = detail.RM_Code,
+                                    RM_Name = detail.RM_Name,
+                                    RM_VendorName = detail.RM_VendorName,
+                                    Wt_Request = Helper.FormatThousand(detail.Wt_Request),
+                                    SupplyQty = Helper.FormatThousand(detail.SupplyQty),
+                                    FromBinRackCode = detail.FromBinRackCode != null ? detail.FromBinRackCode : "",
+                                    ExpDate = Helper.NullDateToString2(detail.ExpDate),
+                                    PickedBy = detail.PickedBy != null ? detail.PickedBy : "",
+                                    ReturnQty = Helper.FormatThousand(detail.ReturnQty),
+                                    ToBinRackCode = detail.ToBinRackCode != null ? detail.ToBinRackCode : "",
+                                    PutBy = detail.PutBy != null ? detail.PutBy : "",
+                                };
+                }
+
+                status = true;
+                message = "Fetch data succeeded.";
+            }
+            catch (HttpRequestException reqpEx)
+            {
+                message = reqpEx.Message;
+                return BadRequest();
+            }
+            catch (HttpResponseException respEx)
+            {
+                message = respEx.Message;
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
+
+            obj.Add("list", pagedData);
+            obj.Add("status", status);
+            obj.Add("message", message);
 
             return Ok(obj);
         }

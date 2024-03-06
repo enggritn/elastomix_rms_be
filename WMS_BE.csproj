@@ -65,8 +65,14 @@
     <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <HintPath>packages\EntityFramework.6.2.0\lib\net45\EntityFramework.SqlServer.dll</HintPath>
     </Reference>
-    <Reference Include="EPPlus, Version=4.5.3.3, Culture=neutral, PublicKeyToken=ea159fdaa78159a1, processorArchitecture=MSIL">
-      <HintPath>packages\EPPlus.4.5.3.3\lib\net40\EPPlus.dll</HintPath>
+    <Reference Include="EPPlus, Version=5.8.9.0, Culture=neutral, PublicKeyToken=ea159fdaa78159a1, processorArchitecture=MSIL">
+      <HintPath>packages\EPPlus.5.8.9\lib\net45\EPPlus.dll</HintPath>
+    </Reference>
+    <Reference Include="EPPlus.Interfaces, Version=6.1.1.0, Culture=neutral, PublicKeyToken=a694d7f3b0907a61, processorArchitecture=MSIL">
+      <HintPath>packages\EPPlus.Interfaces.6.1.1\lib\net35\EPPlus.Interfaces.dll</HintPath>
+    </Reference>
+    <Reference Include="EPPlus.System.Drawing, Version=6.1.1.0, Culture=neutral, PublicKeyToken=2308d35469c9bac0, processorArchitecture=MSIL">
+      <HintPath>packages\EPPlus.System.Drawing.6.1.1\lib\net35\EPPlus.System.Drawing.dll</HintPath>
     </Reference>
     <Reference Include="ExcelDataReader, Version=3.6.0.0, Culture=neutral, PublicKeyToken=93517dbe6a4012fa, processorArchitecture=MSIL">
       <HintPath>packages\ExcelDataReader.3.6.0\lib\net45\ExcelDataReader.dll</HintPath>
@@ -108,6 +114,9 @@
       <HintPath>packages\itext7.7.1.14\lib\net40\itext.svg.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Microsoft.IO.RecyclableMemoryStream, Version=1.4.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>packages\Microsoft.IO.RecyclableMemoryStream.1.4.1\lib\net45\Microsoft.IO.RecyclableMemoryStream.dll</HintPath>
+    </Reference>
     <Reference Include="NPOI, Version=2.5.1.0, Culture=neutral, PublicKeyToken=0df73ec7942b34e1, processorArchitecture=MSIL">
       <HintPath>packages\NPOI.2.5.1\lib\net45\NPOI.dll</HintPath>
     </Reference>
@@ -121,6 +130,7 @@
       <HintPath>packages\NPOI.2.5.1\lib\net45\NPOI.OpenXmlFormats.dll</HintPath>
     </Reference>
     <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
     <Reference Include="Swashbuckle.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=cd1bb07a5ac7c7bc, processorArchitecture=MSIL">
       <HintPath>packages\Swashbuckle.Core.Net45.5.2.1\lib\net45\Swashbuckle.Core.dll</HintPath>
     </Reference>
@@ -209,6 +219,7 @@
       <Private>True</Private>
       <HintPath>packages\Antlr.3.5.0.2\lib\Antlr3.Runtime.dll</HintPath>
     </Reference>
+    <Reference Include="WindowsBase" />
     <Reference Include="zxing, Version=0.16.6.0, Culture=neutral, PublicKeyToken=4e88037ac681fe60, processorArchitecture=MSIL">
       <HintPath>packages\ZXing.Net.0.16.6\lib\net45\zxing.dll</HintPath>
     </Reference>
@@ -578,6 +589,9 @@
     <Compile Include="Models\vIssueSlipPickingSummary.cs">
       <DependentUpon>AppModels.tt</DependentUpon>
     </Compile>
+    <Compile Include="Models\vIssueSlipReport.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
     <Compile Include="Models\vIssueSlipReturnSummary.cs">
       <DependentUpon>AppModels.tt</DependentUpon>
     </Compile>
@@ -585,6 +599,9 @@
       <DependentUpon>AppModels.tt</DependentUpon>
     </Compile>
     <Compile Include="Models\vMaterialRequestDetail.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vOtherInbound.cs">
       <DependentUpon>AppModels.tt</DependentUpon>
     </Compile>
     <Compile Include="Models\vOutboundPicked.cs">
@@ -636,6 +653,12 @@
       <DependentUpon>AppModels.tt</DependentUpon>
     </Compile>
     <Compile Include="Models\vReceivingOld_notused.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vReceivingReport2.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vReceivingReport3.cs">
       <DependentUpon>AppModels.tt</DependentUpon>
     </Compile>
     <Compile Include="Models\vReceivingSFG.cs">

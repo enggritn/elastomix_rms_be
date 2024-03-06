@@ -353,15 +353,15 @@ namespace WMS_BE.Controllers.Api
                     //}
 
 
-                    if (semiFinishGoodVM.WeightPerBag <= 0)
-                    {
-                        ModelState.AddModelError("SemiFinishGood.WeightPerBag", "Weight/Bag can not below zero.");
-                    }
+                    //if (semiFinishGoodVM.WeightPerBag <= 0)
+                    //{
+                    //    ModelState.AddModelError("SemiFinishGood.WeightPerBag", "Weight/Bag can not below zero.");
+                    //}
 
-                    if (semiFinishGoodVM.PerPalletWeight <= 0)
-                    {
-                        ModelState.AddModelError("SemiFinishGood.PerPalletWeight", "Weight/Pallet can not below zero.");
-                    }
+                    //if (semiFinishGoodVM.PerPalletWeight <= 0)
+                    //{
+                    //    ModelState.AddModelError("SemiFinishGood.PerPalletWeight", "Weight/Pallet can not below zero.");
+                    //}
 
                     if (semiFinishGoodVM.ExpiredDate <= 0)
                     {
@@ -518,15 +518,15 @@ namespace WMS_BE.Controllers.Api
                         ModelState.AddModelError("SemiFinishGood.MaterialName", "Product Name is required.");
                     }
 
-                    if (semiFinishGoodVM.WeightPerBag <= 0)
-                    {
-                        ModelState.AddModelError("SemiFinishGood.WeightPerBag", "Weight/Bag can not below zero.");
-                    }
+                    //if (semiFinishGoodVM.WeightPerBag <= 0)
+                    //{
+                    //    ModelState.AddModelError("SemiFinishGood.WeightPerBag", "Weight/Bag can not below zero.");
+                    //}
 
-                    if (semiFinishGoodVM.PerPalletWeight <= 0)
-                    {
-                        ModelState.AddModelError("SemiFinishGood.PerPalletWeight", "Weight/Pallet can not below zero.");
-                    }
+                    //if (semiFinishGoodVM.PerPalletWeight <= 0)
+                    //{
+                    //    ModelState.AddModelError("SemiFinishGood.PerPalletWeight", "Weight/Pallet can not below zero.");
+                    //}
 
                     if (semiFinishGoodVM.ExpiredDate <= 0)
                     {

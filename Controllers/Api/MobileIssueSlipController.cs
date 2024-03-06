@@ -6,23 +6,18 @@ using iText.Layout;
 using NPOI.Util;
 using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Configuration;
 using System.Data.Entity;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.Http;
-using System.Web.Http.ModelBinding;
 using System.Web.Routing;
 using WMS_BE.Models;
 using WMS_BE.Utils;
@@ -211,13 +206,10 @@ namespace WMS_BE.Controllers.Api
                     int lastSeries = retur.LastSeries;
                     //int lastSeries = await db.LogPrintRMs.Where(m => m.StockCode.Equals(summary.StockCode)).OrderByDescending(m => m.LastSeries).Select(m => m.LastSeries).FirstOrDefaultAsync();
 
-
                     //get last series
                     seq = Convert.ToInt32(lastSeries);
 
-
                     List<string> bodies = new List<string>();
-
 
                     string Domain = HttpContext.Current.Request.Url.Scheme + "://" + HttpContext.Current.Request.Url.Authority + HttpContext.Current.Request.ApplicationPath.TrimEnd('/');
 
@@ -247,7 +239,6 @@ namespace WMS_BE.Controllers.Api
                         expiredDate = dt2.ToString("yyyyMMdd").Substring(2);
                         expiredDate2 = dt2.ToString("yyyy-MM-dd");
 
-
                         string qr2 = summary.MaterialCode.PadRight(len) + inDate + expiredDate;
                         dto.Field5 = summary.LotNo;
                         dto.Field6 = Domain + "/" + GenerateQRCode(qr2);
@@ -263,12 +254,10 @@ namespace WMS_BE.Controllers.Api
                         bodies.Add(body);
                     }
 
-
                     using (MemoryStream stream = new MemoryStream())
                     {
                         using (var pdfWriter = new PdfWriter(stream))
                         {
-
                             PdfDocument pdf = new PdfDocument(pdfWriter);
                             PdfMerger merger = new PdfMerger(pdf);
                             //loop in here, try
@@ -326,7 +315,6 @@ namespace WMS_BE.Controllers.Api
 
                     status = true;
                     message = "Print barcode berhasil. Mohon menunggu.";
-
                 }
                 else
                 {
@@ -351,7 +339,6 @@ namespace WMS_BE.Controllers.Api
 
             return Ok(obj);
         }
-
         public static string RenderViewToString(string controllerName, string viewName, object viewData)
         {
             using (var writer = new StringWriter())
@@ -472,9 +459,7 @@ namespace WMS_BE.Controllers.Api
                 else
                 {
                     throw new Exception("Type not recognized.");
-                }
-
-               
+                }               
 
                 status = true;
                 message = "Fetch data succeded.";
@@ -510,8 +495,6 @@ namespace WMS_BE.Controllers.Api
             string message = "";
             bool status = false;
             IEnumerable<IssueSlipHeaderDTO> list = Enumerable.Empty<IssueSlipHeaderDTO>();
-
-
 
             try
             {
@@ -674,7 +657,18 @@ namespace WMS_BE.Controllers.Api
                 }
                 else
                 {
-                    message = "Tidak ada data.";
+                    if (user.AreaType.Equals("LOGISTIC"))
+                    {
+                        status = true;
+                        message = "Tidak ada data.";
+                        obj.Add("list", list1);
+                    }
+                    else
+                    {
+                        status = true;
+                        message = "Tidak ada data.";
+                        obj.Add("list", list);
+                    }
                 }
 
             }
@@ -730,14 +724,26 @@ namespace WMS_BE.Controllers.Api
                 orderDTO.RequestedQty = Helper.FormatThousand(order.Qty);
                 orderDTO.QtyPerBag = Helper.FormatThousand(order.QtyPerBag);
                 orderDTO.PickedQty = Helper.FormatThousand(order.IssueSlipPickings.Sum(i => i.BagQty * i.QtyPerBag));
-                orderDTO.OutstandingQty = Helper.FormatThousand(order.Qty - (order.IssueSlipPickings.Sum(i => i.BagQty * i.QtyPerBag)));
-                orderDTO.PickingBagQty = Helper.FormatThousand(Convert.ToInt32(Math.Ceiling((order.Qty - (order.IssueSlipPickings.Sum(i => i.BagQty * i.QtyPerBag))) / order.QtyPerBag)));
                 orderDTO.DiffQty = Helper.FormatThousand(order.IssueSlipPickings.Sum(i => i.BagQty * i.QtyPerBag) - order.Qty);
-                orderDTO.PickingAction = order.IssueSlipPickings.Sum(i => i.BagQty * i.QtyPerBag) - (order.Qty + order.IssueSlipReturns.Sum(i => i.ReturnQty))<= 0 ? true : false;
                 //orderDTO.ReturnAction = order.IssueSlipPickings.Sum(i => i.BagQty * i.QtyPerBag) > 0 ? true : false;
                 orderDTO.ReturnAction = order.IssueSlipPickings.Sum(i => i.BagQty * i.QtyPerBag) - order.IssueSlipReturns.Sum(i => i.ReturnQty) > 0 ? true : false;
-                orderDTO.ReturnedQty = Helper.FormatThousand(order.IssueSlipReturns.Sum(i => i.ReturnQty));
-                orderDTO.AvailableReturnQty = Helper.FormatThousand(order.IssueSlipPickings.Sum(i => i.BagQty * i.QtyPerBag) - order.IssueSlipReturns.Sum(i => i.ReturnQty));
+
+                if (order.QtyPerBag < 1)
+                {
+                    orderDTO.ReturnedQty = Helper.FormatThousand(order.IssueSlipReturns.Sum(i => i.ReturnQty));
+                    orderDTO.PickingBagQty = Helper.FormatThousand(order.IssueSlipPickings.Sum(i => i.BagQty));
+                    orderDTO.OutstandingQty = Helper.FormatThousand(0);
+                    orderDTO.AvailableReturnQty = Helper.FormatThousand(order.IssueSlipPickings.Sum(i => i.BagQty * i.QtyPerBag) - (order.Qty + order.IssueSlipReturns.Sum(i => i.ReturnQty)));
+                    orderDTO.PickingAction = order.IssueSlipPickings.Sum(i => i.BagQty * i.QtyPerBag) - order.Qty <= 0 ? true : false;
+                }
+                else
+                {
+                    orderDTO.ReturnedQty = Helper.FormatThousand(order.IssueSlipReturns.Sum(i => i.ReturnQty));
+                    orderDTO.PickingBagQty = Helper.FormatThousand(Convert.ToInt32(Math.Ceiling((order.Qty - (order.IssueSlipPickings.Sum(i => i.BagQty * i.QtyPerBag))) / order.QtyPerBag)));
+                    orderDTO.OutstandingQty = Helper.FormatThousand(order.Qty - (order.IssueSlipPickings.Sum(i => i.BagQty * i.QtyPerBag)));
+                    orderDTO.AvailableReturnQty = Helper.FormatThousand(order.IssueSlipPickings.Sum(i => i.BagQty * i.QtyPerBag) - order.IssueSlipReturns.Sum(i => i.ReturnQty));
+                    orderDTO.PickingAction = order.IssueSlipPickings.Sum(i => i.BagQty * i.QtyPerBag) - (order.Qty + order.IssueSlipReturns.Sum(i => i.ReturnQty)) <= 0 ? true : false;
+                }
 
                 status = true;
                 message = "Fetch data succeded.";
@@ -808,7 +814,6 @@ namespace WMS_BE.Controllers.Api
             query = query.Where(a => warehouses.Contains(a.WarehouseCode));
 
             int totalRow = query.Count();
-
 
             decimal requestedQty = order.Qty;
             decimal pickedQty = order.IssueSlipPickings.Sum(i => i.BagQty * i.QtyPerBag);
@@ -890,7 +895,6 @@ namespace WMS_BE.Controllers.Api
                         {
                             break;
                         }
-
                     }
 
                     message = "Fetch data succeeded.";
@@ -959,8 +963,6 @@ namespace WMS_BE.Controllers.Api
 
                 if (activeUser != null)
                 {
-
-
                     if (string.IsNullOrEmpty(req.OrderId))
                     {
                         throw new Exception("Order Id is required.");
@@ -991,20 +993,36 @@ namespace WMS_BE.Controllers.Api
                     }
 
                     //dont trim materialcode
+                    string LotNumber = "";
+                    string QtyPerBag = "";
                     string MaterialCode = req.BarcodeLeft.Substring(0, req.BarcodeLeft.Length - 13);
-                    string QtyPerBag = req.BarcodeRight.Substring(MaterialCode.Length + 7, 6).Trim();
-                    string LotNumber = req.BarcodeRight.Substring(MaterialCode.Length + 14);
+                    if (vProductMaster.ProdType == "SFG")
+                    {
+                        if (req.BarcodeRight.Length == 29)
+                        {
+                            QtyPerBag = req.BarcodeRight.Substring(MaterialCode.Length + 7, 8).Trim();
+                            LotNumber = req.BarcodeRight.Substring(MaterialCode.Length + 16);
+                        }
+                        else
+                        {
+                            QtyPerBag = req.BarcodeRight.Substring(MaterialCode.Length + 7, 6).Trim();
+                            LotNumber = req.BarcodeRight.Substring(MaterialCode.Length + 14);
+                        }
+                    }
+                    else
+                    {
+                        QtyPerBag = req.BarcodeRight.Substring(MaterialCode.Length + 7, 6).Trim();
+                        LotNumber = req.BarcodeRight.Substring(MaterialCode.Length + 14);
+                    }
                     string InDate = req.BarcodeLeft.Substring(MaterialCode.Length, 7);
                     string ExpiredDate = req.BarcodeLeft.Substring(MaterialCode.Length + 7, 6);
 
                     string StockCode = string.Format("{0}{1}{2}{3}{4}", MaterialCode.Trim(), QtyPerBag, LotNumber, InDate, ExpiredDate);
-
                     
                     BinRack binRack = null;
                     if (string.IsNullOrEmpty(req.BinRackCode))
                     {
                         throw new Exception("BinRack harus diisi.");
-
                     }
                     else
                     {
@@ -1013,7 +1031,6 @@ namespace WMS_BE.Controllers.Api
                         {
                             throw new Exception("BinRack tidak ditemukan.");
                         }
-
                     }
 
 
@@ -1081,15 +1098,18 @@ namespace WMS_BE.Controllers.Api
                         }
                         else
                         {
-                            decimal requestedQty = order.Qty;
-                            decimal pickedQty = order.IssueSlipPickings.Sum(i => i.BagQty * i.QtyPerBag);
-                            decimal returnQty = order.IssueSlipReturns.Sum(i => i.ReturnQty);
-                            decimal availableQty = requestedQty + returnQty - pickedQty;
-                            int availableBagQty = Convert.ToInt32(Math.Ceiling(availableQty / order.QtyPerBag));
-
-                            if (req.BagQty > availableBagQty)
+                            if (order.QtyPerBag > 0)
                             {
-                                throw new Exception(string.Format("Bag Qty melewati jumlah tersedia. Bag Qty tersedia : {0}", availableBagQty));
+                                decimal requestedQty = order.Qty;
+                                decimal pickedQty = order.IssueSlipPickings.Sum(i => i.BagQty * i.QtyPerBag);
+                                decimal returnQty = order.IssueSlipReturns.Sum(i => i.ReturnQty);
+                                decimal availableQty = requestedQty + returnQty - pickedQty;
+                                int availableBagQty = Convert.ToInt32(Math.Ceiling(availableQty / order.QtyPerBag));
+
+                                if (req.BagQty > availableBagQty)
+                                {
+                                    throw new Exception(string.Format("Bag Qty melewati jumlah tersedia. Bag Qty tersedia : {0}", availableBagQty));
+                                }
                             }
                         }
                     }
@@ -1131,20 +1151,23 @@ namespace WMS_BE.Controllers.Api
                     IssueSlipHeader header = db.IssueSlipHeaders.Where(m => m.ID.Equals(order.HeaderID)).FirstOrDefault();
                     header.TransactionStatus = "PROGRESS";
 
-
                     await db.SaveChangesAsync();
-
-
 
                     status = true;
                     message = "Picking berhasil.";
 
                     order = await db.IssueSlipOrders.Where(s => s.ID.Equals(req.OrderId)).FirstOrDefaultAsync();
 
-
-                    OutstandingQty = Helper.FormatThousand(order.Qty - (order.IssueSlipPickings.Sum(i => i.BagQty * i.QtyPerBag)));
-                    PickingBagQty = Helper.FormatThousand(Convert.ToInt32(Math.Ceiling((order.Qty - (order.IssueSlipPickings.Sum(i => i.BagQty * i.QtyPerBag))) / order.QtyPerBag)));
-
+                    if (order.QtyPerBag > 0)
+                    {
+                        OutstandingQty = Helper.FormatThousand(order.Qty - (order.IssueSlipPickings.Sum(i => i.BagQty * i.QtyPerBag)));
+                        PickingBagQty = Helper.FormatThousand(Convert.ToInt32(Math.Ceiling((order.Qty - (order.IssueSlipPickings.Sum(i => i.BagQty * i.QtyPerBag))) / order.QtyPerBag)));
+                    }
+                    else
+                    {
+                        OutstandingQty = Helper.FormatThousand(0);
+                        PickingBagQty = Helper.FormatThousand(0);
+                    }
                 }
                 else
                 {
@@ -1180,7 +1203,6 @@ namespace WMS_BE.Controllers.Api
             bool status = false;
             HttpRequest request = HttpContext.Current.Request;
 
-
             if (string.IsNullOrEmpty(OrderId))
             {
                 throw new Exception("Order Id is required.");
@@ -1200,7 +1222,6 @@ namespace WMS_BE.Controllers.Api
 
             int totalRow = query.Count();
 
-
             decimal pickQty = order.IssueSlipPickings.Sum(i => i.BagQty * i.QtyPerBag);
             decimal returnQty = order.IssueSlipReturns.Sum(i => i.ReturnQty);
             decimal availableQty = pickQty - returnQty;
@@ -1209,10 +1230,8 @@ namespace WMS_BE.Controllers.Api
 
             string MaterialType = vProductMaster.ProdType;
 
-
             IEnumerable<BarcodeResp> barcodeList = new List<BarcodeResp>();
             IQueryable<vIssueSlipPickingSummary> barcodeQuery = db.vIssueSlipPickingSummaries.Where(s => s.ID.Equals(order.ID)).AsQueryable();
-
 
             int len = 7;
             if (vProductMaster.MaterialCode.Length > 7)
@@ -1227,11 +1246,8 @@ namespace WMS_BE.Controllers.Api
                        BarcodeLeft = vProductMaster.MaterialCode.PadRight(len) + detail.InDate.ToString("yyyyMMdd").Substring(1) + detail.ExpDate.ToString("yyyyMMdd").Substring(2)
                    };
 
-
             try
-            {
-                
-
+            {               
                 data = from detail in await query.ToListAsync()
                        select new IssueSlipReturnListResp
                        {
@@ -1349,9 +1365,28 @@ namespace WMS_BE.Controllers.Api
                         throw new Exception("Barcode Left & Barcode Right harus diisi.");
                     }
 
+                    //dont trim materialcode
+                    string LotNumber = "";
+                    string QtyPerBag = "";
                     string MaterialCode = req.BarcodeLeft.Substring(0, req.BarcodeLeft.Length - 13);
-                    string QtyPerBag = req.BarcodeRight.Substring(MaterialCode.Length + 7, 6).Trim();
-                    string LotNumber = req.BarcodeRight.Substring(MaterialCode.Length + 14);
+                    if (vProductMaster.ProdType == "SFG")
+                    {
+                        if (req.BarcodeRight.Length == 29)
+                        {
+                            QtyPerBag = req.BarcodeRight.Substring(MaterialCode.Length + 7, 8).Trim();
+                            LotNumber = req.BarcodeRight.Substring(MaterialCode.Length + 16);
+                        }
+                        else
+                        {
+                            QtyPerBag = req.BarcodeRight.Substring(MaterialCode.Length + 7, 6).Trim();
+                            LotNumber = req.BarcodeRight.Substring(MaterialCode.Length + 14);
+                        }
+                    }
+                    else
+                    {
+                        QtyPerBag = req.BarcodeRight.Substring(MaterialCode.Length + 7, 6).Trim();
+                        LotNumber = req.BarcodeRight.Substring(MaterialCode.Length + 14);
+                    }
                     string InDate = req.BarcodeLeft.Substring(MaterialCode.Length, 7);
                     string ExpiredDate = req.BarcodeLeft.Substring(MaterialCode.Length + 7, 6);
 
@@ -1373,10 +1408,13 @@ namespace WMS_BE.Controllers.Api
                     returnQty = summary.ReturnQty.Value;
                     availableQty = pickQty - returnQty;
 
-                    //Return production remaining
-                    if (user.AreaType != "LOGISTIC" && TotalQty > vProductMaster.QtyPerBag)
+                    if (order.QtyPerBag > 0)
                     {
-                        throw new Exception("Quantity full bag harus dikembalikan ke warehouse.");
+                        //Return production remaining
+                        if (user.AreaType != "LOGISTIC" && TotalQty > vProductMaster.QtyPerBag)
+                        {
+                            throw new Exception("Quantity full bag harus dikembalikan ke warehouse.");
+                        }
                     }
 
                     if (TotalQty <= 0)
@@ -1414,7 +1452,6 @@ namespace WMS_BE.Controllers.Api
                         ret.PrevStockCode = StockCode;
                         db.IssueSlipReturns.Add(ret);
                     }
-
 
                     //remainder
                     if (req.RemainderQty > 0)
@@ -1537,7 +1574,6 @@ namespace WMS_BE.Controllers.Api
 
             int totalRow = query.Count();
 
-
             int returnBagQty = Convert.ToInt32(order.IssueSlipReturns.Where(m => m.StockCode.Equals(StockCode)).Sum(i => i.ReturnQty / i.QtyPerBag));
             int putBagQty = Convert.ToInt32(order.IssueSlipPutaways.Where(m => m.StockCode.Equals(StockCode)).Sum(i => i.PutawayQty / i.QtyPerBag));
             int availableBagQty = returnBagQty - putBagQty;
@@ -1557,7 +1593,6 @@ namespace WMS_BE.Controllers.Api
                               BarcodeRight = MaterialType.Equals("RM") ? vProductMaster.MaterialCode.PadRight(7) + " " + string.Format("{0:D5}", 1) + " " + Helper.FormatThousand(detail.QtyPerBag).PadLeft(6) + " " + detail.LotNo : "",
                               BarcodeLeft = MaterialType.Equals("RM") ? vProductMaster.MaterialCode.PadRight(7) + detail.InDate.ToString("yyyyMMdd").Substring(1) + detail.ExpDate.ToString("yyyyMMdd").Substring(2) : ""
                           };
-
 
             try
             {
@@ -1583,7 +1618,6 @@ namespace WMS_BE.Controllers.Api
                 {
                     message = "Tidak ada data.";
                 }
-
             }
             catch (HttpRequestException reqpEx)
             {
@@ -1622,7 +1656,6 @@ namespace WMS_BE.Controllers.Api
             bool status = false;
             var re = Request;
             var headers = re.Headers;
-
 
             int returnBagQty = 0;
             int putBagQty = 0;
@@ -1672,9 +1705,28 @@ namespace WMS_BE.Controllers.Api
                         throw new Exception("Barcode Left & Barcode Right harus diisi.");
                     }
 
+                    //dont trim materialcode
+                    string LotNumber = "";
+                    string QtyPerBag = "";
                     string MaterialCode = req.BarcodeLeft.Substring(0, req.BarcodeLeft.Length - 13);
-                    string QtyPerBag = req.BarcodeRight.Substring(MaterialCode.Length + 7, 6).Trim();
-                    string LotNumber = req.BarcodeRight.Substring(MaterialCode.Length + 14);
+                    if (vProductMaster.ProdType == "SFG")
+                    {
+                        if (req.BarcodeRight.Length == 29)
+                        {
+                            QtyPerBag = req.BarcodeRight.Substring(MaterialCode.Length + 7, 8).Trim();
+                            LotNumber = req.BarcodeRight.Substring(MaterialCode.Length + 16);
+                        }
+                        else
+                        {
+                            QtyPerBag = req.BarcodeRight.Substring(MaterialCode.Length + 7, 6).Trim();
+                            LotNumber = req.BarcodeRight.Substring(MaterialCode.Length + 14);
+                        }
+                    }
+                    else
+                    {
+                        QtyPerBag = req.BarcodeRight.Substring(MaterialCode.Length + 7, 6).Trim();
+                        LotNumber = req.BarcodeRight.Substring(MaterialCode.Length + 14);
+                    }
                     string InDate = req.BarcodeLeft.Substring(MaterialCode.Length, 7);
                     string ExpiredDate = req.BarcodeLeft.Substring(MaterialCode.Length + 7, 6);
 
@@ -1720,17 +1772,21 @@ namespace WMS_BE.Controllers.Api
                         {
                             throw new Exception("BinRackArea tidak ditemukan.");
                         }
-                        if (binRackArea.Type == "PRODUCTION" && summary.PutawayQty >= vProductMaster.QtyPerBag)
-                        {
-                            throw new Exception("Quantity full bag harus dikembalikan ke warehouse.");
-                        }
 
-                        vStockAll cekmaterial = await db.vStockAlls.Where(m => m.MaterialCode.Equals(MaterialCode) && m.QtyPerBag < vProductMaster.QtyPerBag && m.BinRackAreaType == "PRODUCTION").FirstOrDefaultAsync();
-                        if (cekmaterial != null)
+                        if (order.QtyPerBag > 0)
                         {
-                            if (binRackArea.Type == "LOGISTIC" && summary.PutawayQty < vProductMaster.QtyPerBag)
+                            if (binRackArea.Type == "PRODUCTION" && summary.PutawayQty >= vProductMaster.QtyPerBag)
                             {
-                                throw new Exception("Quantity remaining harus dikembalikan ke production.");
+                                throw new Exception("Quantity full bag harus dikembalikan ke warehouse.");
+                            }
+
+                            vStockAll cekmaterial = await db.vStockAlls.Where(m => m.MaterialCode.Equals(MaterialCode) && m.Quantity > 0 && !m.OnInspect && m.QtyPerBag < vProductMaster.QtyPerBag && m.BinRackAreaType == "PRODUCTION").FirstOrDefaultAsync();
+                            if (cekmaterial != null)
+                            {
+                                if (binRackArea.Type == "LOGISTIC" && summary.PutawayQty < vProductMaster.QtyPerBag)
+                                {
+                                    throw new Exception("Quantity remaining harus dikembalikan ke production.");
+                                }
                             }
                         }
                     }
@@ -1811,7 +1867,6 @@ namespace WMS_BE.Controllers.Api
                         }
                     }
                     
-
                     await db.SaveChangesAsync();
 
                     status = true;

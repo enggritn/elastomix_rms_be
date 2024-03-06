@@ -288,9 +288,7 @@ namespace WMS_BE.Controllers.Api
                     decimal RemainderQty = TotalQty / req.QtyPerBag;
                     RemainderQty = TotalQty - (Math.Floor(RemainderQty) * req.QtyPerBag);
                     int BagQty = Convert.ToInt32((TotalQty - RemainderQty) / req.QtyPerBag);
-
-                    Guid guid1 = Guid.NewGuid();
-
+                                        
                     int lastSeries = 0;
                     int startSeries = 0;
 
@@ -298,7 +296,7 @@ namespace WMS_BE.Controllers.Api
 
                     if (BagQty > 0)
                     {
-                        string StockCode = string.Format("{0}{1}{2}{3}{4}", header.ProductCode.PadRight(7), Helper.FormatThousand(header.QtyPerBag).PadLeft(6), header.LotNo, header.InDate.Value.ToString("yyyyMMdd").Substring(1), header.ExpDate.Value.ToString("yyyyMMdd").Substring(1));
+                        string StockCode = string.Format("{0}{1}{2}{3}{4}", header.ProductCode.PadRight(7), Helper.FormatThousand(header.QtyPerBag).PadLeft(6), header.LotNo, header.InDate.Value.ToString("yyyyMMdd").Substring(1), header.ExpDate.Value.ToString("yyyyMMdd").Substring(2));
 
                         lastSeries = await db.ReceivingSFGDetails.Where(m => m.StockCode.Equals(StockCode.Replace(" ", ""))).OrderByDescending(m => m.LastSeries).Select(m => m.LastSeries).FirstOrDefaultAsync();
                         if (lastSeries == 0)
@@ -309,12 +307,10 @@ namespace WMS_BE.Controllers.Api
                         {
                             startSeries = lastSeries + 1;
                         }
-
                         lastSeries = startSeries + BagQty - 1;
 
-
                         ReceivingSFGDetail rec = new ReceivingSFGDetail();
-                        rec.ID = guid1.ToString();
+                        rec.ID = Helper.CreateGuid("RCd");
                         rec.ProductCode = header.ProductCode;
                         rec.StockCode = StockCode.Replace(" ", "");
                         rec.LotNo = header.LotNo;
@@ -327,7 +323,6 @@ namespace WMS_BE.Controllers.Api
                         rec.LastSeries = lastSeries;
 
                         db.ReceivingSFGDetails.Add(rec);
-
                     }
 
                     if(RemainderQty > 0)
@@ -335,9 +330,8 @@ namespace WMS_BE.Controllers.Api
                         int lastSeries1 = 0;
                         int startSeries1 = 0;
 
-                        Guid guid = Guid.NewGuid();
-                        string barcodeReceh = string.Format("{0}{1}{2}{3}{4}", header.ProductCode.PadRight(7), Helper.FormatThousand(RemainderQty).PadLeft(6), header.LotNo, header.InDate.Value.ToString("yyyyMMdd").Substring(1), header.ExpDate.Value.ToString("yyyyMMdd").Substring(1));
-                        string strID_receh = guid.ToString();
+                        string barcodeReceh = string.Format("{0}{1}{2}{3}{4}", header.ProductCode.PadRight(7), Helper.FormatThousand(RemainderQty).PadLeft(6), header.LotNo, header.InDate.Value.ToString("yyyyMMdd").Substring(1), header.ExpDate.Value.ToString("yyyyMMdd").Substring(2));
+                        string strID_receh = Helper.CreateGuid("RCd");
 
                         lastSeries1 = await db.ReceivingSFGDetails.Where(m => m.StockCode.Equals(barcodeReceh.Replace(" ", ""))).OrderByDescending(m => m.LastSeries).Select(m => m.LastSeries).FirstOrDefaultAsync();
                         if (lastSeries1 == 0)
@@ -428,11 +422,36 @@ namespace WMS_BE.Controllers.Api
                         throw new Exception("Receive Id is required.");
                     }
 
-                    ReceivingSFGDetail receive = await db.ReceivingSFGDetails.Where(s => s.ID.Equals(req.ReceiveId)).FirstOrDefaultAsync();
+                    if (string.IsNullOrEmpty(req.BarcodeLeft) || string.IsNullOrEmpty(req.BarcodeRight))
+                    {
+                        throw new Exception("Barcode Left & Barcode Right harus diisi.");
+                    }
+
+                    ReceivingSFGDetail cekQtyPerBag = await db.ReceivingSFGDetails.Where(s => s.ID.Equals(req.ReceiveId)).FirstOrDefaultAsync();
+
+                    string QtyPerBag = "";
+                    string LotNumber = "";
+                    string MaterialCode = req.BarcodeLeft.Substring(0, req.BarcodeLeft.Length - 13);
+                    if (cekQtyPerBag.QtyPerBag >= 1000)
+                    {
+                        QtyPerBag = Helper.FormatThousand(cekQtyPerBag.QtyPerBag);
+                        LotNumber = cekQtyPerBag.LotNo;
+                    }
+                    else
+                    {
+                        QtyPerBag = req.BarcodeRight.Substring(MaterialCode.Length + 7, 6).Trim();
+                        LotNumber = req.BarcodeRight.Substring(MaterialCode.Length + 14);
+                    }
+                    string InDate = req.BarcodeLeft.Substring(MaterialCode.Length, 7);
+                    string ExpiredDate = req.BarcodeLeft.Substring(MaterialCode.Length + 7, 6);
+
+                    string StockCode = string.Format("{0}{1}{2}{3}{4}", MaterialCode.Trim(), QtyPerBag, LotNumber, InDate, ExpiredDate);
+
+                    ReceivingSFGDetail receive = await db.ReceivingSFGDetails.Where(s => s.StockCode.Equals(StockCode) && s.ID.Equals(req.ReceiveId)).FirstOrDefaultAsync();
 
                     if (receive == null)
                     {
-                        throw new Exception("Data tidak dikenali.");
+                        throw new Exception("Data tidak ditemukan.");
                     }
 
                     ReceivingSFG receiving = db.ReceivingSFGs.Where(s => s.ProductCode.Equals(receive.ProductCode) && s.LotNo.Equals(receive.LotNo) && DbFunctions.TruncateTime(s.InDate) == DbFunctions.TruncateTime(receive.InDate) && DbFunctions.TruncateTime(s.ExpDate) == DbFunctions.TruncateTime(receive.ExpDate)).FirstOrDefault();
@@ -440,25 +459,12 @@ namespace WMS_BE.Controllers.Api
                     {
                         throw new Exception("Putaway tidak dapat dilakukan, transaksi sudah selesai.");
                     }
-                    
-                    vProductMaster vProductMaster = await db.vProductMasters.Where(m => m.MaterialCode.Equals(receive.ProductCode)).FirstOrDefaultAsync();  
+
+                    vProductMaster vProductMaster = await db.vProductMasters.Where(m => m.MaterialCode.Equals(receive.ProductCode)).FirstOrDefaultAsync();
                     if (vProductMaster == null)
                     {
                         throw new Exception("Material tidak dikenali.");
                     }
-
-                    if (string.IsNullOrEmpty(req.BarcodeLeft) || string.IsNullOrEmpty(req.BarcodeRight))
-                    {
-                        throw new Exception("Barcode Left & Barcode Right harus diisi.");
-                    }
-
-                    string MaterialCode = req.BarcodeLeft.Substring(0, req.BarcodeLeft.Length - 13);
-                    string QtyPerBag = req.BarcodeRight.Substring(MaterialCode.Length + 7, 6).Trim();
-                    string LotNumber = req.BarcodeRight.Substring(MaterialCode.Length + 14);
-                    string InDate = req.BarcodeLeft.Substring(MaterialCode.Length, 7);
-                    string ExpiredDate = req.BarcodeLeft.Substring(MaterialCode.Length + 7, 6);
-
-                    string StockCode = string.Format("{0}{1}{2}{3}{4}", MaterialCode.Trim(), QtyPerBag, LotNumber, InDate, ExpiredDate);
 
                     if (req.BagQty <= 0)
                     {
@@ -947,11 +953,9 @@ namespace WMS_BE.Controllers.Api
                                         {
                                             qty = qty.Substring(0, index);
                                         }
-                                        receiving.Qty = Decimal.Parse(qty);
-                                        receiving.QtyPerBag = sfg.WeightPerBag;
-                                        receiving.UoM = sfg.UoM;
-                                        receiving.LotNo = dataVM.LotNo;
 
+                                        // Enggrit CR Mei 2023
+                                        // ---
                                         int ShelfLife = Convert.ToInt32(Regex.Match(sfg.ExpiredDate, @"\d+").Value);
                                         int days = 0;
 
@@ -969,51 +973,80 @@ namespace WMS_BE.Controllers.Api
                                         {
                                             days = ShelfLife - 1;
                                         }
+
                                         if (!string.IsNullOrEmpty(dataVM.InDate))
                                         {
-                                            try
+                                            if (dataVM.InDate != DateTime.Now.ToString("yyyy-MM-dd"))
                                             {
-                                                receiving.InDate = DateTime.ParseExact(dataVM.InDate, "yyyy-MM-dd", null);
-                                                receiving.ExpDate = DateTime.ParseExact(Convert.ToDateTime(receiving.InDate).AddDays(days).ToString("yyyy-MM-dd"), "yyyy-MM-dd", null);
+                                                throw new Exception("In Date tidak sesuai, pilih tanggal hari ini.");
                                             }
-                                            catch (Exception)
-                                            {
-
-                                            }
+                                            receiving.InDate = DateTime.ParseExact(DateTime.Now.ToString("yyyy-MM-dd"), "yyyy-MM-dd", null);
                                         }
                                         else 
                                         { 
                                             receiving.InDate = DateTime.ParseExact(DateTime.Now.ToString("yyyy-MM-dd"), "yyyy-MM-dd", null);
-                                            receiving.ExpDate = DateTime.ParseExact(Convert.ToDateTime(receiving.InDate).AddDays(days).ToString("yyyy-MM-dd"), "yyyy-MM-dd", null);
                                         }
-                                        if (!string.IsNullOrEmpty(dataVM.ExpDate))
-                                        {
-                                            try
-                                            {
-                                                receiving.ExpDate = DateTime.ParseExact(dataVM.ExpDate, "yyyy-MM-dd", null);
-                                            }
-                                            catch (Exception)
-                                            {
 
-                                            }
-                                        }
                                         if (!string.IsNullOrEmpty(dataVM.ProdDate))
                                         {
-                                            try
+                                            DateTime dt = DateTime.ParseExact(dataVM.ProdDate, "yyyy-MM-dd", null);
+                                            if (dt > DateTime.Today)
                                             {
-                                                receiving.ProductionDate = DateTime.ParseExact(dataVM.ProdDate, "yyyy-MM-dd", null);
+                                                throw new Exception("Prod Date tidak sesuai, pilih tanggal hari ini atau tanggal sebelumnya.");
                                             }
-                                            catch (Exception)
-                                            {
-
-                                            }
+                                            receiving.ProductionDate = DateTime.ParseExact(dataVM.ProdDate, "yyyy-MM-dd", null);
                                         }
-                                        else { receiving.ProductionDate = DateTime.ParseExact(DateTime.Now.ToString("yyyy-MM-dd"), "yyyy-MM-dd", null); }
+                                        else 
+                                        { 
+                                            receiving.ProductionDate = DateTime.ParseExact(DateTime.Now.ToString("yyyy-MM-dd"), "yyyy-MM-dd", null); 
+                                        }
+
+                                        if (!string.IsNullOrEmpty(dataVM.ExpDate))
+                                        {
+                                            if (dataVM.ExpDate != Convert.ToDateTime(receiving.InDate).AddDays(days).ToString("yyyy-MM-dd"))
+                                            {
+                                                throw new Exception("Exp Date tidak sesuai, Exp Date ditentukan oleh system.");
+                                            }
+                                            receiving.ExpDate = DateTime.ParseExact(Convert.ToDateTime(receiving.InDate).AddDays(days).ToString("yyyy-MM-dd"), "yyyy-MM-dd", null);
+                                        }
+                                        else
+                                        {
+                                            receiving.ExpDate = DateTime.ParseExact(Convert.ToDateTime(receiving.InDate).AddDays(days).ToString("yyyy-MM-dd"), "yyyy-MM-dd", null);
+                                        }
+
+                                        if (!string.IsNullOrEmpty(dataVM.LotNo))
+                                        {
+                                            if (dataVM.LotNo != Convert.ToDateTime(receiving.InDate).ToString("yyMMdd"))
+                                            {
+                                                throw new Exception("Lot number tidak sesuai, gunakan format yyMMdd.");
+                                            }
+                                            receiving.LotNo = dataVM.LotNo;
+                                        }
+                                        else
+                                        {
+                                            receiving.LotNo = Convert.ToDateTime(receiving.InDate).ToString("yyMMdd");
+                                        }
+
+                                        receiving.Qty = Decimal.Parse(qty);
+
+                                        if (sfg.WeightPerBag > 0)
+                                        {
+                                            receiving.QtyPerBag = sfg.WeightPerBag;
+                                        }
+                                        else
+                                        {
+                                            receiving.QtyPerBag = receiving.Qty;
+                                        }
+
+                                        // ----------------------------------
+                                        // ----------------------------------
+
 
                                         receiving.ID = Helper.CreateGuid(prefix);
                                         receiving.TransactionStatus = "OPEN";
                                         receiving.WarehouseCode = wh.Code;
                                         receiving.WarehouseName = wh.Name;
+                                        receiving.UoM = sfg.UoM;
                                         receiving.CreatedBy = activeUser;
                                         receiving.CreatedOn = DateTime.Now;
 

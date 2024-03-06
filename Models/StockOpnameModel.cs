@@ -92,6 +92,7 @@ namespace WMS_BE.Models
     public class vStockOpnameDTO
     {
         public string ID { get; set; }
+        public string Code { get; set; }
         public string BinRackCode { get; set; }
         public string MaterialCode { get; set; }
         public string MaterialName { get; set; }
