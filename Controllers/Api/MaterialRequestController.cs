@@ -1,22 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Data.Entity;
 using System.Linq;
-using System.IO;
-using System.Net;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.Http;
-using System.Web.Http.ModelBinding;
 using WMS_BE.Models;
 using WMS_BE.Utils;
-using OfficeOpenXml;
-using OfficeOpenXml.Style;
-using System.Drawing;
-using System.Globalization;
 
 namespace WMS_BE.Controllers.Api
 {
@@ -484,126 +475,6 @@ namespace WMS_BE.Controllers.Api
 
             return Ok(obj);
         }
-        //[HttpPost]
-        //public async Task<IHttpActionResult> DatatableRawMaterialOutsource(string warehouseCode)
-        //{
-        //    int draw = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("draw")[0]);
-        //    int start = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("start")[0]);
-        //    int length = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("length")[0]);
-        //    string search = HttpContext.Current.Request.Form.GetValues("search[value]")[0];
-        //    string orderCol = HttpContext.Current.Request.Form.GetValues("order[0][column]")[0];
-        //    string sortName = HttpContext.Current.Request.Form.GetValues("columns[" + orderCol + "][name]")[0];
-        //    string sortDirection = HttpContext.Current.Request.Form.GetValues("order[0][dir]")[0];
-
-        //    Dictionary<string, object> obj = new Dictionary<string, object>();
-        //    string message = "";
-        //    bool status = false;
-        //    HttpRequest request = HttpContext.Current.Request;
-
-        //    IEnumerable<vRawMaterialConvertOutsource> list = Enumerable.Empty<vRawMaterialConvertOutsource>();
-        //    IEnumerable<RawMaterialDTO> pagedData = Enumerable.Empty<RawMaterialDTO>();
-
-        //    IQueryable<vRawMaterialConvertOutsource> query = db.vRawMaterialConvertOutsources.AsQueryable();
-        //    query = query.Where(a => a.WarehouseCode == warehouseCode);
-
-        //    int recordsTotal = db.vRawMaterialConverts.Count();
-        //    int recordsFiltered = 0;
-
-        //    try
-        //    {
-        //        query = query
-        //                .Where(m => m.MaterialCode.Contains(search)
-        //                || m.MaterialName.Contains(search)
-        //                );
-
-        //        Dictionary<string, Func<vRawMaterialConvertOutsource, object>> cols = new Dictionary<string, Func<vRawMaterialConvertOutsource, object>>();
-        //        cols.Add("MaterialCode", x => x.MaterialCode);
-        //        cols.Add("MaterialName", x => x.MaterialName);
-        //        cols.Add("Qty", x => x.Qty);
-        //        cols.Add("UoM", x => x.UoM);
-        //        cols.Add("ShelfLife", x => x.ShelfLife);
-        //        cols.Add("MinPurchaseQty", x => x.MinPurchaseQty);
-        //        cols.Add("Maker", x => x.Maker);
-        //        cols.Add("Vendor", x => x.Vendor);
-        //        cols.Add("PoRate", x => x.PoRate);
-        //        cols.Add("ManfCd", x => x.ManfCd);
-        //        cols.Add("VendorCode", x => x.VendorCode);
-        //        cols.Add("IsActive", x => x.IsActive);
-        //        cols.Add("CreatedBy", x => x.CreatedBy);
-        //        cols.Add("CreatedOn", x => x.CreatedOn);
-        //        cols.Add("ModifiedBy", x => x.ModifiedBy);
-        //        cols.Add("ModifiedOn", x => x.ModifiedOn);
-        //        cols.Add("IsConvertible", x => x.IsConvertible);
-        //        cols.Add("MinPurchaseQtyLitre", x => x.MinPurchaseQtyLitre);
-        //        cols.Add("ActualQty", x => x.Quantity);
-
-
-        //        if (sortDirection.Equals("asc"))
-        //            list = query.OrderBy(cols[sortName]);
-        //        else
-        //            list = query.OrderByDescending(cols[sortName]);
-
-        //        recordsFiltered = list.Count();
-
-        //        list = list.Skip(start).Take(length).ToList();
-
-
-        //        if (list != null && list.Count() > 0)
-        //        {
-
-
-        //            pagedData = from x in list
-        //                        select new RawMaterialDTO
-        //                        {
-        //                            MaterialCode = x.MaterialCode,
-        //                            MaterialName = x.MaterialName,
-        //                            Qty = Helper.FormatThousand(x.Qty),
-        //                            UoM = x.UoM,
-        //                            ShelfLife = x.ShelfLife,
-        //                            MinPurchaseQty = Helper.FormatThousand(x.MinPurchaseQty),
-        //                            Maker = x.Maker,
-        //                            Vendor = x.Vendor,
-        //                            PoRate = Helper.FormatThousand(x.PoRate),
-        //                            ManfCd = x.ManfCd,
-        //                            VendorCode = x.VendorCode,
-        //                            IsActive = x.IsActive,
-        //                            CreatedBy = x.CreatedBy,
-        //                            CreatedOn = x.CreatedOn.ToString(),
-        //                            ModifiedBy = x.ModifiedBy != null ? x.ModifiedBy : "",
-        //                            ModifiedOn = x.ModifiedOn.ToString(),
-        //                            IsConvertible = x.IsConvertible.HasValue ? x.IsConvertible.Value : false,
-        //                            MinPurchaseQtyLitre = Helper.FormatThousand(x.MinPurchaseQtyLitre.HasValue ? x.MinPurchaseQtyLitre.Value : 0),
-        //                            ActualQty = Helper.FormatThousand(x.Quantity),
-        //                        };
-        //        }
-
-        //        status = true;
-        //        message = "Fetch data succeeded.";
-        //    }
-        //    catch (HttpRequestException reqpEx)
-        //    {
-        //        message = reqpEx.Message;
-        //        return BadRequest();
-        //    }
-        //    catch (HttpResponseException respEx)
-        //    {
-        //        message = respEx.Message;
-        //        return NotFound();
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        message = ex.Message;
-        //    }
-
-        //    obj.Add("draw", draw);
-        //    obj.Add("recordsTotal", recordsTotal);
-        //    obj.Add("recordsFiltered", recordsFiltered);
-        //    obj.Add("data", pagedData);
-        //    obj.Add("status", status);
-        //    obj.Add("message", message);
-
-        //    return Ok(obj);
-        //}
 
         [HttpGet]
         public async Task<IHttpActionResult> GetDataById(string id)
@@ -778,7 +649,6 @@ namespace WMS_BE.Controllers.Api
 
             return Ok(obj);
         }
-
 
         [HttpPost]
         public async Task<IHttpActionResult> Create(PurchaseRequestHeaderVM purchaseRequestHeaderVM)
@@ -1829,153 +1699,11 @@ namespace WMS_BE.Controllers.Api
 
                         if (transactionStatus.Equals("CONFIRMED"))
                         {
-                            //commented by bhov 
-                            //#region Create Outbound
-                            //OutboundHeader header = new OutboundHeader();
-                            //string TransactionId = string.Empty;
-                            //if (purchaseRequestHeader.SourceType == "OUTSOURCE")
-                            //{
-
-                            //    TransactionId = Helper.CreateGuid("OUT");
-                            //    var CreatedAt = transactionDate;
-                            //    string prefix = TransactionId.Substring(0, 3);
-                            //    int year = Convert.ToInt32(CreatedAt.Year.ToString().Substring(2));
-                            //    int month = CreatedAt.Month;
-                            //    string romanMonth = Helper.ConvertMonthToRoman(month);
-
-                            //    // get last number, and do increment.
-                            //    string lastNumber = db.OutboundHeaders.AsQueryable().OrderByDescending(x => x.Code)
-                            //        .Where(x => x.CreatedOn.Year.Equals(CreatedAt.Year) && x.CreatedOn.Month.Equals(CreatedAt.Month))
-                            //        .AsEnumerable().Select(x => x.Code).FirstOrDefault();
-                            //    int currentNumber = 0;
-
-                            //    if (!string.IsNullOrEmpty(lastNumber))
-                            //    {
-                            //        currentNumber = Int32.Parse(lastNumber.Substring(lastNumber.Length - 3));
-                            //    }
-
-                            //    string runningNumber = string.Format("{0:D3}", currentNumber + 1);
-
-                            //    var Code = string.Format("EIN-RMI/{0}/{1}/{2}/{3}", prefix, year, romanMonth, runningNumber);
-                            //    header = new OutboundHeader
-                            //    {
-                            //        ID = TransactionId,
-                            //        Code = Code,
-                            //        Remarks = purchaseRequestHeader.Code,
-                            //        TransactionStatus = "OPEN",
-                            //        CreatedBy = activeUser,
-                            //        CreatedOn = CreatedAt,
-                            //    };
-
-                            //    Warehouse wh = await db.Warehouses.Where(s => s.Code.Equals((purchaseRequestHeader.SourceCode))).FirstOrDefaultAsync();
-                            //    header.WarehouseCode = wh.Code;
-                            //    header.WarehouseName = wh.Name;
-                            //}
-                            ////await db.SaveChangesAsync();
-                            //#endregion
                             //check detail
                             if (purchaseRequestHeader.PurchaseRequestDetails.Count() < 1)
                             {
                                 throw new Exception("Receiving Plan can not be empty.");
                             }
-                            //await CreateReceiving(id, activeUser);
-                            //await CreateReceiving(id);
-
-                            //create receiving
-
-                            //foreach (PurchaseRequestDetail prd in purchaseRequestHeader.PurchaseRequestDetails)
-                            //{
-                            //    vProductMaster vStocks = await db.vProductMasters.Where(m => m.MaterialCode.Equals(prd.MaterialCode)).FirstOrDefaultAsync();
-                            //    Receiving receiving = new Receiving
-                            //    {
-                            //        ID = Helper.CreateGuid("RCp"),
-                            //        PurchaseRequestID = prd.ID,
-                            //        RefNumber = purchaseRequestHeader.RefNumber,
-                            //        MaterialCode = prd.MaterialCode,
-                            //        MaterialName = prd.MaterialName,
-                            //        Qty = prd.Qty,
-                            //        UoM = prd.UoM,
-                            //        TransactionStatus = "OPEN",
-                            //        QtyPerBag = prd.QtyPerBag,
-                            //        ETA = prd.ETA
-                            //    };
-
-                            //    db.Receivings.Add(receiving);
-
-                            //    //Add Outbound Order 
-                            //    if (purchaseRequestHeader.SourceType == "OUTSOURCE")
-                            //    {
-                            //        OutboundOrder order = new OutboundOrder()
-                            //        {
-                            //            ID = Helper.CreateGuid("Oo"),
-                            //            OutboundID = TransactionId,
-                            //            MaterialCode = prd.MaterialCode,
-                            //            MaterialName = prd.MaterialName,
-                            //            MaterialType = vStocks.ProdType,
-                            //            TotalQty = prd.Qty,
-                            //            QtyPerBag = prd.QtyPerBag,
-                            //            CreatedBy = activeUser,
-                            //            CreatedOn = transactionDate
-                            //        };
-                            //        header.OutboundOrders.Add(order);
-                            //        if (purchaseRequestHeader.SourceCode == "2003" || purchaseRequestHeader.SourceCode == "2004")
-                            //        {
-                            //            vStockAll stockAll = db.vStockAlls.Where(m => m.MaterialCode.Equals(prd.MaterialCode) && m.WarehouseCode == purchaseRequestHeader.SourceCode).FirstOrDefault();
-                            //            if (stockAll == null)
-                            //            {
-                            //                noStockls[idx] = prd.MaterialCode;
-                            //                idx++;
-                            //            }
-                            //            else
-                            //            {
-                            //                BinRack binRack = db.BinRacks.Where(m => m.WarehouseCode.Equals(purchaseRequestHeader.SourceCode)).FirstOrDefault();
-                            //                OutboundPicking picking = new OutboundPicking();
-                            //                picking.ID = Helper.CreateGuid("P");
-                            //                picking.OutboundOrderID = order.ID;
-                            //                picking.PickingMethod = "MANUAL";
-                            //                picking.PickedOn = DateTime.Now;
-                            //                picking.PickedBy = activeUser;
-                            //                picking.BinRackID = binRack.ID;
-                            //                picking.BinRackCode = binRack.Code;
-                            //                picking.BinRackName = binRack.Name;
-                            //                picking.BagQty = Convert.ToInt32(prd.Qty / prd.QtyPerBag);
-                            //                picking.QtyPerBag = prd.QtyPerBag;
-                            //                picking.StockCode = stockAll.Code;
-                            //                picking.LotNo = string.IsNullOrEmpty(stockAll.LotNumber) ? "" : stockAll.LotNumber;
-                            //                picking.InDate = stockAll.InDate.HasValue ? stockAll.InDate.Value : DateTime.Now;
-                            //                picking.ExpDate = stockAll.ExpiredDate.HasValue ? stockAll.ExpiredDate.Value : DateTime.Now;
-
-                            //                order.OutboundPickings.Add(picking);
-                            //            }
-
-                            //        }
-                            //        db.OutboundHeaders.Add(header);
-                            //        //Pemotongan Stock
-                            //        var source = receiving.PurchaseRequestDetail.PurchaseRequestHeader.SourceCode;
-                            //        BinRack binRack1 = new BinRack();
-                            //        if (purchaseRequestHeader.SourceCode == "2003" || purchaseRequestHeader.SourceCode == "2004")
-                            //        {
-                            //            binRack1 = db.BinRacks.Where(x => x.WarehouseCode == source).FirstOrDefault();
-                            //            vStockAll stockAll1 = db.vStockAlls.Where(x => x.BinRackAreaCode == binRack1.BinRackAreaCode && x.MaterialCode == prd.MaterialCode).SingleOrDefault();
-                            //            if (stockAll1 == null)
-                            //            {
-                            //                throw new Exception("Stock is not found.");
-                            //            }
-                            //            if (stockAll1.Type.Equals("RM"))
-                            //            {
-                            //                decimal pickQty = order.TotalQty;
-                            //                StockRM stock = db.StockRMs.Where(m => m.ID.Equals(stockAll1.ID)).FirstOrDefault();
-                            //                stock.Quantity -= pickQty;
-                            //            }
-                            //            else if (stockAll1.Type.Equals("SFG"))
-                            //            {
-                            //                decimal pickQty = order.TotalQty;
-                            //                StockSFG stock = db.StockSFGs.Where(m => m.ID.Equals(stockAll1.ID)).FirstOrDefault();
-                            //                stock.Quantity -= pickQty;
-                            //            }
-                            //        }
-                            //    }
-                            //}
 
                             string originCode = purchaseRequestHeader.SourceCode;
                             string destinationCode = purchaseRequestHeader.DestinationCode;
@@ -1985,7 +1713,6 @@ namespace WMS_BE.Controllers.Api
 
 
                             //create receiving plan RM/SFG
-
                             foreach (PurchaseRequestDetail prd in purchaseRequestHeader.PurchaseRequestDetails)
                             {
                                 //if RM insert to Receiving, if SG insert to ReceivingSFG
@@ -2034,357 +1761,338 @@ namespace WMS_BE.Controllers.Api
                                 }
                              }
 
-                            //if type outsource
-                            //create outbound & inbound
-                            if (purchaseRequestHeader.SourceType.Equals("OUTSOURCE"))
-                            {
-                                //check origin
-                                //origin will create other outbound
-                                //if emix, create outbound status confirmed, picking only
-                                //if outsource create outbound status closed, autopicked (update stock automatically)
-                            
-                                string tStatus = "";
-                                bool autoPicking = false;
+                            // pemotongan stock sourcenya dipindahin kembali ke saat receive
+                            ////if type outsource
+                            ////create outbound & inbound
+                            //if (purchaseRequestHeader.SourceType.Equals("OUTSOURCE"))
+                            //{
+                            //    //check origin
+                            //    //origin will create other outbound
+                            //    //if emix, create outbound status confirmed, picking only
+                            //    //if outsource create outbound status closed, autopicked (update stock automatically)
 
-                                if (origin.Type.Equals("EMIX"))
-                                {
-                                    autoPicking = false;
-                                    tStatus = "CONFIRMED";
-                                }
-                                else
-                                {
-                                    autoPicking = true;
-                                    tStatus = "CLOSED";
-                                }
+                            //    string tStatus = "";
+                            //    bool autoPicking = false;
 
-                                #region outbound
-                                var CreatedAt = transactionDate;
-                                var TransactionId = Helper.CreateGuid("OUT");
+                            //    if (origin.Type.Equals("EMIX"))
+                            //    {
+                            //        autoPicking = false;
+                            //        tStatus = "CONFIRMED";
+                            //    }
+                            //    else
+                            //    {
+                            //        autoPicking = true;
+                            //        tStatus = "CLOSED";
+                            //    }
 
-                                string prefix = TransactionId.Substring(0, 3);
-                                int year = Convert.ToInt32(CreatedAt.Year.ToString().Substring(2));
-                                int month = CreatedAt.Month;
-                                string romanMonth = Helper.ConvertMonthToRoman(month);
+                            //    #region outbound
+                            //    var CreatedAt = transactionDate;
+                            //    var TransactionId = Helper.CreateGuid("OUT");
 
-                                // get last number, and do increment.
-                                string lastNumber = db.OutboundHeaders.AsQueryable().OrderByDescending(x => x.Code)
-                                    .Where(x => x.CreatedOn.Year.Equals(CreatedAt.Year) && x.CreatedOn.Month.Equals(CreatedAt.Month))
-                                    .AsEnumerable().Select(x => x.Code).FirstOrDefault();
-                                int currentNumber = 0;
+                            //    string prefix = TransactionId.Substring(0, 3);
+                            //    int year = Convert.ToInt32(CreatedAt.Year.ToString().Substring(2));
+                            //    int month = CreatedAt.Month;
+                            //    string romanMonth = Helper.ConvertMonthToRoman(month);
 
-                                if (!string.IsNullOrEmpty(lastNumber))
-                                {
-                                    currentNumber = Int32.Parse(lastNumber.Substring(lastNumber.Length - 3));
-                                }
+                            //    // get last number, and do increment.
+                            //    string lastNumber = db.OutboundHeaders.AsQueryable().OrderByDescending(x => x.Code)
+                            //        .Where(x => x.CreatedOn.Year.Equals(CreatedAt.Year) && x.CreatedOn.Month.Equals(CreatedAt.Month))
+                            //        .AsEnumerable().Select(x => x.Code).FirstOrDefault();
+                            //    int currentNumber = 0;
 
-                                string runningNumber = string.Format("{0:D3}", currentNumber + 1);
+                            //    if (!string.IsNullOrEmpty(lastNumber))
+                            //    {
+                            //        currentNumber = Int32.Parse(lastNumber.Substring(lastNumber.Length - 3));
+                            //    }
 
-                                var Code = string.Format("EIN-RMI/{0}/{1}/{2}/{3}", prefix, year, romanMonth, runningNumber);
+                            //    string runningNumber = string.Format("{0:D3}", currentNumber + 1);
 
-                                // Ref Number necessities
-                                string yearMonth = CreatedAt.Year.ToString() + month.ToString();
+                            //    var Code = string.Format("EIN-RMI/{0}/{1}/{2}/{3}", prefix, year, romanMonth, runningNumber);
 
-                                OutboundHeader outbound = new OutboundHeader
-                                {
-                                    ID = TransactionId,
-                                    Code = Code,
-                                    Remarks = string.Format("Created from Material Request: {0}, Origin: {1}, Destination: {2}", purchaseRequestHeader.Code, origin.Code + " - " + origin.Name, destination.Code + " - " + destination.Name),
-                                    TransactionStatus = tStatus,
-                                    CreatedBy = activeUser,
-                                    CreatedOn = CreatedAt,
-                                    WarehouseCode = origin.Code,
-                                    WarehouseName = origin.Name
-                                };
+                            //    // Ref Number necessities
+                            //    string yearMonth = CreatedAt.Year.ToString() + month.ToString();
 
-                                db.OutboundHeaders.Add(outbound);
+                            //    OutboundHeader outbound = new OutboundHeader
+                            //    {
+                            //        ID = TransactionId,
+                            //        Code = Code,
+                            //        Remarks = string.Format("Created from Material Request: {0}, Origin: {1}, Destination: {2}", purchaseRequestHeader.Code, origin.Code + " - " + origin.Name, destination.Code + " - " + destination.Name),
+                            //        TransactionStatus = tStatus,
+                            //        CreatedBy = activeUser,
+                            //        CreatedOn = CreatedAt,
+                            //        WarehouseCode = origin.Code,
+                            //        WarehouseName = origin.Name
+                            //    };
 
-                                //insert order
-                                foreach (PurchaseRequestDetail prd in purchaseRequestHeader.PurchaseRequestDetails)
-                                {
-                                    vProductMaster product = await db.vProductMasters.Where(m => m.MaterialCode.Equals(prd.MaterialCode)).FirstOrDefaultAsync();
-                                    if (product != null)
-                                    {
-                                        OutboundOrder order = new OutboundOrder()
-                                        {
-                                            ID = Helper.CreateGuid("Oo"),
-                                            OutboundID = outbound.ID,
-                                            MaterialCode = product.MaterialCode,
-                                            MaterialName = product.MaterialName,
-                                            MaterialType = product.ProdType,
-                                            TotalQty = prd.Qty,
-                                            QtyPerBag = prd.QtyPerBag,
-                                            CreatedBy = activeUser,
-                                            CreatedOn = transactionDate
-                                        };
+                            //    db.OutboundHeaders.Add(outbound);
 
+                            //    //insert order
+                            //    foreach (PurchaseRequestDetail prd in purchaseRequestHeader.PurchaseRequestDetails)
+                            //    {
+                            //        vProductMaster product = await db.vProductMasters.Where(m => m.MaterialCode.Equals(prd.MaterialCode)).FirstOrDefaultAsync();
+                            //        if (product != null)
+                            //        {
+                            //            OutboundOrder order = new OutboundOrder()
+                            //            {
+                            //                ID = Helper.CreateGuid("Oo"),
+                            //                OutboundID = outbound.ID,
+                            //                MaterialCode = product.MaterialCode,
+                            //                MaterialName = product.MaterialName,
+                            //                MaterialType = product.ProdType,
+                            //                TotalQty = prd.Qty,
+                            //                QtyPerBag = prd.QtyPerBag,
+                            //                CreatedBy = activeUser,
+                            //                CreatedOn = transactionDate
+                            //            };
 
-                                        db.OutboundOrders.Add(order);
+                            //            db.OutboundOrders.Add(order);
 
-                                        //insert picking if auto picking == true
-                                        if (autoPicking)
-                                        {
-                                            //get available quantity
-                                            vStockAll stockAll = db.vStockAlls.Where(m => m.MaterialCode.Equals(prd.MaterialCode) && m.WarehouseCode.Equals(originCode)).FirstOrDefault();
-                                            if(stockAll != null)
-                                            {
-                                                BinRack binRack = db.BinRacks.Where(m => m.WarehouseCode.Equals(originCode)).FirstOrDefault();
+                            //            //insert picking if auto picking == true
+                            //            if (autoPicking)
+                            //            {
+                            //                //get available quantity
+                            //                vStockAll stockAll = db.vStockAlls.Where(m => m.MaterialCode.Equals(prd.MaterialCode) && m.WarehouseCode.Equals(originCode)).FirstOrDefault();
+                            //                if(stockAll != null)
+                            //                {
+                            //                    BinRack binRack = db.BinRacks.Where(m => m.WarehouseCode.Equals(originCode)).FirstOrDefault();
 
-                                                decimal availableQty = order.TotalQty;
-                                                if(order.TotalQty > stockAll.Quantity)
-                                                {
-                                                    availableQty = stockAll.Quantity;
-                                                }
+                            //                    decimal availableQty = order.TotalQty;
+                            //                    if(order.TotalQty > stockAll.Quantity)
+                            //                    {
+                            //                        availableQty = stockAll.Quantity;
+                            //                    }
 
-                                                //check if have remainder
-                                                int bagQty = Convert.ToInt32(availableQty / order.QtyPerBag);
-                                                decimal remainder = availableQty - (bagQty * order.QtyPerBag);
+                            //                    //check if have remainder
+                            //                    int bagQty = Convert.ToInt32(availableQty / order.QtyPerBag);
+                            //                    decimal remainder = availableQty - (bagQty * order.QtyPerBag);
 
-                                                //picking limit based on stock qty
+                            //                    //picking limit based on stock qty
 
-                                                OutboundPicking picking = new OutboundPicking();
-                                                picking.ID = Helper.CreateGuid("P");
-                                                picking.OutboundOrderID = order.ID;
-                                                picking.PickingMethod = "MANUAL";
-                                                picking.PickedOn = DateTime.Now;
-                                                picking.PickedBy = activeUser;
-                                                picking.BinRackID = binRack.ID;
-                                                picking.BinRackCode = stockAll.BinRackCode;
-                                                picking.BinRackName = stockAll.BinRackName;
-                                                picking.BagQty = bagQty;
-                                                picking.QtyPerBag = stockAll.QtyPerBag;
+                            //                    OutboundPicking picking = new OutboundPicking();
+                            //                    picking.ID = Helper.CreateGuid("P");
+                            //                    picking.OutboundOrderID = order.ID;
+                            //                    picking.PickingMethod = "MANUAL";
+                            //                    picking.PickedOn = DateTime.Now;
+                            //                    picking.PickedBy = activeUser;
+                            //                    picking.BinRackID = binRack.ID;
+                            //                    picking.BinRackCode = stockAll.BinRackCode;
+                            //                    picking.BinRackName = stockAll.BinRackName;
+                            //                    picking.BagQty = bagQty;
+                            //                    picking.QtyPerBag = stockAll.QtyPerBag;
 
-                                                db.OutboundPickings.Add(picking);
+                            //                    db.OutboundPickings.Add(picking);
 
-                                                if(remainder > 0)
-                                                {
-                                                    picking = new OutboundPicking();
-                                                    picking.ID = Helper.CreateGuid("P");
-                                                    picking.OutboundOrderID = order.ID;
-                                                    picking.PickingMethod = "MANUAL";
-                                                    picking.PickedOn = DateTime.Now;
-                                                    picking.PickedBy = activeUser;
-                                                    picking.BinRackID = binRack.ID;
-                                                    picking.BinRackCode = stockAll.BinRackCode;
-                                                    picking.BinRackName = stockAll.BinRackName;
-                                                    picking.BagQty = Convert.ToInt32(remainder / remainder);
-                                                    picking.QtyPerBag = remainder;                                                   
+                            //                    if(remainder > 0)
+                            //                    {
+                            //                        picking = new OutboundPicking();
+                            //                        picking.ID = Helper.CreateGuid("P");
+                            //                        picking.OutboundOrderID = order.ID;
+                            //                        picking.PickingMethod = "MANUAL";
+                            //                        picking.PickedOn = DateTime.Now;
+                            //                        picking.PickedBy = activeUser;
+                            //                        picking.BinRackID = binRack.ID;
+                            //                        picking.BinRackCode = stockAll.BinRackCode;
+                            //                        picking.BinRackName = stockAll.BinRackName;
+                            //                        picking.BagQty = Convert.ToInt32(remainder / remainder);
+                            //                        picking.QtyPerBag = remainder;                                                   
 
-                                                    db.OutboundPickings.Add(picking);
-                                                }
+                            //                        db.OutboundPickings.Add(picking);
+                            //                    }
 
-                                                if (product.ProdType.Equals("RM"))
-                                                {
-                                                    decimal pickQty = availableQty;
-                                                    StockRM stock = db.StockRMs.Where(m => m.ID.Equals(stockAll.ID)).FirstOrDefault();
-                                                    stock.Quantity -= pickQty;
-                                                }
-                                                else if (product.ProdType.Equals("SFG"))
-                                                {
-                                                    decimal pickQty = availableQty;
-                                                    StockSFG stock = db.StockSFGs.Where(m => m.ID.Equals(stockAll.ID)).FirstOrDefault();
-                                                    stock.Quantity -= pickQty;
-                                                }
-                                            }                                       
-                                        }
-                                    }
-                                }
+                            //                    if (product.ProdType.Equals("RM"))
+                            //                    {
+                            //                        decimal pickQty = availableQty;
+                            //                        StockRM stock = db.StockRMs.Where(m => m.ID.Equals(stockAll.ID)).FirstOrDefault();
+                            //                        stock.Quantity -= pickQty;
+                            //                    }
+                            //                    else if (product.ProdType.Equals("SFG"))
+                            //                    {
+                            //                        decimal pickQty = availableQty;
+                            //                        StockSFG stock = db.StockSFGs.Where(m => m.ID.Equals(stockAll.ID)).FirstOrDefault();
+                            //                        stock.Quantity -= pickQty;
+                            //                    }
+                            //                }                                       
+                            //            }
+                            //        }
+                            //    }
 
-                                #endregion outbound
-                                #region inbound
+                            //    #endregion outbound
 
-                                //check destination
-                                //destination will create other inbound
-                                //if emix, create inbound status confirmed, putaway only
-                                //if outsource, create inbound status closed, autoputaway (update stock automatically)
+                            //    #region inbound
 
-                                if (!destination.Type.Equals("EMIX"))
-                                {
-                                    TransactionId = Helper.CreateGuid("IN");
+                            //    //check destination
+                            //    //destination will create other inbound
+                            //    //if emix, create inbound status confirmed, putaway only
+                            //    //if outsource, create inbound status closed, autoputaway (update stock automatically)
 
-                                    prefix = TransactionId.Substring(0, 2);
+                            //    if (!destination.Type.Equals("EMIX"))
+                            //    {
+                            //        TransactionId = Helper.CreateGuid("IN");
 
-                                    // get last number, and do increment.
-                                    lastNumber = db.InboundHeaders.AsQueryable().OrderByDescending(x => x.Code)
-                                        .Where(x => x.CreatedOn.Year.Equals(CreatedAt.Year) && x.CreatedOn.Month.Equals(CreatedAt.Month))
-                                        .AsEnumerable().Select(x => x.Code).FirstOrDefault();
-                                    currentNumber = 0;
+                            //        prefix = TransactionId.Substring(0, 2);
 
-                                    if (!string.IsNullOrEmpty(lastNumber))
-                                    {
-                                        currentNumber = Int32.Parse(lastNumber.Substring(lastNumber.Length - 3));
-                                    }
+                            //        // get last number, and do increment.
+                            //        lastNumber = db.InboundHeaders.AsQueryable().OrderByDescending(x => x.Code)
+                            //            .Where(x => x.CreatedOn.Year.Equals(CreatedAt.Year) && x.CreatedOn.Month.Equals(CreatedAt.Month))
+                            //            .AsEnumerable().Select(x => x.Code).FirstOrDefault();
+                            //        currentNumber = 0;
 
-                                    runningNumber = string.Format("{0:D3}", currentNumber + 1);
+                            //        if (!string.IsNullOrEmpty(lastNumber))
+                            //        {
+                            //            currentNumber = Int32.Parse(lastNumber.Substring(lastNumber.Length - 3));
+                            //        }
 
-                                    Code = string.Format("EIN-RMI/{0}/{1}/{2}/{3}", prefix, year, romanMonth, runningNumber);
+                            //        runningNumber = string.Format("{0:D3}", currentNumber + 1);
 
-                                    // Ref Number necessities
-                                    yearMonth = CreatedAt.Year.ToString() + month.ToString();
+                            //        Code = string.Format("EIN-RMI/{0}/{1}/{2}/{3}", prefix, year, romanMonth, runningNumber);
 
-                                    InboundHeader inbound = new InboundHeader
-                                    {
-                                        ID = TransactionId,
-                                        Code = Code,
-                                        Remarks = string.Format("Created from Material Request: {0}, Origin: {1}, Destination: {2}", purchaseRequestHeader.Code, origin.Code + " - " + origin.Name, destination.Code + " - " + destination.Name),
-                                        TransactionStatus = "CLOSED",
-                                        WarehouseCode = destination.Code,
-                                        WarehouseName = destination.Name,
-                                        CreatedBy = activeUser,
-                                        CreatedOn = CreatedAt,
-                                    };
+                            //        // Ref Number necessities
+                            //        yearMonth = CreatedAt.Year.ToString() + month.ToString();
 
-                                    db.InboundHeaders.Add(inbound);
+                            //        InboundHeader inbound = new InboundHeader
+                            //        {
+                            //            ID = TransactionId,
+                            //            Code = Code,
+                            //            Remarks = string.Format("Created from Material Request: {0}, Origin: {1}, Destination: {2}", purchaseRequestHeader.Code, origin.Code + " - " + origin.Name, destination.Code + " - " + destination.Name),
+                            //            TransactionStatus = "CLOSED",
+                            //            WarehouseCode = destination.Code,
+                            //            WarehouseName = destination.Name,
+                            //            CreatedBy = activeUser,
+                            //            CreatedOn = CreatedAt,
+                            //        };
 
-                                    //insert order
-                                    foreach (PurchaseRequestDetail prd in purchaseRequestHeader.PurchaseRequestDetails)
-                                    {
-                                        vProductMaster product = await db.vProductMasters.Where(m => m.MaterialCode.Equals(prd.MaterialCode)).FirstOrDefaultAsync();
-                                        if (product != null)
-                                        {
-                                            InboundOrder order = new InboundOrder()
-                                            {
-                                                ID = Helper.CreateGuid("Oo"),
-                                                InboundID = inbound.ID,
-                                                MaterialCode = product.MaterialCode,
-                                                MaterialName = product.MaterialName,
-                                                MaterialType = product.ProdType,
-                                                Qty = prd.Qty,
-                                                QtyPerBag = prd.QtyPerBag,
-                                                CreatedBy = activeUser,
-                                                CreatedOn = transactionDate
-                                            };
+                            //        db.InboundHeaders.Add(inbound);
 
-                                            db.InboundOrders.Add(order);
+                            //        //insert order
+                            //        foreach (PurchaseRequestDetail prd in purchaseRequestHeader.PurchaseRequestDetails)
+                            //        {
+                            //            vProductMaster product = await db.vProductMasters.Where(m => m.MaterialCode.Equals(prd.MaterialCode)).FirstOrDefaultAsync();
+                            //            if (product != null)
+                            //            {
+                            //                InboundOrder order = new InboundOrder()
+                            //                {
+                            //                    ID = Helper.CreateGuid("Oo"),
+                            //                    InboundID = inbound.ID,
+                            //                    MaterialCode = product.MaterialCode,
+                            //                    MaterialName = product.MaterialName,
+                            //                    MaterialType = product.ProdType,
+                            //                    Qty = prd.Qty,
+                            //                    QtyPerBag = prd.QtyPerBag,
+                            //                    CreatedBy = activeUser,
+                            //                    CreatedOn = transactionDate
+                            //                };
 
-                                            InboundReceive rec = new InboundReceive();
-                                            rec.ID = Helper.CreateGuid("Ir");
-                                            rec.InboundOrderID = order.ID;
-                                            rec.Qty = order.Qty;
-                                            rec.QtyPerBag = order.QtyPerBag;
-                                            rec.ReceivedBy = activeUser;
-                                            rec.ReceivedOn = DateTime.Now;
-                                            rec.LastSeries = 0;
+                            //                db.InboundOrders.Add(order);
 
-                                            db.InboundReceives.Add(rec);
+                            //                InboundReceive rec = new InboundReceive();
+                            //                rec.ID = Helper.CreateGuid("Ir");
+                            //                rec.InboundOrderID = order.ID;
+                            //                rec.Qty = order.Qty;
+                            //                rec.QtyPerBag = order.QtyPerBag;
+                            //                rec.ReceivedBy = activeUser;
+                            //                rec.ReceivedOn = DateTime.Now;
+                            //                rec.LastSeries = 0;
 
-                                            BinRack binRack = db.BinRacks.Where(m => m.WarehouseCode.Equals(destinationCode)).FirstOrDefault();
+                            //                db.InboundReceives.Add(rec);
 
-                                            decimal availableQty = order.Qty;
-                                            //check if have remainder
-                                            int bagQty = Convert.ToInt32(availableQty / order.QtyPerBag);
-                                            decimal remainder = availableQty - (bagQty * order.QtyPerBag);
+                            //                BinRack binRack = db.BinRacks.Where(m => m.WarehouseCode.Equals(destinationCode)).FirstOrDefault();
 
-                                            InboundPutaway putaway = new InboundPutaway();
-                                            putaway.ID = Helper.CreateGuid("Ip");
-                                            putaway.InboundReceiveID = rec.ID;
-                                            putaway.PutawayMethod = "MANUAL";
-                                            putaway.QtyPerBag = order.QtyPerBag;
-                                            putaway.PutOn = DateTime.Now;
-                                            putaway.PutBy = activeUser;
-                                            putaway.BinRackID = binRack.ID;
-                                            putaway.BinRackCode = binRack.Code;
-                                            putaway.BinRackName = binRack.Name;
-                                            putaway.PutawayQty = bagQty * order.QtyPerBag;
+                            //                decimal availableQty = order.Qty;
+                            //                //check if have remainder
+                            //                int bagQty = Convert.ToInt32(availableQty / order.QtyPerBag);
+                            //                decimal remainder = availableQty - (bagQty * order.QtyPerBag);
 
-                                            db.InboundPutaways.Add(putaway);
+                            //                InboundPutaway putaway = new InboundPutaway();
+                            //                putaway.ID = Helper.CreateGuid("Ip");
+                            //                putaway.InboundReceiveID = rec.ID;
+                            //                putaway.PutawayMethod = "MANUAL";
+                            //                putaway.QtyPerBag = order.QtyPerBag;
+                            //                putaway.PutOn = DateTime.Now;
+                            //                putaway.PutBy = activeUser;
+                            //                putaway.BinRackID = binRack.ID;
+                            //                putaway.BinRackCode = binRack.Code;
+                            //                putaway.BinRackName = binRack.Name;
+                            //                putaway.PutawayQty = bagQty * order.QtyPerBag;
 
-                                            if (remainder > 0)
-                                            {
-                                                putaway = new InboundPutaway();
-                                                putaway.ID = Helper.CreateGuid("Ip");
-                                                putaway.InboundReceiveID = rec.ID;
-                                                putaway.PutawayMethod = "MANUAL";
-                                                putaway.QtyPerBag = remainder;
-                                                putaway.PutOn = DateTime.Now;
-                                                putaway.PutBy = activeUser;
-                                                putaway.BinRackID = binRack.ID;
-                                                putaway.BinRackCode = binRack.Code;
-                                                putaway.BinRackName = binRack.Name;
-                                                putaway.PutawayQty = remainder;
+                            //                db.InboundPutaways.Add(putaway);
 
-                                                db.InboundPutaways.Add(putaway);
-                                            }
+                            //                if (remainder > 0)
+                            //                {
+                            //                    putaway = new InboundPutaway();
+                            //                    putaway.ID = Helper.CreateGuid("Ip");
+                            //                    putaway.InboundReceiveID = rec.ID;
+                            //                    putaway.PutawayMethod = "MANUAL";
+                            //                    putaway.QtyPerBag = remainder;
+                            //                    putaway.PutOn = DateTime.Now;
+                            //                    putaway.PutBy = activeUser;
+                            //                    putaway.BinRackID = binRack.ID;
+                            //                    putaway.BinRackCode = binRack.Code;
+                            //                    putaway.BinRackName = binRack.Name;
+                            //                    putaway.PutawayQty = remainder;
 
-                                            if (product.ProdType.Equals("RM"))
-                                            {
-                                                //insert to Stock if not exist, update quantity if barcode, indate and location is same
+                            //                    db.InboundPutaways.Add(putaway);
+                            //                }
 
-                                                StockRM stockRM = await db.StockRMs.Where(m => m.MaterialCode.Equals(product.MaterialCode) && m.BinRackCode.Equals(binRack.Code)).FirstOrDefaultAsync();
-                                                if (stockRM != null)
-                                                {
-                                                    stockRM.Quantity += availableQty;
-                                                }
-                                                else
-                                                {
-                                                    stockRM = new StockRM();
-                                                    stockRM.ID = Helper.CreateGuid("S");
-                                                    stockRM.Code = product.MaterialCode;
-                                                    stockRM.MaterialCode = product.MaterialCode;
-                                                    stockRM.MaterialName = product.MaterialName;
-                                                    stockRM.Quantity = availableQty;
-                                                    stockRM.QtyPerBag = order.QtyPerBag;
-                                                    stockRM.BinRackID = binRack.ID;
-                                                    stockRM.BinRackCode = binRack.Code;
-                                                    stockRM.BinRackName = binRack.Name;
-                                                    stockRM.ReceivedAt = DateTime.Now;
+                            //                if (product.ProdType.Equals("RM"))
+                            //                {
+                            //                    //insert to Stock if not exist, update quantity if barcode, indate and location is same
 
-                                                    db.StockRMs.Add(stockRM);
-                                                }
-                                            }
-                                            else
-                                            {
-                                                //insert to Stock if not exist, update quantity if barcode, indate and location is same
+                            //                    StockRM stockRM = await db.StockRMs.Where(m => m.MaterialCode.Equals(product.MaterialCode) && m.BinRackCode.Equals(binRack.Code)).FirstOrDefaultAsync();
+                            //                    if (stockRM != null)
+                            //                    {
+                            //                        stockRM.Quantity += availableQty;
+                            //                    }
+                            //                    else
+                            //                    {
+                            //                        stockRM = new StockRM();
+                            //                        stockRM.ID = Helper.CreateGuid("S");
+                            //                        stockRM.Code = product.MaterialCode;
+                            //                        stockRM.MaterialCode = product.MaterialCode;
+                            //                        stockRM.MaterialName = product.MaterialName;
+                            //                        stockRM.Quantity = availableQty;
+                            //                        stockRM.QtyPerBag = order.QtyPerBag;
+                            //                        stockRM.BinRackID = binRack.ID;
+                            //                        stockRM.BinRackCode = binRack.Code;
+                            //                        stockRM.BinRackName = binRack.Name;
+                            //                        stockRM.ReceivedAt = DateTime.Now;
 
-                                                StockSFG stockSFG = await db.StockSFGs.Where(m => m.MaterialCode.Equals(product.MaterialCode) && m.BinRackCode.Equals(binRack.Code)).FirstOrDefaultAsync();
-                                                if (stockSFG != null)
-                                                {
-                                                    stockSFG.Quantity += availableQty;
-                                                }
-                                                else
-                                                {
-                                                    stockSFG = new StockSFG();
-                                                    stockSFG.ID = Helper.CreateGuid("S");
-                                                    stockSFG.Code = product.MaterialCode;
-                                                    stockSFG.MaterialCode = product.MaterialCode;
-                                                    stockSFG.MaterialName = product.MaterialName;
-                                                    stockSFG.Quantity = availableQty;
-                                                    stockSFG.QtyPerBag = order.QtyPerBag;
-                                                    stockSFG.BinRackID = binRack.ID;
-                                                    stockSFG.BinRackCode = binRack.Code;
-                                                    stockSFG.BinRackName = binRack.Name;
-                                                    stockSFG.ReceivedAt = DateTime.Now;
+                            //                        db.StockRMs.Add(stockRM);
+                            //                    }
+                            //                }
+                            //                else
+                            //                {
+                            //                    //insert to Stock if not exist, update quantity if barcode, indate and location is same
 
-                                                    db.StockSFGs.Add(stockSFG);
-                                                }
-                                            }
+                            //                    StockSFG stockSFG = await db.StockSFGs.Where(m => m.MaterialCode.Equals(product.MaterialCode) && m.BinRackCode.Equals(binRack.Code)).FirstOrDefaultAsync();
+                            //                    if (stockSFG != null)
+                            //                    {
+                            //                        stockSFG.Quantity += availableQty;
+                            //                    }
+                            //                    else
+                            //                    {
+                            //                        stockSFG = new StockSFG();
+                            //                        stockSFG.ID = Helper.CreateGuid("S");
+                            //                        stockSFG.Code = product.MaterialCode;
+                            //                        stockSFG.MaterialCode = product.MaterialCode;
+                            //                        stockSFG.MaterialName = product.MaterialName;
+                            //                        stockSFG.Quantity = availableQty;
+                            //                        stockSFG.QtyPerBag = order.QtyPerBag;
+                            //                        stockSFG.BinRackID = binRack.ID;
+                            //                        stockSFG.BinRackCode = binRack.Code;
+                            //                        stockSFG.BinRackName = binRack.Name;
+                            //                        stockSFG.ReceivedAt = DateTime.Now;
 
-                                        }
-                                    }
-                                }
+                            //                        db.StockSFGs.Add(stockSFG);
+                            //                    }
+                            //                }
+                            //            }
+                            //        }
+                            //    }
 
-
-                                #endregion inbound
-
-
-                            }
+                            //    #endregion inbound
+                            //}
 
                         }
-                        //commented by bhov
-                        //if (noStockls[0] != null)
-                        //{
-                        //    int idxC = 1;
-                        //    string msg = "No stock available for material code below. Please remove row from list.<br />";
-                        //    foreach (var item in noStockls)
-                        //    {
-                        //        if (item != null)
-                        //        {
-                        //            msg += idxC.ToString() + ". " + item + "<br />";
-                        //            idxC++;
-                        //        }
-
-                        //    }
-                        //    throw new Exception(msg);
-                        //}
                         await db.SaveChangesAsync();
                         status = true;
                     }
@@ -2535,7 +2243,6 @@ namespace WMS_BE.Controllers.Api
                     header.ModifiedBy = activeUser;
                     header.RefNumber = dataVM.RefNumber;
 
-
                     string[] detailList = header.PurchaseRequestDetails.Where(m => m.HeaderID.Equals(header.ID)).Select(x => x.ID).ToArray();
 
                     var receivings = db.Receivings.Where(m => detailList.Contains(m.PurchaseRequestID)).ToList();
@@ -2683,7 +2390,6 @@ namespace WMS_BE.Controllers.Api
             return Ok(obj);
         }
 
-
         [HttpPost]
         public async Task<IHttpActionResult> DatatableCustomer()
         {
@@ -2740,7 +2446,6 @@ namespace WMS_BE.Controllers.Api
 
                 recordsFiltered = list.Count();
 
-
                 list = list.Skip(start).Take(length).ToList();
 
                 if (list != null && list.Count() > 0)
@@ -2790,7 +2495,6 @@ namespace WMS_BE.Controllers.Api
 
             return Ok(obj);
         }
-
 
         [HttpPost]
         public async Task<IHttpActionResult> DatatableWarehouse()
@@ -3087,91 +2791,5 @@ namespace WMS_BE.Controllers.Api
 
             return Ok(obj);
         }
-
-        //[HttpPost]
-        //public async Task<IHttpActionResult> UpdateBagQty(PurchaseRequestDetailVM dataVM)
-        //{
-        //    Dictionary<string, object> obj = new Dictionary<string, object>();
-        //    List<CustomValidationMessage> customValidationMessages = new List<CustomValidationMessage>();
-
-        //    string message = "";
-        //    bool status = false;
-        //    var re = Request;
-        //    var headers = re.Headers;
-
-        //    try
-        //    {
-        //        string token = "";
-
-        //        if (headers.Contains("token"))
-        //        {
-        //            token = headers.GetValues("token").First();
-        //        }
-
-        //        string activeUser = await db.Users.Where(x => x.Token.Equals(token) && x.IsActive).Select(x => x.Username).FirstOrDefaultAsync();
-
-        //        if (activeUser != null)
-        //        {
-        //            if (string.IsNullOrEmpty(dataVM.ID))
-        //            {
-        //                throw new Exception("Material Request Detail ID is required.");
-        //            }
-        //            if (dataVM.Qty == 0)
-        //            {
-        //                throw new Exception("Material Request Qty is required.");
-        //            }
-
-        //            PurchaseRequestDetail detail = await db.PurchaseRequestDetails.Where(s => s.ID.Equals(dataVM.ID)).SingleOrDefaultAsync();
-
-        //            if (detail == null)
-        //            {
-        //                throw new Exception("Material Request Detail is not recognized.");
-        //            }
-        //            var receiving = detail.Receivings.Where(d => d.MaterialCode == detail.MaterialCode).SingleOrDefault();
-
-        //            if (dataVM.Qty < receiving.ReceivingDetails.Sum(x => x.Qty))
-        //            {
-        //                throw new Exception("Amount of Material Request Quantity cannot lower than material request that have been received.");
-        //            }
-        //            detail.Qty = dataVM.Qty;
-        //            receiving.Qty = dataVM.Qty;
-        //            decimal totalReceive = receiving.Qty;
-        //            var receivingDetails = receiving.ReceivingDetails.Where(x => x.HeaderID == receiving.ID);
-        //            decimal totalPutaway = receivingDetails.Sum(i => i.Putaways.Sum(x => x.PutawayQty));
-
-        //            if (totalReceive == totalPutaway)
-        //            {
-        //                receiving.TransactionStatus = "CLOSED";
-        //            }
-        //            await db.SaveChangesAsync();
-
-        //            status = true;
-        //            message = "Update Qty succeeded.";
-
-        //        }
-        //        else
-        //        {
-        //            message = "Token is no longer valid. Please re-login.";
-        //        }
-        //    }
-        //    catch (HttpRequestException reqpEx)
-        //    {
-        //        message = reqpEx.Message;
-        //    }
-        //    catch (HttpResponseException respEx)
-        //    {
-        //        message = respEx.Message;
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        message = ex.Message;
-        //    }
-
-        //    obj.Add("status", status);
-        //    obj.Add("message", message);
-        //    obj.Add("error_validation", customValidationMessages);
-
-        //    return Ok(obj);
-        //}
     }
 }

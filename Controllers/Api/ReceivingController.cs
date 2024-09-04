@@ -32,7 +32,6 @@ namespace WMS_BE.Controllers.Api
     {
         private EIN_WMSEntities db = new EIN_WMSEntities();
 
-
         [System.Web.Http.HttpPost]
         public async Task<IHttpActionResult> Datatable()
         {
@@ -59,8 +58,6 @@ namespace WMS_BE.Controllers.Api
             DateTime filterDate = Convert.ToDateTime(date);
             IQueryable<Receiving> query;
 
-
-
             if (!string.IsNullOrEmpty(sourceType))
             {
                 query = db.Receivings.Where(s => DbFunctions.TruncateTime(s.ETA) <= DbFunctions.TruncateTime(filterDate)
@@ -76,7 +73,6 @@ namespace WMS_BE.Controllers.Api
             }
 
             int recordsTotal = query.Count();
-
             int recordsFiltered = 0;
 
             try
@@ -222,10 +218,6 @@ namespace WMS_BE.Controllers.Api
             }
 
             int recordsTotal = query.Count();
-
-            //IQueryable<ReceivingDetail> query = db.ReceivingDetails.Where(s => s.HeaderID.Equals("")).AsQueryable();
-
-            //int recordsTotal = db.ReceivingDetails.Where(s => s.HeaderID.Equals("")).Count();
             int recordsFiltered = 0;
 
             try
@@ -493,7 +485,6 @@ namespace WMS_BE.Controllers.Api
             Dictionary<string, object> obj = new Dictionary<string, object>();
             string message = "";
             bool status = false;
-
 
             IEnumerable<vReceivingReport3> list = Enumerable.Empty<vReceivingReport3>();
             IEnumerable<ReceivingDetailDTOReport3> pagedData = Enumerable.Empty<ReceivingDetailDTOReport3>();
@@ -877,7 +868,6 @@ namespace WMS_BE.Controllers.Api
             return Ok(obj);
         }
 
-
         [HttpGet]
         public async Task<IHttpActionResult> GetDataReportReceiving3(string date, string warehouse, string sourcetype)
         {
@@ -1033,12 +1023,10 @@ namespace WMS_BE.Controllers.Api
                 }
 
                 Receiving receiving = await db.Receivings.Where(m => m.ID.Equals(id)).FirstOrDefaultAsync();
-
                 if (receiving == null)
                 {
                     throw new Exception("Data not found.");
                 }
-
 
                 receivingDTO = new ReceivingDTO
                 {
@@ -1062,7 +1050,6 @@ namespace WMS_BE.Controllers.Api
                 };
 
                 RawMaterial rm = await db.RawMaterials.Where(s => s.MaterialCode.Equals(receiving.MaterialCode)).FirstOrDefaultAsync();
-
                 receivingDTO.UoM2 = "KG";
 
                 decimal Qty2 = 0;
@@ -1093,18 +1080,13 @@ namespace WMS_BE.Controllers.Api
 
                 AvailableBagQty = Convert.ToInt32(AvailableQty / QtyPerBag);
 
-
                 receivingDTO.ReceivedQty = Helper.FormatThousand(ReceivedQty);
                 receivingDTO.ReceivedBagQty = Helper.FormatThousand(ReceivedBagQty);
-
-
 
                 receivingDTO.AvailableQty = Helper.FormatThousand(AvailableQty);
                 receivingDTO.AvailableBagQty = Helper.FormatThousand(AvailableBagQty);
 
-
                 receivingDTO.DefaultLot = DateTime.Now.ToString("yyyMMdd").Substring(1);
-
 
                 status = true;
                 message = "Fetch data succeded.";
@@ -1248,7 +1230,6 @@ namespace WMS_BE.Controllers.Api
                 cols.Add("COA", x => x.COA);
                 cols.Add("ReceivedBy", x => x.ReceivedBy);
                 cols.Add("ReceivedOn", x => x.ReceivedOn);
-
 
                 if (sortDirection.Equals("asc"))
                     list = query.OrderBy(cols[sortName]);
@@ -1476,7 +1457,6 @@ namespace WMS_BE.Controllers.Api
 
                     lastSeries = startSeries + BagQty - 1;
 
-
                     receivingDetail.LastSeries = lastSeries;
 
                     db.ReceivingDetails.Add(receivingDetail);
@@ -1501,8 +1481,6 @@ namespace WMS_BE.Controllers.Api
 
                     db.LogPrintRMs.Add(logPrintRM);
 
-
-
                     receiving.TransactionStatus = "PROGRESS";
                     if (receiving.PurchaseRequestDetail.PurchaseRequestHeader.DestinationCode == "2003" || receiving.PurchaseRequestDetail.PurchaseRequestHeader.DestinationCode == "2004")
                     {
@@ -1517,10 +1495,6 @@ namespace WMS_BE.Controllers.Api
                         putaway.ID = Helper.CreateGuid("P");
                         putaway.ReceivingDetailID = receivingDetail.ID;
                         putaway.PutawayMethod = "MANUAL";
-
-                        //TokenDate tokenDate = await db.TokenDates.Where(m => m.Token.Equals(token)).FirstOrDefaultAsync();
-                        //DateTime now = DateTime.Now;
-                        //DateTime transactionDate = new DateTime(tokenDate.LoginDate.Year, tokenDate.LoginDate.Month, tokenDate.LoginDate.Day, now.Hour, now.Minute, now.Second);
                         putaway.PutOn = transactionDate;
                         putaway.PutBy = activeUser;
                         putaway.BinRackID = binRack.ID;
@@ -1564,6 +1538,7 @@ namespace WMS_BE.Controllers.Api
                         //{
                         //    throw new Exception("Stock is not found.");
                         //}
+
                         //if (stockAll.Type.Equals("RM"))
                         //{
                         //    decimal pickQty = putaway.PutawayQty;
@@ -1691,7 +1666,6 @@ namespace WMS_BE.Controllers.Api
 
                     status = true;
                     message = "Receiving succeeded.";
-
                 }
                 else
                 {
@@ -1870,9 +1844,7 @@ namespace WMS_BE.Controllers.Api
 
                     lastSeries = startSeries + BagQty - 1;
 
-
                     receivingDetail.LastSeries = lastSeries;
-
 
                     //add to Log Print RM
                     LogPrintRM logPrintRM = new LogPrintRM();
@@ -1894,8 +1866,6 @@ namespace WMS_BE.Controllers.Api
 
                     db.LogPrintRMs.Add(logPrintRM);
 
-
-
                     receiving.TransactionStatus = "PROGRESS";
                     if (receiving.PurchaseRequestDetail.PurchaseRequestHeader.DestinationCode == "2003" || receiving.PurchaseRequestDetail.PurchaseRequestHeader.DestinationCode == "2004")
                     {
@@ -1910,10 +1880,6 @@ namespace WMS_BE.Controllers.Api
                         putaway.ID = Helper.CreateGuid("P");
                         putaway.ReceivingDetailID = receivingDetail.ID;
                         putaway.PutawayMethod = "MANUAL";
-
-                        //TokenDate tokenDate = await db.TokenDates.Where(m => m.Token.Equals(token)).FirstOrDefaultAsync();
-                        //DateTime now = DateTime.Now;
-                        //DateTime transactionDate = new DateTime(tokenDate.LoginDate.Year, tokenDate.LoginDate.Month, tokenDate.LoginDate.Day, now.Hour, now.Minute, now.Second);
                         putaway.PutOn = transactionDate;
                         putaway.PutBy = activeUser;
                         putaway.BinRackID = binRack.ID;
@@ -1978,13 +1944,10 @@ namespace WMS_BE.Controllers.Api
                         receiving.TransactionStatus = "CLOSED";
                     }
 
-
                     await db.SaveChangesAsync();
-
 
                     status = true;
                     message = "Edit Receiving succeeded.";
-
                 }
                 else
                 {
@@ -2010,7 +1973,6 @@ namespace WMS_BE.Controllers.Api
 
             return Ok(obj);
         }
-
 
         [HttpPost]
         public async Task<IHttpActionResult> UpdateCOA(CoaVM coaVM)
@@ -2165,7 +2127,6 @@ namespace WMS_BE.Controllers.Api
                         }
                     }
 
-
                     if (!ModelState.IsValid)
                     {
                         foreach (var state in ModelState)
@@ -2206,13 +2167,10 @@ namespace WMS_BE.Controllers.Api
 
                     receivingDetail.NGQty = NGBagQty * receivingDetail.QtyPerBag;
 
-
-
                     int startSeries = receivingDetail.LastSeries - Convert.ToInt32(receivingDetail.Qty / receivingDetail.QtyPerBag);
                     //insert to inspection log
 
                     int OKBagQty = Convert.ToInt32(inspectionVM.OKBagQty);
-
 
                     Inspection inspection = new Inspection();
                     inspection.ID = Helper.CreateGuid("I");
@@ -2233,7 +2191,6 @@ namespace WMS_BE.Controllers.Api
 
                     status = true;
                     message = "Inspection succeeded.";
-
                 }
                 else
                 {
@@ -2295,7 +2252,6 @@ namespace WMS_BE.Controllers.Api
                         //check status already closed
                     }
 
-
                     if (judgementVM.OKBagQty <= 0)
                     {
                         ModelState.AddModelError("Receiving.JudgementQTY", "Bag Qty can not be empty or below zero.");
@@ -2309,7 +2265,6 @@ namespace WMS_BE.Controllers.Api
                         }
                     }
 
-
                     if (!ModelState.IsValid)
                     {
                         foreach (var state in ModelState)
@@ -2322,14 +2277,11 @@ namespace WMS_BE.Controllers.Api
                         throw new Exception("Input is not valid");
                     }
 
-
                     int lastSeries = await db.Judgements.Where(m => m.ReceivingDetailID.Equals(receivingDetail.ID)).OrderByDescending(m => m.JudgeOn).Select(m => m.LastSeries).FirstOrDefaultAsync();
                     if (lastSeries == 0)
                     {
                         lastSeries = await db.Inspections.Where(m => m.ReceivingDetailID.Equals(receivingDetail.ID)).OrderByDescending(m => m.InspectedOn).Select(m => m.LastSeries).FirstOrDefaultAsync();
                     }
-
-
 
                     lastSeries += judgementVM.OKBagQty;
 
@@ -2350,14 +2302,12 @@ namespace WMS_BE.Controllers.Api
 
                     db.Judgements.Add(judgement);
 
-
                     receivingDetail.NGQty -= judgement.JudgementQty;
 
                     await db.SaveChangesAsync();
 
                     status = true;
                     message = "Judgement succeeded.";
-
                 }
                 else
                 {

@@ -95,7 +95,6 @@ namespace WMS_BE.Controllers.Api
                     list.AddRange(data.ToList());
                 }
 
-
                 status = true;
                 message = "Fetch data succeded.";
 
@@ -285,7 +284,6 @@ namespace WMS_BE.Controllers.Api
                             }
                             catch (Exception e)
                             {
-
                             }
                         }
 
@@ -299,7 +297,6 @@ namespace WMS_BE.Controllers.Api
                             }
                             catch (Exception e)
                             {
-
                             }
                         }
                         string qr2 = data.MaterialCode.PadRight(7) + inDate + expiredDate;
@@ -1120,7 +1117,6 @@ namespace WMS_BE.Controllers.Api
             return Ok(obj);
         }
 
-
         [HttpGet]
         public async Task<IHttpActionResult> GetDetailById(string id)
         {
@@ -1281,7 +1277,6 @@ namespace WMS_BE.Controllers.Api
 
 
                     NGBagQty = (Convert.ToInt32(receivingDetail.Qty / receivingDetail.QtyPerBag)) - req.OKBagQty;
-
                     remarkNGQty = req.DamageQty + req.WetQty + req.ContaminationQty;
 
                     string remarks = "";
