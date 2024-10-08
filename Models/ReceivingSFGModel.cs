@@ -38,7 +38,7 @@ namespace WMS_BE.Models
         public decimal NGBagQty { get; set; }
         public decimal AvailableQty { get; set; }
         public decimal AvailableReceive { get; set; }
-        public decimal xAvailableReceive { get; set; }        
+        public decimal xAvailableReceive { get; set; }
         public decimal AvailableBagQty { get; set; }
         public string UoM { get; set; }
         public DateTime ATA { get; set; }
@@ -63,6 +63,7 @@ namespace WMS_BE.Models
         public string PutawayMethod { get; set; }
         public string PutBy { get; set; }
         public DateTime PutOn { get; set; }
+        public decimal QtyTotal { get; set; }
     }
 
     public class ReceivingSFGList

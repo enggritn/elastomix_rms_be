@@ -472,6 +472,9 @@
     <Compile Include="Models\RawMaterial.cs">
       <DependentUpon>AppModels.tt</DependentUpon>
     </Compile>
+    <Compile Include="Models\ReceiveIssueSummary3.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
     <Compile Include="Models\Receiving.cs">
       <DependentUpon>AppModels.tt</DependentUpon>
     </Compile>
@@ -575,6 +578,9 @@
       <DependentUpon>AppModels.tt</DependentUpon>
     </Compile>
     <Compile Include="Models\vCustomerSupplier.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vDataInOutSummary.cs">
       <DependentUpon>AppModels.tt</DependentUpon>
     </Compile>
     <Compile Include="Models\vIssueSlipOrder.cs">

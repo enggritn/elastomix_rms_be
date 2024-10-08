@@ -366,6 +366,18 @@ namespace WMS_BE.Controllers.Api
 
                             printers.Add(printer);
 
+                            printer = new PrinterDTO();
+                            printer.PrinterIP = ConfigurationManager.AppSettings["printer_3_ip"].ToString();
+                            printer.PrinterName = ConfigurationManager.AppSettings["printer_3_name"].ToString();
+
+                            printers.Add(printer);
+
+                            printer = new PrinterDTO();
+                            printer.PrinterIP = ConfigurationManager.AppSettings["printer_4_ip"].ToString();
+                            printer.PrinterName = ConfigurationManager.AppSettings["printer_4_name"].ToString();
+
+                            printers.Add(printer);
+
                             string folder_name = "";
                             foreach (PrinterDTO printerDTO in printers)
                             {
@@ -377,7 +389,7 @@ namespace WMS_BE.Controllers.Api
 
                             string file_name = string.Format("{0}.pdf", DateTime.Now.ToString("yyyyMMddHHmmss"));
 
-                            using (Stream fileStream = new FileStream(string.Format(@"C:\RMI_PRINTER\{0}\{1}", folder_name, file_name), FileMode.CreateNew))
+                            using (Stream fileStream = new FileStream(string.Format(@"C:\RMI_PRINTER_SERVICE\{0}\{1}", folder_name, file_name), FileMode.CreateNew))
                             {
                                 output.CopyTo(fileStream);
                             }

@@ -145,5 +145,66 @@ namespace WMS_BE.Controllers.Api
             return Ok(obj);
         }
 
+
+        [HttpGet]
+        public async Task<IHttpActionResult> ListPrinterWeb()
+        {
+            Dictionary<string, object> obj = new Dictionary<string, object>();
+            string message = "";
+            bool status = false;
+            HttpRequest request = HttpContext.Current.Request;
+
+            try
+            {
+                List<PrinterDTO> printers = new List<PrinterDTO>();
+
+                PrinterDTO printer = new PrinterDTO();
+                printer.PrinterIP = ConfigurationManager.AppSettings["printer_1_ip"].ToString();
+                printer.PrinterName = ConfigurationManager.AppSettings["printer_1_name"].ToString();
+
+                printers.Add(printer);
+
+                printer = new PrinterDTO();
+                printer.PrinterIP = ConfigurationManager.AppSettings["printer_2_ip"].ToString();
+                printer.PrinterName = ConfigurationManager.AppSettings["printer_2_name"].ToString();
+
+                printers.Add(printer);
+
+                printer = new PrinterDTO();
+                printer.PrinterIP = ConfigurationManager.AppSettings["printer_3_ip"].ToString();
+                printer.PrinterName = ConfigurationManager.AppSettings["printer_3_name"].ToString();
+
+                printers.Add(printer);
+
+                printer = new PrinterDTO();
+                printer.PrinterIP = ConfigurationManager.AppSettings["printer_4_ip"].ToString();
+                printer.PrinterName = ConfigurationManager.AppSettings["printer_4_name"].ToString();
+
+                printers.Add(printer);
+                obj.Add("printers", printers);
+                status = true;
+                message = "Printer found.";
+            }
+            catch (HttpRequestException reqpEx)
+            {
+                message = reqpEx.Message;
+                return BadRequest();
+            }
+            catch (HttpResponseException respEx)
+            {
+                message = respEx.Message;
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
+
+
+            obj.Add("status", status);
+            obj.Add("message", message);
+
+            return Ok(obj);
+        }
     }
 }

@@ -150,6 +150,13 @@ namespace WMS_BE.Models
         public decimal Qty { get; set; }
     }
 
+    public class IssueSlipReturnVM2
+    {
+        public string OrderID { get; set; }
+        public string StockCode { get; set; }
+        public decimal Qty { get; set; }
+        public string LotNo { get; set; }
+    }
     public class IssueSlipReturnDTO
     {
         public string RowNum { get; set; }
@@ -232,6 +239,17 @@ namespace WMS_BE.Models
         public string ReturnQty { get; set; }
         public string ToBinRackCode { get; set; }
         public string PutBy { get; set; }
+    }
+
+    public class DataInOutDTOReport
+    {
+        public string ItemCode { get; set; }
+        public string Date { get; set; }
+        public string UserHanheld { get; set; }
+        public string Type { get; set; }
+        public string ReceiveQty { get; set; }
+        public string IssueSlipQty { get; set; }
+        public string BalanceQty { get; set; }
     }
 
     //public class IssueSlipListDTO

@@ -2166,7 +2166,7 @@ namespace WMS_BE.Controllers.Api
 
                             string file_name = string.Format("{0}.pdf", DateTime.Now.ToString("yyyyMMddHHmmss"));
 
-                            using (Stream fileStream = new FileStream(string.Format(@"C:\RMI_PRINTER\{0}\{1}", folder_name, file_name), FileMode.CreateNew))
+                            using (Stream fileStream = new FileStream(string.Format(@"C:\RMI_PRINTER_SERVICE\{0}\{1}", folder_name, file_name), FileMode.CreateNew))
                             {
                                 output.CopyTo(fileStream);
                             }

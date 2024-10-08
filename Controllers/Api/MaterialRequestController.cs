@@ -399,7 +399,7 @@ namespace WMS_BE.Controllers.Api
             string[] warehouseCodes = { };
             if (!wh.Type.Equals("EMIX"))
             {
-                warehouseCodes = new string[1]{warehouseCode};
+                warehouseCodes = new string[1] { warehouseCode };
             }
             else
             {
@@ -1380,7 +1380,7 @@ namespace WMS_BE.Controllers.Api
                                 string[] warehouseCodes = { };
                                 if (!wh.Type.Equals("EMIX"))
                                 {
-                                    warehouseCodes = new string[1]{purchaseRequestHeader.SourceCode};
+                                    warehouseCodes = new string[1] { purchaseRequestHeader.SourceCode };
                                 }
                                 else
                                 {
@@ -1400,7 +1400,7 @@ namespace WMS_BE.Controllers.Api
                                     ModelState.AddModelError("PurchaseRequest.Qty", string.Format("Total Qty exceeded. Available Qty : {0}", Helper.FormatThousand(availableQty)));
                                 }
                             }
-                        }                     
+                        }
                     }
 
 
@@ -1759,7 +1759,7 @@ namespace WMS_BE.Controllers.Api
                                         db.ReceivingSFGs.Add(receiving);
                                     }
                                 }
-                             }
+                            }
 
                             // pemotongan stock sourcenya dipindahin kembali ke saat receive
                             ////if type outsource
@@ -2622,7 +2622,7 @@ namespace WMS_BE.Controllers.Api
                     RequestBagQty = Helper.FormatThousand(vMaterialRequestDetail.RequestBagQty),
                     ReceivedBagQty = Helper.FormatThousand(vMaterialRequestDetail.ReceivedBagQty),
                 };
-              
+
                 status = true;
                 message = "Fetch data succeded.";
 
@@ -2673,7 +2673,7 @@ namespace WMS_BE.Controllers.Api
 
                 if (activeUser != null)
                 {
-                    PurchaseRequestDetail requestDetail = null;                    
+                    PurchaseRequestDetail requestDetail = null;
                     if (string.IsNullOrEmpty(purchaseRequestDetailVM.ID))
                     {
                         throw new Exception("Detail ID is required.");
@@ -2750,11 +2750,12 @@ namespace WMS_BE.Controllers.Api
                     //otomatis close apabila request dan received qty sudah sama, dan received qty sudah sama dengan putaway qty
                     if (purchaseRequestDetailVM.Qty == vMaterialRequestDetail.ReceivedBagQty)
                     {
-                        if(vMaterialRequestDetail.ReceivedBagQty == vMaterialRequestDetail.PutawayBagQty)
+                        if (vMaterialRequestDetail.ReceivedBagQty == vMaterialRequestDetail.PutawayBagQty)
                         {
                             receiving.TransactionStatus = "CLOSED";
                         }
-                    } else if (purchaseRequestDetailVM.Qty > vMaterialRequestDetail.ReceivedBagQty)
+                    }
+                    else if (purchaseRequestDetailVM.Qty > vMaterialRequestDetail.ReceivedBagQty)
                     {
                         if (purchaseRequestDetailVM.Qty > vMaterialRequestDetail.PutawayBagQty)
                         {

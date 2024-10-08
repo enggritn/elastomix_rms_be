@@ -229,7 +229,7 @@ namespace WMS_BE.Controllers.Api
                         );
 
                 Dictionary<string, Func<ReceivingDetail, object>> cols = new Dictionary<string, Func<ReceivingDetail, object>>();
-                cols.Add("SourceName", x => x.Receiving.PurchaseRequestDetail.PurchaseRequestHeader.SourceName); 
+                cols.Add("SourceName", x => x.Receiving.PurchaseRequestDetail.PurchaseRequestHeader.SourceName);
                 cols.Add("DocumentNo", x => x.Receiving.PurchaseRequestDetail.PurchaseRequestHeader.Code);
                 cols.Add("MaterialCode", x => x.Receiving.MaterialCode);
                 cols.Add("MaterialName", x => x.Receiving.MaterialName);
@@ -259,6 +259,7 @@ namespace WMS_BE.Controllers.Api
 
                 if (list != null && list.Count() > 0)
                 {
+                    var now = DateTime.Now;
 
                     pagedData = from detail in list
                                 select new ReceivingDetailDTO
@@ -294,7 +295,7 @@ namespace WMS_BE.Controllers.Api
                                     PutawayAvailableQty = Helper.FormatThousand((detail.Qty - detail.NGQty) - detail.Putaways.Sum(i => i.PutawayQty)),
                                     PutawayAvailableBagQty = Helper.FormatThousand(Convert.ToInt32(((detail.Qty - detail.NGQty) - detail.Putaways.Sum(i => i.PutawayQty)) / detail.QtyPerBag)),
                                     DestinationCode = detail.Receiving.PurchaseRequestDetail.PurchaseRequestHeader.DestinationCode,
-                                    EditAction = detail.Putaways.Sum(i => i.PutawayQty) == 0
+                                    EditAction = detail.Putaways.Sum(i => i.PutawayQty) == 0 && (detail.ReceivedOn == null || (now - detail.ReceivedOn).TotalHours >= 24)
                                 };
                 }
 
@@ -637,8 +638,8 @@ namespace WMS_BE.Controllers.Api
             }
 
             IEnumerable<ReceivingDetail> list = Enumerable.Empty<ReceivingDetail>();
-            IEnumerable<ReceivingDetailDTO> pagedData = Enumerable.Empty<ReceivingDetailDTO>(); 
-            
+            IEnumerable<ReceivingDetailDTO> pagedData = Enumerable.Empty<ReceivingDetailDTO>();
+
             DateTime filterDate = Convert.ToDateTime(date);
             IQueryable<ReceivingDetail> query;
 
@@ -657,7 +658,7 @@ namespace WMS_BE.Controllers.Api
                 }
                 else if (!string.IsNullOrEmpty(warehouse))
                 {
-                    query = db.ReceivingDetails.Where(s => DbFunctions.TruncateTime(s.ATA) == DbFunctions.TruncateTime(filterDate)                    
+                    query = db.ReceivingDetails.Where(s => DbFunctions.TruncateTime(s.ATA) == DbFunctions.TruncateTime(filterDate)
                             && s.Receiving.PurchaseRequestDetail.PurchaseRequestHeader.SourceCode.Equals(warehouse));
                 }
                 else
@@ -1242,6 +1243,7 @@ namespace WMS_BE.Controllers.Api
 
                 if (list != null && list.Count() > 0)
                 {
+                    var now = DateTime.Now;
 
                     pagedData = from detail in list
                                 select new ReceivingDetailDTO
@@ -1274,7 +1276,7 @@ namespace WMS_BE.Controllers.Api
                                     PutawayAvailableQty = Helper.FormatThousand((detail.Qty - detail.NGQty) - detail.Putaways.Sum(i => i.PutawayQty)),
                                     PutawayAvailableBagQty = Helper.FormatThousand(Convert.ToInt32(((detail.Qty - detail.NGQty) - detail.Putaways.Sum(i => i.PutawayQty)) / detail.QtyPerBag)),
                                     DestinationCode = detail.Receiving.PurchaseRequestDetail.PurchaseRequestHeader.DestinationCode,
-                                    EditAction = detail.Putaways.Sum(i => i.PutawayQty) == 0
+                                    EditAction = detail.Putaways.Sum(i => i.PutawayQty) == 0 && (detail.ReceivedOn == null || (now - detail.ReceivedOn).TotalHours <= 24)
                                 };
                 }
 
@@ -1591,8 +1593,8 @@ namespace WMS_BE.Controllers.Api
                                             stockrm.Quantity = stockrmqty;
                                             countqty = countqty - stockrmqty;
                                         }
-                                        else 
-                                        { 
+                                        else
+                                        {
                                             if (stockrm.Quantity > countqty)
                                             {
                                                 stockrm.Quantity = stockrm.Quantity - countqty;
@@ -1611,8 +1613,8 @@ namespace WMS_BE.Controllers.Api
                                                     countqty = countqty - (pickQty - stockrm.Quantity);
                                                 }
                                             }
-                                        }                                        
-                                    }                                    
+                                        }
+                                    }
                                 }
                                 else if (stock.Type.Equals("SFG"))
                                 {
@@ -1658,7 +1660,7 @@ namespace WMS_BE.Controllers.Api
                                         }
                                     }
                                 }
-                            }                               
+                            }
                         }
                     }
 
@@ -1728,7 +1730,7 @@ namespace WMS_BE.Controllers.Api
                     }
 
                     ReceivingDetail receivingDetail = db.ReceivingDetails.Where(s => s.ID.Equals(receivingDetailVM.ID)).FirstOrDefault();
-                    if(receivingDetail == null)
+                    if (receivingDetail == null)
                     {
                         throw new Exception("Receiving Detail is not recognized.");
                     }
@@ -1736,7 +1738,7 @@ namespace WMS_BE.Controllers.Api
 
                     decimal totalPutaway = receivingDetail.Putaways.Sum(i => i.PutawayQty);
 
-                    if(totalPutaway > 0)
+                    if (totalPutaway > 0)
                     {
                         throw new Exception("Can not edit receiving, putaway already processed.");
                     }
@@ -2424,7 +2426,7 @@ namespace WMS_BE.Controllers.Api
 
                     //insert to Stock if not exist, update quantity if barcode, indate and location is same
 
-                     StockRM stockRM = await db.StockRMs.Where(m => m.Code.Equals(receivingDetail.StockCode) && m.BinRackCode.Equals(putaway.BinRackCode)).FirstOrDefaultAsync();
+                    StockRM stockRM = await db.StockRMs.Where(m => m.Code.Equals(receivingDetail.StockCode) && m.BinRackCode.Equals(putaway.BinRackCode)).FirstOrDefaultAsync();
                     if (stockRM != null)
                     {
                         stockRM.Quantity += putaway.PutawayQty;
@@ -2480,7 +2482,7 @@ namespace WMS_BE.Controllers.Api
                     decimal totalReceive = rec.Qty;
                     decimal totalPutaway = 0;
 
-                    foreach(ReceivingDetail recDetail in rec.ReceivingDetails)
+                    foreach (ReceivingDetail recDetail in rec.ReceivingDetails)
                     {
                         totalPutaway += recDetail.Putaways.Sum(i => i.PutawayQty);
                     }
@@ -2882,7 +2884,7 @@ namespace WMS_BE.Controllers.Api
 
                             string file_name = string.Format("{0}.pdf", DateTime.Now.ToString("yyyyMMddHHmmss"));
 
-                            using (Stream fileStream = new FileStream(string.Format(@"C:\RMI_PRINTER\{0}\{1}", folder_name, file_name), FileMode.CreateNew))
+                            using (Stream fileStream = new FileStream(string.Format(@"C:\RMI_PRINTER_SERVICE\{0}\{1}", folder_name, file_name), FileMode.CreateNew))
                             {
                                 output.CopyTo(fileStream);
                             }

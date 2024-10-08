@@ -50,9 +50,43 @@ namespace WMS_BE.Controllers.Api
                         throw new Exception("Barcode Left & Barcode Right harus diisi.");
                     }
 
+                    //dont trim materialcode
+                    string LotNumber = "";
+                    string QtyPerBag = "";
                     string MaterialCode = req.BarcodeLeft.Substring(0, req.BarcodeLeft.Length - 13);
-                    string QtyPerBag = req.BarcodeRight.Substring(MaterialCode.Length + 7, 6).Trim();
-                    string LotNumber = req.BarcodeRight.Substring(MaterialCode.Length + 14);
+                    RawMaterial cekQtyPerBag = await db.RawMaterials.Where(s => s.MaterialCode.Equals(MaterialCode)).FirstOrDefaultAsync();
+                    vProductMaster vProductMaster = await db.vProductMasters.Where(m => m.MaterialCode.Equals(MaterialCode)).FirstOrDefaultAsync();
+                    if (vProductMaster == null)
+                    {
+                        throw new Exception("Material tidak dikenali.");
+                    }
+
+                    if (vProductMaster.ProdType == "SFG")
+                    {
+                        if (req.BarcodeRight.Length == 29)
+                        {
+                            QtyPerBag = req.BarcodeRight.Substring(MaterialCode.Length + 7, 8).Trim();
+                            LotNumber = req.BarcodeRight.Substring(MaterialCode.Length + 16);
+                        }
+                        else
+                        {
+                            QtyPerBag = req.BarcodeRight.Substring(MaterialCode.Length + 7, 6).Trim();
+                            LotNumber = req.BarcodeRight.Substring(MaterialCode.Length + 14);
+                        }
+                    }
+                    else
+                    {
+                        if (cekQtyPerBag.Qty >= 1000)
+                        {
+                            QtyPerBag = req.BarcodeRight.Substring(MaterialCode.Length + 7, 8).Trim();
+                            LotNumber = req.BarcodeRight.Substring(MaterialCode.Length + 16);
+                        }
+                        else
+                        {
+                            QtyPerBag = req.BarcodeRight.Substring(MaterialCode.Length + 7, 6).Trim();
+                            LotNumber = req.BarcodeRight.Substring(MaterialCode.Length + 14);
+                        }
+                    }
                     string InDate = req.BarcodeLeft.Substring(MaterialCode.Length, 7);
                     string ExpiredDate = req.BarcodeLeft.Substring(MaterialCode.Length + 7, 6);
 
@@ -169,9 +203,43 @@ namespace WMS_BE.Controllers.Api
                         throw new Exception("Barcode Left & Barcode Right harus diisi.");
                     }
 
+                    //dont trim materialcode
+                    string LotNumber = "";
+                    string QtyPerBag = "";
                     string MaterialCode = req.BarcodeLeft.Substring(0, req.BarcodeLeft.Length - 13);
-                    string QtyPerBag = req.BarcodeRight.Substring(MaterialCode.Length + 7, 6).Trim();
-                    string LotNumber = req.BarcodeRight.Substring(MaterialCode.Length + 14);
+                    RawMaterial cekQtyPerBag = await db.RawMaterials.Where(s => s.MaterialCode.Equals(MaterialCode)).FirstOrDefaultAsync();
+                    vProductMaster vProductMaster = await db.vProductMasters.Where(m => m.MaterialCode.Equals(MaterialCode)).FirstOrDefaultAsync();
+                    if (vProductMaster == null)
+                    {
+                        throw new Exception("Material tidak dikenali.");
+                    }
+
+                    if (vProductMaster.ProdType == "SFG")
+                    {
+                        if (req.BarcodeRight.Length == 29)
+                        {
+                            QtyPerBag = req.BarcodeRight.Substring(MaterialCode.Length + 7, 8).Trim();
+                            LotNumber = req.BarcodeRight.Substring(MaterialCode.Length + 16);
+                        }
+                        else
+                        {
+                            QtyPerBag = req.BarcodeRight.Substring(MaterialCode.Length + 7, 6).Trim();
+                            LotNumber = req.BarcodeRight.Substring(MaterialCode.Length + 14);
+                        }
+                    }
+                    else
+                    {
+                        if (cekQtyPerBag.Qty >= 1000)
+                        {
+                            QtyPerBag = req.BarcodeRight.Substring(MaterialCode.Length + 7, 8).Trim();
+                            LotNumber = req.BarcodeRight.Substring(MaterialCode.Length + 16);
+                        }
+                        else
+                        {
+                            QtyPerBag = req.BarcodeRight.Substring(MaterialCode.Length + 7, 6).Trim();
+                            LotNumber = req.BarcodeRight.Substring(MaterialCode.Length + 14);
+                        }
+                    }
                     string InDate = req.BarcodeLeft.Substring(MaterialCode.Length, 7);
                     string ExpiredDate = req.BarcodeLeft.Substring(MaterialCode.Length + 7, 6);
 

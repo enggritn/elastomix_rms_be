@@ -636,9 +636,38 @@ namespace WMS_BE.Controllers.Api
                         throw new Exception("Barcode Left & Barcode Right harus diisi.");
                     }
 
+                    //dont trim materialcode
+                    string LotNumber = "";
+                    string QtyPerBag = "";
                     string MaterialCode = req.BarcodeLeft.Substring(0, req.BarcodeLeft.Length - 13);
-                    string QtyPerBag = req.BarcodeRight.Substring(MaterialCode.Length + 7, 6).Trim();
-                    string LotNumber = req.BarcodeRight.Substring(MaterialCode.Length + 14);
+                    RawMaterial cekQtyPerBag = await db.RawMaterials.Where(s => s.MaterialCode.Equals(MaterialCode)).FirstOrDefaultAsync();
+
+                    if (vProductMaster.ProdType == "SFG")
+                    {
+                        if (req.BarcodeRight.Length == 29)
+                        {
+                            QtyPerBag = req.BarcodeRight.Substring(MaterialCode.Length + 7, 8).Trim();
+                            LotNumber = req.BarcodeRight.Substring(MaterialCode.Length + 16);
+                        }
+                        else
+                        {
+                            QtyPerBag = req.BarcodeRight.Substring(MaterialCode.Length + 7, 6).Trim();
+                            LotNumber = req.BarcodeRight.Substring(MaterialCode.Length + 14);
+                        }
+                    }
+                    else
+                    {
+                        if (cekQtyPerBag.Qty >= 1000)
+                        {
+                            QtyPerBag = req.BarcodeRight.Substring(MaterialCode.Length + 7, 8).Trim();
+                            LotNumber = req.BarcodeRight.Substring(MaterialCode.Length + 16);
+                        }
+                        else
+                        {
+                            QtyPerBag = req.BarcodeRight.Substring(MaterialCode.Length + 7, 6).Trim();
+                            LotNumber = req.BarcodeRight.Substring(MaterialCode.Length + 14);
+                        }
+                    }
                     string InDate = req.BarcodeLeft.Substring(MaterialCode.Length, 7);
                     string ExpiredDate = req.BarcodeLeft.Substring(MaterialCode.Length + 7, 6);
 
@@ -1438,6 +1467,18 @@ namespace WMS_BE.Controllers.Api
 
                             printers.Add(printer);
 
+                            printer = new PrinterDTO();
+                            printer.PrinterIP = ConfigurationManager.AppSettings["printer_3_ip"].ToString();
+                            printer.PrinterName = ConfigurationManager.AppSettings["printer_3_name"].ToString();
+
+                            printers.Add(printer);
+
+                            printer = new PrinterDTO();
+                            printer.PrinterIP = ConfigurationManager.AppSettings["printer_4_ip"].ToString();
+                            printer.PrinterName = ConfigurationManager.AppSettings["printer_4_name"].ToString();
+
+                            printers.Add(printer);
+
                             string folder_name = "";
                             foreach (PrinterDTO printerDTO in printers)
                             {
@@ -1449,7 +1490,7 @@ namespace WMS_BE.Controllers.Api
 
                             string file_name = string.Format("{0}.pdf", DateTime.Now.ToString("yyyyMMddHHmmss"));
 
-                            using (Stream fileStream = new FileStream(string.Format(@"C:\RMI_PRINTER\{0}\{1}", folder_name, file_name), FileMode.CreateNew))
+                            using (Stream fileStream = new FileStream(string.Format(@"C:\RMI_PRINTER_SERVICE\{0}\{1}", folder_name, file_name), FileMode.CreateNew))
                             {
                                 output.CopyTo(fileStream);
                             }

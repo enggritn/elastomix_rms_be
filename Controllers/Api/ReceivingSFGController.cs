@@ -151,7 +151,7 @@ namespace WMS_BE.Controllers.Api
 
                                                             }
                                                         }
-                                                        
+
                                                         string ExpDate = row[7].ToString();
                                                         if (!string.IsNullOrEmpty(ExpDate))
                                                         {
@@ -313,7 +313,7 @@ namespace WMS_BE.Controllers.Api
 
                     //get expired date
                     SemiFinishGood sfg = db.SemiFinishGoods.Where(m => m.MaterialCode.Equals(receiving.ProductCode)).FirstOrDefault();
-                    if(sfg == null)
+                    if (sfg == null)
                     {
                         throw new Exception("Material not recognized.");
                     }
@@ -559,9 +559,9 @@ namespace WMS_BE.Controllers.Api
                                     ReceiveAction = !string.IsNullOrEmpty(receiving.LotNo) && (receiving.InDate != null) && receiving.TotalOrder != receiving.TotalReceive,
                                     PrintBarcodeAction = true,
                                     PutawayAction = true,
-                                    EditReceiveAction = string.IsNullOrEmpty(receiving.LotNo) && !(receiving.InDate != null),
+                                    EditReceiveAction = !string.IsNullOrEmpty(receiving.LotNo) && (receiving.InDate != null) && receiving.TotalReceive < receiving.TotalOrder,
                                     DefaultLotNo = DefaultLot
-                                    
+
                                 };
                 }
 
@@ -633,6 +633,115 @@ namespace WMS_BE.Controllers.Api
 
 
         [HttpPost]
+        public async Task<IHttpActionResult> UpdateOrder(ReceivingSFGVM receivingVM)
+        {
+            HttpRequest request = HttpContext.Current.Request;
+            string inDate = request["InDate"].ToString();
+            string expDate = request["ExpDate"].ToString();
+            DateTime xInDate = new DateTime();
+            DateTime xExpDate = new DateTime();
+            DateTime temp;
+            DateTime temp1;
+
+            Dictionary<string, object> obj = new Dictionary<string, object>();
+            List<CustomValidationMessage> customValidationMessages = new List<CustomValidationMessage>();
+
+            string message = "";
+            bool status = false;
+            var re = Request;
+            var headers = re.Headers;
+
+            try
+            {
+                string token = "";
+
+                if (headers.Contains("token"))
+                {
+                    token = headers.GetValues("token").First();
+                }
+
+                string activeUser = await db.Users.Where(x => x.Token.Equals(token)).Select(x => x.Username).FirstOrDefaultAsync();
+
+                if (activeUser != null)
+                {
+                    if (DateTime.TryParse(inDate, out temp))
+                    {
+                        xInDate = Convert.ToDateTime(inDate);
+                    }
+                    if (DateTime.TryParse(expDate, out temp1))
+                    {
+                        xExpDate = Convert.ToDateTime(expDate);
+                    }
+
+                    vReceivingSFG2 receiving = await db.vReceivingSFG2.Where(s => s.ProductCode.Equals(receivingVM.ProductCode) && s.LotNo.Equals(receivingVM.LotNo) && DbFunctions.TruncateTime(s.InDate) == DbFunctions.TruncateTime(xInDate) && DbFunctions.TruncateTime(s.ExpDate) == DbFunctions.TruncateTime(xExpDate)).FirstOrDefaultAsync();
+                    if (receiving != null)
+                    {
+                        int TotalReceive = Convert.ToInt32(receiving.TotalReceive);
+                        if (receivingVM.QtyTotal <= TotalReceive)
+                        {
+                            ModelState.AddModelError("ReceivingSFG.EditOrderRequestQtyTotal", string.Format("Total order must be greater than total receive : {0}", TotalReceive));
+                        }
+                    }
+
+                    if (receivingVM.QtyTotal <= 0)
+                    {
+                        ModelState.AddModelError("ReceivingSFG.EditOrderRequestQtyTotal", string.Format("Qty can not be empty or below zero."));
+                    }
+
+                    if (!ModelState.IsValid)
+                    {
+                        foreach (var state in ModelState)
+                        {
+                            string field = state.Key.Split('.')[1];
+                            string value = state.Value.Errors.Select(x => x.ErrorMessage).ToArray()[0];
+                            customValidationMessages.Add(new CustomValidationMessage(field, value));
+                        }
+
+                        throw new Exception("Input is not valid");
+                    }
+
+                    ReceivingSFG receivingcek = new ReceivingSFG();
+                    receivingcek = await db.ReceivingSFGs.Where(s => s.ProductCode.Equals(receivingVM.ProductCode) && s.LotNo.Equals(receivingVM.LotNo) && DbFunctions.TruncateTime(s.InDate) == DbFunctions.TruncateTime(xInDate) && DbFunctions.TruncateTime(s.ExpDate) == DbFunctions.TruncateTime(xExpDate)).FirstOrDefaultAsync();
+
+                    if (receivingcek != null)
+                    {
+                        receivingcek.Qty = receivingVM.QtyTotal;
+                        receivingcek.QtyPerBag = receivingVM.QtyTotal;
+                    }
+
+                    await db.SaveChangesAsync();
+
+                    status = true;
+                    message = "Edit total order succeeded.";
+
+                }
+                else
+                {
+                    message = "Token is no longer valid. Please re-login.";
+                }
+            }
+
+            catch (HttpRequestException reqpEx)
+            {
+                message = reqpEx.Message;
+            }
+            catch (HttpResponseException respEx)
+            {
+                message = respEx.Message;
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
+
+            obj.Add("status", status);
+            obj.Add("message", message);
+            obj.Add("error_validation", customValidationMessages);
+
+            return Ok(obj);
+        }
+
+        [HttpPost]
         public async Task<IHttpActionResult> Receive(ReceivingSFGVM receivingVM)
         {
             HttpRequest request = HttpContext.Current.Request;
@@ -699,7 +808,7 @@ namespace WMS_BE.Controllers.Api
                         {
                             ModelState.AddModelError("ReceivingSFG.ReceiveOKQty", string.Format("Qty exceeded. Available Qty : {0}", availableQty));
                         }
-                    }                  
+                    }
 
                     if (!ModelState.IsValid)
                     {
@@ -1045,7 +1154,7 @@ namespace WMS_BE.Controllers.Api
                 }
 
                 IEnumerable<StockSFG> list = Enumerable.Empty<StockSFG>();
-                IQueryable<StockSFG> query = db.StockSFGs.Where(s => s.Code.Equals(StockCode)).OrderByDescending(s => s.InDate).AsQueryable();          
+                IQueryable<StockSFG> query = db.StockSFGs.Where(s => s.Code.Equals(StockCode)).OrderByDescending(s => s.InDate).AsQueryable();
                 list = query.ToList();
                 if (list != null && list.Count() > 0)
                 {
@@ -1378,7 +1487,7 @@ namespace WMS_BE.Controllers.Api
                     if (string.IsNullOrEmpty(req.Printer))
                     {
                         ModelState.AddModelError("Receiving.PrinterList", "Printer harus dipilih.");
-                    }                                      
+                    }
 
                     vProductMaster material = db.vProductMasters.Where(m => m.MaterialCode.Equals(stk.ProductCode)).FirstOrDefault();
                     if (material == null)
@@ -1543,7 +1652,7 @@ namespace WMS_BE.Controllers.Api
 
                             string file_name = string.Format("{0}.pdf", DateTime.Now.ToString("yyyyMMddHHmmss"));
 
-                            using (Stream fileStream = new FileStream(string.Format(@"C:\RMI_PRINTER\{0}\{1}", folder_name, file_name), FileMode.CreateNew))
+                            using (Stream fileStream = new FileStream(string.Format(@"C:\RMI_PRINTER_SERVICE\{0}\{1}", folder_name, file_name), FileMode.CreateNew))
                             {
                                 output.CopyTo(fileStream);
                             }

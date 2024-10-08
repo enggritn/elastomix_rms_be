@@ -270,7 +270,7 @@ namespace WMS_BE.Controllers.Api
                                     QtyPerBag = Helper.FormatThousand(x.QtyPerBag),
                                     PickedQty = Helper.FormatThousand(x.IssueSlipPickings.Sum(i => i.BagQty * i.QtyPerBag)),
                                     OutstandingQty = Helper.FormatThousand(x.Qty - (x.IssueSlipPickings.Sum(i => i.BagQty * i.QtyPerBag))),
-                                    PickingBagQty = Helper.FormatThousand(Convert.ToInt32(Math.Ceiling((x.Qty - (x.IssueSlipPickings.Sum(i => i.BagQty * i.QtyPerBag))) / x.QtyPerBag))),
+                                    PickingBagQty = x.QtyPerBag == 0 ? "0" : Helper.FormatThousand(Convert.ToInt32(Math.Ceiling((x.Qty - (x.IssueSlipPickings.Sum(i => i.BagQty * i.QtyPerBag))) / x.QtyPerBag))),
                                     DiffQty = Helper.FormatThousand(x.IssueSlipPickings.Sum(i => i.BagQty * i.QtyPerBag) - x.Qty)
                                 };
                 }
@@ -736,7 +736,7 @@ namespace WMS_BE.Controllers.Api
                                     }
 
                                     IssueSlipHeader issueSlipHeader = db.IssueSlipHeaders.Where(m => m.ID.Equals(id)).FirstOrDefault();
-                                    if(issueSlipHeader == null)
+                                    if (issueSlipHeader == null)
                                     {
                                         throw new Exception("Data not found.");
                                     }
@@ -789,13 +789,13 @@ namespace WMS_BE.Controllers.Api
                                             {
                                                 //check quantity still available or not
                                                 vIssueSlipPicked picked = db.vIssueSlipPickeds.Where(m => m.HeaderID.Equals(TransactionId) && m.MaterialCode.Equals(itemCode)).FirstOrDefault();
-                                                if(picked == null)
+                                                if (picked == null)
                                                 {
                                                     order.Qty = Qty;
                                                 }
                                                 else
                                                 {
-                                                    if(Qty > picked.TotalQty)
+                                                    if (Qty > picked.TotalQty)
                                                     {
                                                         order.Qty = Qty;
                                                     }
@@ -804,7 +804,7 @@ namespace WMS_BE.Controllers.Api
                                                         //add error message
                                                     }
                                                 }
-                                                
+
                                             }
                                         }
 
@@ -2118,6 +2118,127 @@ namespace WMS_BE.Controllers.Api
             return Ok(obj);
         }
 
+
+        [HttpPost]
+        public async Task<IHttpActionResult> EditReturn(IssueSlipReturnVM2 dataVM)
+        {
+            Dictionary<string, object> obj = new Dictionary<string, object>();
+            List<CustomValidationMessage> customValidationMessages = new List<CustomValidationMessage>();
+
+            string message = "";
+            bool status = false;
+            var re = Request;
+            var headers = re.Headers;
+
+            try
+            {
+                string token = "";
+
+                if (headers.Contains("token"))
+                {
+                    token = headers.GetValues("token").First();
+                }
+
+                string activeUser = await db.Users.Where(x => x.Token.Equals(token)).Select(x => x.Username).FirstOrDefaultAsync();
+
+                if (activeUser != null)
+                {
+                    vIssueSlipPickingSummary summary = null;
+
+                    if (string.IsNullOrEmpty(dataVM.OrderID))
+                    {
+                        throw new Exception("Order Id is required.");
+                    }
+
+                    if (string.IsNullOrEmpty(dataVM.StockCode))
+                    {
+                        throw new Exception("Stock Code is required.");
+                    }
+
+                    IssueSlipOrder issueSlipOrder = await db.IssueSlipOrders.Where(s => s.ID.Equals(dataVM.OrderID)).FirstOrDefaultAsync();
+
+                    if (issueSlipOrder == null)
+                    {
+                        throw new Exception("Order is not recognized.");
+                    }
+
+                    if (!issueSlipOrder.IssueSlipHeader.TransactionStatus.Equals("OPEN") && !issueSlipOrder.IssueSlipHeader.TransactionStatus.Equals("PROGRESS"))
+                    {
+                        throw new Exception("Return not allowed.");
+                    }
+
+                    if (dataVM.Qty <= 0)
+                    {
+                        ModelState.AddModelError("IssueSlip.NewReturnQty", "Return Qty can not be empty or below zero.");
+                    }
+
+                    int totalFullBag = Convert.ToInt32(Math.Floor(dataVM.Qty / issueSlipOrder.QtyPerBag));
+                    if (totalFullBag > 0)
+                    {
+                        ModelState.AddModelError("IssueSlip.NewReturnQty", string.Format("Edit return qty must be below : {0}", Helper.FormatThousand(issueSlipOrder.QtyPerBag))); 
+                    }
+
+                    if (!ModelState.IsValid)
+                    {
+                        foreach (var state in ModelState)
+                        {
+                            string field = state.Key.Split('.')[1];
+                            string value = state.Value.Errors.Select(x => x.ErrorMessage).ToArray()[0];
+                            customValidationMessages.Add(new CustomValidationMessage(field, value));
+                        }
+
+                        throw new Exception("Input is not valid");
+                    }
+
+                    // Hitung panjang total string
+                    int totalLength = dataVM.StockCode.Length;
+
+                    // Indeks untuk karakter ke-7 dari belakang
+                    int startIndex = totalLength - 12; // Karakter ke-7 dari belakang = 12 karakter dari belakang
+
+                    // Ambil substring dari indeks ke-7 hingga ke-12 dari belakang
+                    string indate = dataVM.StockCode.Substring(startIndex, 6);
+                    string expdate = dataVM.StockCode.Substring(dataVM.StockCode.Length - 6);
+
+                    IssueSlipReturn returncek = new IssueSlipReturn();
+                    returncek = await db.IssueSlipReturns.Where(s => s.IssueSlipOrderID.Equals(dataVM.OrderID) && s.StockCode.Equals(dataVM.StockCode)).FirstOrDefaultAsync();
+
+                    if (returncek != null)
+                    {
+                        returncek.StockCode = string.Format("{0}{1}{2}{3}{4}", issueSlipOrder.MaterialCode, Helper.FormatThousand(dataVM.Qty), dataVM.LotNo, indate, expdate);
+                        returncek.QtyPerBag = dataVM.Qty;
+                        returncek.ReturnQty = dataVM.Qty;
+                    }
+                    await db.SaveChangesAsync();
+
+                    status = true;
+                    message = "Edit return succeeded.";
+                }
+                else
+                {
+                    message = "Token is no longer valid. Please re-login.";
+                }
+            }
+            catch (HttpRequestException reqpEx)
+            {
+                message = reqpEx.Message;
+            }
+            catch (HttpResponseException respEx)
+            {
+                message = respEx.Message;
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
+
+            obj.Add("status", status);
+            obj.Add("message", message);
+            obj.Add("error_validation", customValidationMessages);
+
+            return Ok(obj);
+        }
+
         [HttpPost]
         public async Task<IHttpActionResult> DatatablePutaway(string HeaderID)
         {
@@ -2576,6 +2697,111 @@ namespace WMS_BE.Controllers.Api
             return Ok(obj);
         }
 
+        [HttpPost]
+        public async Task<IHttpActionResult> DatatableDataInOutSummary()
+        {
+            int draw = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("draw")[0]);
+            int start = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("start")[0]);
+            int length = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("length")[0]);
+            string search = HttpContext.Current.Request.Form.GetValues("search[value]")[0];
+            string orderCol = HttpContext.Current.Request.Form.GetValues("order[0][column]")[0];
+            string sortName = HttpContext.Current.Request.Form.GetValues("columns[" + orderCol + "][name]")[0];
+            string sortDirection = HttpContext.Current.Request.Form.GetValues("order[0][dir]")[0];
+
+            Dictionary<string, object> obj = new Dictionary<string, object>();
+            string message = "";
+            bool status = false;
+            HttpRequest request = HttpContext.Current.Request;
+
+            string materialcode = request["materialcode"].ToString();
+            string StartDate = request["filterStartDate"].ToString();
+            string EndDate = request["filterEndDate"].ToString();
+
+            SemiFinishGood sfg = db.SemiFinishGoods.Where(m => m.MaterialCode.Equals(materialcode)).FirstOrDefault();
+            if (sfg == null)
+            {
+                throw new Exception("Material not recognized.");
+            }
+
+            IEnumerable<vDataInOutSummary> list = Enumerable.Empty<vDataInOutSummary>();
+            IEnumerable<DataInOutDTOReport> pagedData = Enumerable.Empty<DataInOutDTOReport>();
+
+            DateTime filterStartDate = Convert.ToDateTime(StartDate);
+            DateTime filterEndDate = Convert.ToDateTime(EndDate);
+            IQueryable<vDataInOutSummary> query;
+
+            query = db.vDataInOutSummaries.Where(s => s.ItemCode.Equals(materialcode) && DbFunctions.TruncateTime(s.Date) >= DbFunctions.TruncateTime(filterStartDate) && DbFunctions.TruncateTime(s.Date) <= DbFunctions.TruncateTime(filterEndDate));
+
+            int recordsTotal = query.Count();
+            int recordsFiltered = 0;
+
+            try
+            {
+                query = query
+                        .Where(m => m.ItemCode.Contains(search)
+                        );
+
+                Dictionary<string, Func<vDataInOutSummary, object>> cols = new Dictionary<string, Func<vDataInOutSummary, object>>();
+                cols.Add("ItemCode", x => x.ItemCode);
+                cols.Add("Date", x => x.Date);
+                cols.Add("UserHanheld", x => x.UserHanheld);
+                cols.Add("Type", x => x.Type);
+                cols.Add("ReceiveQty", x => x.ReceiveQty);
+                cols.Add("IssueSlipQty", x => x.IssueSlipQty);
+                cols.Add("BalanceQty", x => x.BalanceQty);
+
+                if (sortDirection.Equals("asc"))
+                    list = query.OrderBy(cols[sortName]);
+                else
+                    list = query.OrderByDescending(cols[sortName]);
+
+                recordsFiltered = list.Count();
+
+                list = list.Skip(start).Take(length).ToList();
+
+                if (list != null && list.Count() > 0)
+                {
+                    pagedData = from detail in list
+                                select new DataInOutDTOReport
+                                {
+                                    ItemCode = detail.ItemCode,
+                                    Date = Helper.NullDateToString2(detail.Date),
+                                    UserHanheld = detail.UserHanheld,
+                                    Type = detail.Type,
+                                    ReceiveQty = Helper.FormatThousand(detail.ReceiveQty),
+                                    IssueSlipQty = Helper.FormatThousand(detail.IssueSlipQty),
+                                    BalanceQty = Helper.FormatThousand(detail.BalanceQty),
+                                };
+                }
+
+                status = true;
+                message = "Fetch data succeeded.";
+            }
+            catch (HttpRequestException reqpEx)
+            {
+                message = reqpEx.Message;
+                return BadRequest();
+            }
+            catch (HttpResponseException respEx)
+            {
+                message = respEx.Message;
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
+
+            obj.Add("draw", draw);
+            obj.Add("recordsTotal", recordsTotal);
+            obj.Add("recordsFiltered", recordsFiltered);
+            obj.Add("data", pagedData);
+            obj.Add("status", status);
+            obj.Add("message", message);
+
+            return Ok(obj);
+        }
+
         [HttpGet]
         public async Task<IHttpActionResult> GetDataReportIssueSlip(string date)
         {
@@ -2640,6 +2866,92 @@ namespace WMS_BE.Controllers.Api
                                     ReturnQty = Helper.FormatThousand(detail.ReturnQty),
                                     ToBinRackCode = detail.ToBinRackCode != null ? detail.ToBinRackCode : "",
                                     PutBy = detail.PutBy != null ? detail.PutBy : "",
+                                };
+                }
+
+                status = true;
+                message = "Fetch data succeeded.";
+            }
+            catch (HttpRequestException reqpEx)
+            {
+                message = reqpEx.Message;
+                return BadRequest();
+            }
+            catch (HttpResponseException respEx)
+            {
+                message = respEx.Message;
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
+
+            obj.Add("list", pagedData);
+            obj.Add("status", status);
+            obj.Add("message", message);
+
+            return Ok(obj);
+        }
+
+        [HttpGet]
+        public async Task<IHttpActionResult> GetDataReportDataInOut(string materialcode, string startdate, string enddate)
+        {
+            Dictionary<string, object> obj = new Dictionary<string, object>();
+            string message = "";
+            bool status = false;
+            HttpRequest request = HttpContext.Current.Request;
+
+
+            if (string.IsNullOrEmpty(materialcode) || string.IsNullOrEmpty(startdate) || string.IsNullOrEmpty(enddate))
+            {
+                throw new Exception("Parameter is required.");
+            }
+
+            SemiFinishGood sfg = db.SemiFinishGoods.Where(m => m.MaterialCode.Equals(materialcode)).FirstOrDefault();
+            if (sfg == null)
+            {
+                throw new Exception("Material not recognized.");
+            }
+
+            IEnumerable<vDataInOutSummary> list = Enumerable.Empty<vDataInOutSummary>();
+            IEnumerable<DataInOutDTOReport> pagedData = Enumerable.Empty<DataInOutDTOReport>();
+
+            DateTime filterStartDate = Convert.ToDateTime(startdate);
+            DateTime filterEndDate = Convert.ToDateTime(enddate);
+            IQueryable<vDataInOutSummary> query;
+
+            query = db.vDataInOutSummaries.Where(s => s.ItemCode.Equals(materialcode) && DbFunctions.TruncateTime(s.Date) >= DbFunctions.TruncateTime(filterStartDate) && DbFunctions.TruncateTime(s.Date) <= DbFunctions.TruncateTime(filterEndDate));
+
+            int recordsTotal = query.Count();
+            int recordsFiltered = 0;
+
+            try
+            {
+                Dictionary<string, Func<vDataInOutSummary, object>> cols = new Dictionary<string, Func<vDataInOutSummary, object>>();
+                cols.Add("ItemCode", x => x.ItemCode);
+                cols.Add("Date", x => x.Date);
+                cols.Add("UserHanheld", x => x.UserHanheld);
+                cols.Add("Type", x => x.Type);
+                cols.Add("ReceiveQty", x => x.ReceiveQty);
+                cols.Add("IssueSlipQty", x => x.IssueSlipQty);
+                cols.Add("BalanceQty", x => x.BalanceQty);
+
+                recordsFiltered = list.Count();
+                list = query.ToList();
+
+                if (list != null && list.Count() > 0)
+                {
+                    pagedData = from detail in list
+                                select new DataInOutDTOReport
+                                {
+                                    ItemCode = detail.ItemCode,
+                                    Date = Helper.NullDateToString2(detail.Date),
+                                    UserHanheld = detail.UserHanheld,
+                                    Type = detail.Type,
+                                    ReceiveQty = detail.ReceiveQty.ToString(),
+                                    IssueSlipQty = detail.IssueSlipQty.ToString(),
+                                    BalanceQty = detail.BalanceQty.ToString(),
                                 };
                 }
 

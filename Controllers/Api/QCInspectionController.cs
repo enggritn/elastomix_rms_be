@@ -879,7 +879,7 @@ namespace WMS_BE.Controllers.Api
                                     InspectedBy = x.InspectedBy,
                                     InspectedOn = Helper.NullDateTimeToString(x.InspectedOn),
                                     //JudgementAction =   string.IsNullOrEmpty(x.InspectionStatus) && Convert.ToDateTime(x.ExpiredDate) < DateTime.Now,
-                                    PickingAction = !string.IsNullOrEmpty(x.InspectionStatus) ? x.InspectionStatus : "",
+                                    PickingAction = db.QCPickings.Any(p => p.QCInspectionID == x.ID && p.PickedMethod == null),
                                     JudgementAction = !string.IsNullOrEmpty(x.ID),
                                     DisposeAction = !string.IsNullOrEmpty(x.ID),
                                 };

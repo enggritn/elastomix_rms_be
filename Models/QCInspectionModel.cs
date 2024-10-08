@@ -90,7 +90,7 @@ namespace WMS_BE.Models
 
         public bool JudgementAction { get; set; }
         public bool DisposeAction { get; set; }
-        public string PickingAction { get; set; }
+        public bool PickingAction { get; set; }
         public bool PutawayExtendAction { get; set; }
         public bool PrintPutawayExtendAction { get; set; }
         public bool PickingDisposeAction { get; set; }
