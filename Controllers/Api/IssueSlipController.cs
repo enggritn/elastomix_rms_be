@@ -1,23 +1,16 @@
 ﻿using ExcelDataReader;
 using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Data;
 using System.Data.Entity;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.Http;
 using WMS_BE.Models;
 using WMS_BE.Utils;
-using OfficeOpenXml;
-using OfficeOpenXml.Style;
-using System.Drawing;
 
 namespace WMS_BE.Controllers.Api
 {
@@ -60,7 +53,6 @@ namespace WMS_BE.Controllers.Api
             }
 
             recordsTotal = query.Count();
-
             int recordsFiltered = 0;
 
             try
@@ -140,7 +132,6 @@ namespace WMS_BE.Controllers.Api
             return Ok(obj);
         }
 
-
         [HttpGet]
         public async Task<IHttpActionResult> GetDataById(string id)
         {
@@ -152,16 +143,12 @@ namespace WMS_BE.Controllers.Api
 
             try
             {
-
                 if (string.IsNullOrEmpty(id))
                 {
                     throw new Exception("Id is required.");
                 }
 
-
                 IssueSlipHeader header = await db.IssueSlipHeaders.Where(m => m.ID.Equals(id)).FirstOrDefaultAsync();
-
-
                 if (header == null || header.TransactionStatus == "CANCELLED")
                 {
                     throw new Exception("Data not found.");
@@ -303,7 +290,6 @@ namespace WMS_BE.Controllers.Api
             return Ok(obj);
         }
 
-
         [HttpPost]
         public async Task<IHttpActionResult> Upload()
         {
@@ -324,7 +310,6 @@ namespace WMS_BE.Controllers.Api
                 }
 
                 string activeUser = await db.Users.Where(x => x.Token.Equals(token)).Select(x => x.Username).FirstOrDefaultAsync();
-
                 if (activeUser != null)
                 {
                     if (request.Files.Count > 0)
@@ -342,7 +327,6 @@ namespace WMS_BE.Controllers.Api
                                     if ((Path.GetExtension(file.FileName).ToLower() == ".xlsx"))
                                     {
                                         reader = ExcelReaderFactory.CreateOpenXmlReader(stream);
-
                                     }
                                     else
                                     {
@@ -353,7 +337,6 @@ namespace WMS_BE.Controllers.Api
                                     reader.Close();
 
                                     DataTable dt = result.Tables[0];
-
 
                                     string fileName = file.FileName.Replace(Path.GetExtension(file.FileName), "");
 
@@ -605,12 +588,9 @@ namespace WMS_BE.Controllers.Api
                                     //    }
                                     //}
 
-
                                     await db.SaveChangesAsync();
                                     message = "Upload succeeded.";
                                     status = true;
-
-
                                 }
                                 catch (Exception e)
                                 {
@@ -698,7 +678,6 @@ namespace WMS_BE.Controllers.Api
                                     if ((Path.GetExtension(file.FileName).ToLower() == ".xlsx"))
                                     {
                                         reader = ExcelReaderFactory.CreateOpenXmlReader(stream);
-
                                     }
                                     else
                                     {
@@ -709,7 +688,6 @@ namespace WMS_BE.Controllers.Api
                                     reader.Close();
 
                                     DataTable dt = result.Tables[0];
-
 
                                     //issue slip date
                                     //string title = dt.Rows[2]["A"].ToString();
@@ -804,19 +782,13 @@ namespace WMS_BE.Controllers.Api
                                                         //add error message
                                                     }
                                                 }
-
                                             }
                                         }
-
                                     }
-
-
 
                                     await db.SaveChangesAsync();
                                     message = "Upload succeeded.";
                                     status = true;
-
-
                                 }
                                 catch (Exception e)
                                 {
@@ -923,7 +895,6 @@ namespace WMS_BE.Controllers.Api
                     header.ModifiedBy = activeUser;
                     header.ModifiedOn = DateTime.Now;
 
-
                     await db.SaveChangesAsync();
                     status = true;
                 }
@@ -995,13 +966,11 @@ namespace WMS_BE.Controllers.Api
             IEnumerable<vStockAll> list = Enumerable.Empty<vStockAll>();
             List<FifoStockDTO> data = new List<FifoStockDTO>();
 
-
             IQueryable<vStockAll> query = db.vStockAlls.Where(s => s.MaterialCode.Equals(order.MaterialCode) && s.Quantity > 0 && !s.OnInspect).AsQueryable();
             List<string> warehouses = db.Warehouses.Where(x => x.Type.Equals("EMIX")).Select(d => d.Code).ToList();
             query = query.Where(a => warehouses.Contains(a.WarehouseCode));
 
             int totalRow = query.Count();
-
 
             decimal requestedQty = order.Qty;
             decimal pickedQty = order.IssueSlipPickings.Sum(i => i.BagQty * i.QtyPerBag);
@@ -1147,7 +1116,6 @@ namespace WMS_BE.Controllers.Api
                         throw new Exception("Stock is not recognized.");
                     }
 
-
                     //restriction 1 : AREA TYPE
 
                     User userData = await db.Users.Where(x => x.Username.Equals(activeUser)).FirstOrDefaultAsync();
@@ -1159,8 +1127,6 @@ namespace WMS_BE.Controllers.Api
                     {
                         throw new Exception(string.Format("FIFO Restriction, do not allowed to pick material in area {0}", materialAreaType));
                     }
-
-
 
                     vStockAll stkAll = db.vStockAlls.Where(s => s.MaterialCode.Equals(issueSlipOrder.MaterialCode) && s.Quantity > 0 && !s.OnInspect && s.BinRackAreaType.Equals(userAreaType) && warehouses.Contains(s.WarehouseCode))
                        .OrderByDescending(s => DbFunctions.TruncateTime(DateTime.Now) >= DbFunctions.TruncateTime(s.ExpiredDate))
@@ -1297,7 +1263,6 @@ namespace WMS_BE.Controllers.Api
 
                     status = true;
                     message = "Picking succeeded.";
-
                 }
                 else
                 {
@@ -1427,8 +1392,6 @@ namespace WMS_BE.Controllers.Api
 
             return Ok(obj);
         }
-
-
 
         [HttpPost]
         public async Task<IHttpActionResult> DatatablePicking(string HeaderID)
@@ -2091,7 +2054,6 @@ namespace WMS_BE.Controllers.Api
 
                     status = true;
                     message = "Return succeeded.";
-
                 }
                 else
                 {
@@ -2117,7 +2079,6 @@ namespace WMS_BE.Controllers.Api
 
             return Ok(obj);
         }
-
 
         [HttpPost]
         public async Task<IHttpActionResult> EditReturn(IssueSlipReturnVM2 dataVM)
@@ -2517,7 +2478,6 @@ namespace WMS_BE.Controllers.Api
 
                             db.StockRMs.Add(stockRM);
                         }
-
                     }
                     else
                     {
@@ -2549,13 +2509,10 @@ namespace WMS_BE.Controllers.Api
                         }
                     }
 
-
-
                     await db.SaveChangesAsync();
 
                     status = true;
                     message = "Putaway succeeded.";
-
                 }
                 else
                 {
@@ -2980,158 +2937,220 @@ namespace WMS_BE.Controllers.Api
             return Ok(obj);
         }
 
-        //[HttpPost]
-        //public async Task<IHttpActionResult> Putaway(PutawayReturnVM putawayVM)
-        //{
-        //    Dictionary<string, object> obj = new Dictionary<string, object>();
-        //    List<CustomValidationMessage> customValidationMessages = new List<CustomValidationMessage>();
+        [HttpPost]
+        public async Task<IHttpActionResult> DatatableDetailListTransaction()
+        {
+            int draw = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("draw")[0]);
+            int start = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("start")[0]);
+            int length = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("length")[0]);
+            string search = HttpContext.Current.Request.Form.GetValues("search[value]")[0];
+            string orderCol = HttpContext.Current.Request.Form.GetValues("order[0][column]")[0];
+            string sortName = HttpContext.Current.Request.Form.GetValues("columns[" + orderCol + "][name]")[0];
+            string sortDirection = HttpContext.Current.Request.Form.GetValues("order[0][dir]")[0];
 
-        //    string message = "";
-        //    bool status = false;
-        //    var re = Request;
-        //    var headers = re.Headers;
+            HttpRequest request = HttpContext.Current.Request;
+            string date = request["date"].ToString();
+            string enddate = request["enddate"].ToString();
+            string warehouseCode = request["warehouseCode"].ToString();
 
-        //    try
-        //    {
-        //        string token = "";
+            Dictionary<string, object> obj = new Dictionary<string, object>();
+            string message = "";
+            bool status = false;
 
-        //        if (headers.Contains("token"))
-        //        {
-        //            token = headers.GetValues("token").First();
-        //        }
+            IEnumerable<vIssueSlipListTransaction> list = Enumerable.Empty<vIssueSlipListTransaction>();
+            IEnumerable<ListTransactionDTOReport> pagedData = Enumerable.Empty<ListTransactionDTOReport>();
 
-        //        string activeUser = await db.Users.Where(x => x.Token.Equals(token)).Select(x => x.Username).FirstOrDefaultAsync();
+            DateTime filterDate = Convert.ToDateTime(date);
+            DateTime endfilterDate = Convert.ToDateTime(enddate);
+            IQueryable<vIssueSlipListTransaction> query;
 
-        //        if (activeUser != null)
-        //        {
-        //            if (string.IsNullOrEmpty(dataVM.OrderID))
-        //            {
-        //                throw new Exception("Order Id is required.");
-        //            }
+            if (!string.IsNullOrEmpty(warehouseCode))
+            {
+                query = db.vIssueSlipListTransactions.Where(s => DbFunctions.TruncateTime(s.CreateOn) >= DbFunctions.TruncateTime(filterDate)
+                        && DbFunctions.TruncateTime(s.CreateOn) <= DbFunctions.TruncateTime(endfilterDate)
+                        && s.WHName.Equals(warehouseCode));
+            }
+            else
+            {
+                query = db.vIssueSlipListTransactions.Where(s => DbFunctions.TruncateTime(s.CreateOn) >= DbFunctions.TruncateTime(filterDate)
+                        && DbFunctions.TruncateTime(s.CreateOn) <= DbFunctions.TruncateTime(endfilterDate));
+            }
 
-        //            IssueSlipOrder order = await db.IssueSlipOrders.Where(s => s.ID.Equals(putawayVM.OrderID)).FirstOrDefaultAsync();
+            int recordsTotal = query.Count();
+            int recordsFiltered = 0;
 
-        //            if (order == null)
-        //            {
-        //                throw new Exception("Order is not recognized.");
-        //            }
+            try
+            {
+                query = query
+                        .Where(m => m.RMCode.Contains(search)
+                        || m.RMName.Contains(search)
+                        );
 
-        //            if (putawayVM.BagQty <= 0)
-        //            {
-        //                ModelState.AddModelError("IssueSlip.PutawayQTY", "Bag Qty can not be empty or below zero.");
-        //            }
-        //            else
-        //            {
-        //                decimal availableQty = (returnDetail.Qty - returnDetail.NGQty) - returnDetail.IssueSlipPutaways.Sum(i => i.PutawayQty);
-        //                int availableBagQty = Convert.ToInt32(availableQty / returnDetail.QtyPerBag);
-        //                if (putawayVM.BagQty > availableBagQty)
-        //                {
-        //                    ModelState.AddModelError("IssueSlip.PutawayQTY", string.Format("Bag Qty exceeded. Available Bag Qty : {0}", availableBagQty));
-        //                }
-        //            }
+                Dictionary<string, Func<vIssueSlipListTransaction, object>> cols = new Dictionary<string, Func<vIssueSlipListTransaction, object>>();
+                cols.Add("RMCode", x => x.RMCode);
+                cols.Add("RMName", x => x.RMName);
+                cols.Add("WHName", x => x.WHName);
+                cols.Add("InOut", x => x.InOut);
+                cols.Add("TransactionDate", x => x.TransactionDate);
+                cols.Add("InQty", x => x.InQty);
+                cols.Add("OutQty", x => x.OutQty);
+                cols.Add("InventoryQty", x => x.InventoryQty);
+                cols.Add("InOutType", x => x.InOutType);
+                cols.Add("CreateBy", x => x.CreateBy);
+                cols.Add("CreateOn", x => x.CreateOn);
 
-        //            BinRack binRack = null;
-        //            if (string.IsNullOrEmpty(putawayVM.BinRackID))
-        //            {
-        //                ModelState.AddModelError("IssueSlip.BinRackID", "BinRack is required.");
-        //            }
-        //            else
-        //            {
-        //                binRack = await db.BinRacks.Where(m => m.ID.Equals(putawayVM.BinRackID)).FirstOrDefaultAsync();
-        //                if (binRack == null)
-        //                {
-        //                    ModelState.AddModelError("IssueSlip.BinRackID", "BinRack is not recognized.");
-        //                }
-        //            }
+                if (sortDirection.Equals("asc"))
+                    list = query.OrderBy(cols[sortName]);
+                else
+                    list = query.OrderByDescending(cols[sortName]);
 
+                recordsFiltered = list.Count();
 
-        //            if (!ModelState.IsValid)
-        //            {
-        //                foreach (var state in ModelState)
-        //                {
-        //                    string field = state.Key.Split('.')[1];
-        //                    string value = state.Value.Errors.Select(x => x.ErrorMessage).ToArray()[0];
-        //                    customValidationMessages.Add(new CustomValidationMessage(field, value));
-        //                }
+                list = list.Skip(start).Take(length).ToList();
 
-        //                throw new Exception("Input is not valid");
-        //            }
+                if (list != null && list.Count() > 0)
+                {
+                    pagedData = from detail in list
+                                select new ListTransactionDTOReport
+                                {
+                                    RMCode = detail.RMCode,
+                                    RMName = detail.RMName,
+                                    WHName = detail.WHName,
+                                    InOut = detail.InOut,
+                                    TransactionDate = Helper.NullDateToString2(detail.TransactionDate),
+                                    InQty = Helper.FormatThousand(detail.InQty),
+                                    OutQty = Helper.FormatThousand(detail.OutQty),
+                                    InventoryQty = Helper.FormatThousand(detail.InventoryQty),
+                                    InOutType = detail.InOutType,
+                                    CreateBy = detail.CreateBy,
+                                    CreateOn = Convert.ToDateTime(detail.CreateOn),
+                                };
+                }
 
-        //            IssueSlipPutaway putaway = new IssueSlipPutaway();
-        //            putaway.ID = Helper.CreateGuid("P");
-        //            putaway.IssueSlipReturnID = returnDetail.ID;
-        //            putaway.PutawayMethod = "MANUAL";
+                status = true;
+                message = "Fetch data succeeded.";
+            }
+            catch (HttpRequestException reqpEx)
+            {
+                message = reqpEx.Message;
+                return BadRequest();
+            }
+            catch (HttpResponseException respEx)
+            {
+                message = respEx.Message;
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
 
-        //            TokenDate tokenDate = await db.TokenDates.Where(m => m.Token.Equals(token)).FirstOrDefaultAsync();
-        //            DateTime now = DateTime.Now;
-        //            DateTime transactionDate = new DateTime(tokenDate.LoginDate.Year, tokenDate.LoginDate.Month, tokenDate.LoginDate.Day, now.Hour, now.Minute, now.Second);
-        //            putaway.PutOn = transactionDate;
-        //            putaway.PutBy = activeUser;
-        //            putaway.BinRackID = binRack.ID;
-        //            putaway.BinRackCode = binRack.Code;
-        //            putaway.BinRackName = binRack.Name;
-        //            putaway.PutawayQty = putawayVM.BagQty * returnDetail.QtyPerBag;
+            obj.Add("draw", draw);
+            obj.Add("recordsTotal", recordsTotal);
+            obj.Add("recordsFiltered", recordsFiltered);
+            obj.Add("data", pagedData);
+            obj.Add("status", status);
+            obj.Add("message", message);
 
-        //            db.IssueSlipPutaways.Add(putaway);
+            return Ok(obj);
+        }
 
-        //            //insert to Stock if not exist, update quantity if barcode, indate and location is same
-
-        //            StockRM stockRM = await db.StockRMs.Where(m => m.Code.Equals(returnDetail.StockCode) && m.InDate.Equals(returnDetail.InDate.Date) && m.BinRackCode.Equals(putaway.BinRackCode)).FirstOrDefaultAsync();
-        //            if (stockRM != null)
-        //            {
-        //                stockRM.Quantity += putaway.PutawayQty;
-        //            }
-        //            else
-        //            {
-        //                stockRM = new StockRM();
-        //                stockRM.ID = Helper.CreateGuid("S");
-        //                stockRM.MaterialCode = returnDetail.IssueSlipPicking.IssueSlipOrder.MaterialCode;
-        //                stockRM.MaterialName = returnDetail.IssueSlipPicking.IssueSlipOrder.MaterialName;
-        //                stockRM.Code = returnDetail.StockCode;
-        //                stockRM.LotNumber = returnDetail.LotNo;
-        //                stockRM.InDate = returnDetail.InDate;
-        //                stockRM.ExpiredDate = returnDetail.ExpDate;
-        //                stockRM.Quantity = putaway.PutawayQty;
-        //                stockRM.QtyPerBag = returnDetail.QtyPerBag;
-        //                stockRM.BinRackID = putaway.BinRackID;
-        //                stockRM.BinRackCode = putaway.BinRackCode;
-        //                stockRM.BinRackName = putaway.BinRackName;
-        //                stockRM.ReceivedAt = putaway.PutOn;
-
-        //                db.StockRMs.Add(stockRM);
-        //            }
-
-
-        //            await db.SaveChangesAsync();
+        [HttpGet]
+        public async Task<IHttpActionResult> GetDataReportListTransaction(string date, string enddate, string warehouse)
+        {
+            Dictionary<string, object> obj = new Dictionary<string, object>();
+            string message = "";
+            bool status = false;
+            HttpRequest request = HttpContext.Current.Request;
 
 
-        //            status = true;
-        //            message = "Putaway succeeded.";
+            if (string.IsNullOrEmpty(date) && string.IsNullOrEmpty(enddate) && string.IsNullOrEmpty(warehouse))
+            {
+                throw new Exception("Parameter is required.");
+            }
 
-        //        }
-        //        else
-        //        {
-        //            message = "Token is no longer valid. Please re-login.";
-        //        }
-        //    }
-        //    catch (HttpRequestException reqpEx)
-        //    {
-        //        message = reqpEx.Message;
-        //    }
-        //    catch (HttpResponseException respEx)
-        //    {
-        //        message = respEx.Message;
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        message = ex.Message;
-        //    }
+            IEnumerable<vIssueSlipListTransaction> list = Enumerable.Empty<vIssueSlipListTransaction>();
+            IEnumerable<ListTransactionDTOReport> pagedData = Enumerable.Empty<ListTransactionDTOReport>();
 
-        //    obj.Add("status", status);
-        //    obj.Add("message", message);
-        //    obj.Add("error_validation", customValidationMessages);
+            DateTime filterDate = Convert.ToDateTime(date);
+            DateTime endfilterDate = Convert.ToDateTime(enddate);
+            IQueryable<vIssueSlipListTransaction> query;
 
-        //    return Ok(obj);
-        //}
+            if (!string.IsNullOrEmpty(warehouse))
+            {
+                query = db.vIssueSlipListTransactions.Where(s => DbFunctions.TruncateTime(s.CreateOn) >= DbFunctions.TruncateTime(filterDate)
+                        && DbFunctions.TruncateTime(s.CreateOn) <= DbFunctions.TruncateTime(endfilterDate)
+                        && s.WHName.Equals(warehouse));
+            }
+            else
+            {
+                query = db.vIssueSlipListTransactions.Where(s => DbFunctions.TruncateTime(s.CreateOn) >= DbFunctions.TruncateTime(filterDate)
+                        && DbFunctions.TruncateTime(s.CreateOn) <= DbFunctions.TruncateTime(endfilterDate));
+            }
+
+            int recordsTotal = query.Count();
+            int recordsFiltered = 0;
+
+            try
+            {
+                Dictionary<string, Func<vIssueSlipListTransaction, object>> cols = new Dictionary<string, Func<vIssueSlipListTransaction, object>>();
+                cols.Add("RMCode", x => x.RMCode);
+                cols.Add("RMName", x => x.RMName);
+                cols.Add("WHName", x => x.WHName);
+                cols.Add("InOut", x => x.InOut);
+                cols.Add("TransactionDate", x => x.TransactionDate);
+                cols.Add("InQty", x => x.InQty);
+                cols.Add("OutQty", x => x.OutQty);
+                cols.Add("InventoryQty", x => x.InventoryQty);
+                cols.Add("InOutType", x => x.InOutType);
+                cols.Add("CreateBy", x => x.CreateBy);
+                cols.Add("CreateOn", x => x.CreateOn);
+
+                recordsFiltered = list.Count();
+                list = query.ToList();
+
+                if (list != null && list.Count() > 0)
+                {
+                    pagedData = from detail in list
+                                select new ListTransactionDTOReport
+                                {
+                                    RMCode = detail.RMCode,
+                                    RMName = detail.RMName,
+                                    WHName = detail.WHName,
+                                    InOut = detail.InOut,
+                                    TransactionDate = Helper.NullDateToString2(detail.TransactionDate),
+                                    InQty = Helper.FormatThousand(detail.InQty),
+                                    OutQty = Helper.FormatThousand(detail.OutQty),
+                                    InventoryQty = Helper.FormatThousand(detail.InventoryQty),
+                                    InOutType = detail.InOutType,
+                                    CreateBy = detail.CreateBy,
+                                    CreateOn = Convert.ToDateTime(detail.CreateOn),
+                                };
+                }
+
+                status = true;
+                message = "Fetch data succeeded.";
+            }
+            catch (HttpRequestException reqpEx)
+            {
+                message = reqpEx.Message;
+                return BadRequest();
+            }
+            catch (HttpResponseException respEx)
+            {
+                message = respEx.Message;
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
+
+            obj.Add("list2", pagedData);
+            obj.Add("status", status);
+            obj.Add("message", message);
+
+            return Ok(obj);
+        }
     }
 }

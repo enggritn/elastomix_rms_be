@@ -14,7 +14,6 @@ namespace WMS_BE.Models
         public string ExpiredDate { get; set; }
     }
 
-
     public class QCPickingVM
     {
         public string PickingID { get; set; }
@@ -45,7 +44,6 @@ namespace WMS_BE.Models
     {
         public string PutawayID { get; set; }
     }
-
 
     public class QCRevertVM
     {
@@ -79,8 +77,6 @@ namespace WMS_BE.Models
         public string CreatedBy { get; set; }
         public string TransactionStatus { get; set; }
         public string CreatedOn { get; set; }
-        //public string TotalJudgementQty { get; set; }
-        //public string TotalDisposalQty { get; set; }
 
         public string InspectionStatus { get; set; }
         public string InspectedBy { get; set; }
@@ -142,7 +138,6 @@ namespace WMS_BE.Models
         public bool PutawayAction { get; set; }
     }
 
-
     public class ListDataReturnDTO
     {
         public string MaterialCode { get; set; }
@@ -155,6 +150,7 @@ namespace WMS_BE.Models
         public int BagQty { get; set; }
         public string Quantity { get; set; }
     }
+
     //summary from QCPutaway
     public class QCMaterialDTO
     {
@@ -222,21 +218,6 @@ namespace WMS_BE.Models
 
     public class ExpiredListDTO
     {
-        //public string MaterialCode { get; set; }
-        //public string MaterialName { get; set; }
-        //public string MaterialType { get; set; }
-        //public string LotNumber { get; set; }
-        //public string InDate { get; set; }
-        //public string ExpiredDate { get; set; }
-        //public string TotalQty { get; set; }
-        //public string QtyPerBag { get; set; }
-        //public string BagQty { get; set; }
-        //public string BinRackCode { get; set; }
-        //public string BinRackName { get; set; }
-        //public string BinRackAreaCode { get; set; }
-        //public string BinRackAreaName { get; set; }
-        //public string WarehouseCode { get; set; }
-        //public string WarehouseName { get; set; }
         public string MaterialCode { get; set; }
         public string MaterialName { get; set; }
         public string MaterialType { get; set; }
@@ -245,5 +226,56 @@ namespace WMS_BE.Models
         public string ExpiredDate { get; set; }
         public string TotalQty { get; set; }
         public string ExpirationDay { get; set; }
+    }
+
+    public class InspectionReportDTO
+    {
+        public string DocumentNo { get; set; }
+        public string WHName { get; set; }
+        public string RMCode { get; set; }
+        public string RMName { get; set; }
+        public string InDate { get; set; }
+        public string ExpDate { get; set; }
+        public string LotNo { get; set; }
+        public string Bag { get; set; }
+        public string FullBag { get; set; }
+        public string Total { get; set; }
+        public string CreatedBy { get; set; }
+        public DateTime CreatedOn { get; set; }
+        public string PickingBag { get; set; }
+        public string PickingFullBag { get; set; }
+        public string PickingTotal { get; set; }
+        public string PickingBinRack { get; set; }
+        public string PickingBy { get; set; }
+        public DateTime PickingOn { get; set; }
+        public string ActionExtendDuration { get; set; }
+        public string ActionExpDate { get; set; }
+        public string ActionDispose { get; set; }
+        public string ApproveBy { get; set; }
+        public DateTime ApproveOn { get; set; }
+        public string PrintLabelBy { get; set; }
+        public DateTime PrintLabelOn { get; set; }
+        public string PutawayBag { get; set; }
+        public string PutawayFullBag { get; set; }
+        public string PutawayTotal { get; set; }
+        public string PutawayBinRack { get; set; }
+        public string PutawayBy { get; set; }
+        public DateTime PutawayOn { get; set; }
+        public string Status { get; set; }
+        public string Memo { get; set; }
+    }
+
+    public class ShelfLifeExtensionReportDTO
+    {
+        public string RMCode { get; set; }
+        public string RMName { get; set; }
+        public string InDate { get; set; }
+        public string LotNo { get; set; }
+        public string Qty { get; set; }
+        public string ExpiredDate { get; set; }
+        public string Extension { get; set; }
+        public string Remark { get; set; }
+        public string ShelfLifeBaseOnCOA { get; set; }
+        public string Note { get; set; }
     }
 }

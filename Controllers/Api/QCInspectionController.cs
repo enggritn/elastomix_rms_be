@@ -4701,5 +4701,504 @@ namespace WMS_BE.Controllers.Api
 
             return Ok(obj);
         }
+
+
+        [HttpPost]
+        public async Task<IHttpActionResult> DatatableDetailInspection()
+        {
+            int draw = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("draw")[0]);
+            int start = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("start")[0]);
+            int length = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("length")[0]);
+            string search = HttpContext.Current.Request.Form.GetValues("search[value]")[0];
+            string orderCol = HttpContext.Current.Request.Form.GetValues("order[0][column]")[0];
+            string sortName = HttpContext.Current.Request.Form.GetValues("columns[" + orderCol + "][name]")[0];
+            string sortDirection = HttpContext.Current.Request.Form.GetValues("order[0][dir]")[0];
+
+            HttpRequest request = HttpContext.Current.Request;
+            string date = request["date"].ToString();
+            string enddate = request["enddate"].ToString();
+            string warehouseCode = request["warehouseCode"].ToString();
+
+            Dictionary<string, object> obj = new Dictionary<string, object>();
+            string message = "";
+            bool status = false;
+
+            IEnumerable<vQCInspection> list = Enumerable.Empty<vQCInspection>();
+            IEnumerable<InspectionReportDTO> pagedData = Enumerable.Empty<InspectionReportDTO>();
+
+            DateTime filterDate = Convert.ToDateTime(date);
+            DateTime endfilterDate = Convert.ToDateTime(enddate);
+            IQueryable<vQCInspection> query;
+
+            if (!string.IsNullOrEmpty(warehouseCode))
+            {
+                query = db.vQCInspections.Where(s => DbFunctions.TruncateTime(s.CreatedOn) >= DbFunctions.TruncateTime(filterDate)
+                        && DbFunctions.TruncateTime(s.CreatedOn) <= DbFunctions.TruncateTime(endfilterDate)
+                        && s.WHName.Equals(warehouseCode));
+            }
+            else
+            {
+                query = db.vQCInspections.Where(s => DbFunctions.TruncateTime(s.CreatedOn) >= DbFunctions.TruncateTime(filterDate)
+                        && DbFunctions.TruncateTime(s.CreatedOn) <= DbFunctions.TruncateTime(endfilterDate));
+            }
+
+            int recordsTotal = query.Count();
+            int recordsFiltered = 0;
+
+            try
+            {
+                query = query
+                        .Where(m => m.RMCode.Contains(search)
+                        || m.RMName.Contains(search)
+                        );
+
+                Dictionary<string, Func<vQCInspection, object>> cols = new Dictionary<string, Func<vQCInspection, object>>();
+                cols.Add("DocumentNo", x => x.DocumentNo);
+                cols.Add("WHName", x => x.WHName);
+                cols.Add("RMCode", x => x.RMCode);
+                cols.Add("RMName", x => x.RMName);
+                cols.Add("InDate", x => x.InDate);
+                cols.Add("ExpDate", x => x.ExpDate);
+                cols.Add("LotNo", x => x.LotNo);
+                cols.Add("Bag", x => x.Bag);
+                cols.Add("FullBag", x => x.FullBag);
+                cols.Add("Total", x => x.Total);
+                cols.Add("CreatedBy", x => x.CreatedBy);
+                cols.Add("CreatedOn", x => x.CreatedOn);
+                cols.Add("PickingBag", x => x.PickingBag);
+                cols.Add("PickingFullBag", x => x.PickingFullBag);
+                cols.Add("PickingTotal", x => x.PickingTotal);
+                cols.Add("PickingBinRack", x => x.PickingBinRack);
+                cols.Add("PickingBy", x => x.PickingBy);
+                cols.Add("PickingOn", x => x.PickingOn);
+                cols.Add("ActionExtendDuration", x => x.ActionExtendDuration);
+                cols.Add("ActionExpDate", x => x.ActionExpDate);
+                cols.Add("ActionDispose", x => x.ActionDispose);
+                cols.Add("ApproveBy", x => x.ApproveBy);
+                cols.Add("ApproveOn", x => x.ApproveOn);
+                cols.Add("PrintLabelBy", x => x.PrintLabelBy);
+                cols.Add("PrintLabelOn", x => x.PrintLabelOn);
+                cols.Add("PutawayBag", x => x.PutawayBag);
+                cols.Add("PutawayFullBag", x => x.PutawayFullBag);
+                cols.Add("PutawayTotal", x => x.PutawayTotal);
+                cols.Add("PutawayBinRack", x => x.PutawayBinRack);
+                cols.Add("PutawayBy", x => x.PutawayBy);
+                cols.Add("PutawayOn", x => x.PutawayOn);
+                cols.Add("Status", x => x.Status);
+                cols.Add("Memo", x => x.Memo);
+
+                if (sortDirection.Equals("asc"))
+                    list = query.OrderBy(cols[sortName]);
+                else
+                    list = query.OrderByDescending(cols[sortName]);
+
+                recordsFiltered = list.Count();
+
+                list = list.Skip(start).Take(length).ToList();
+
+                if (list != null && list.Count() > 0)
+                {
+                    pagedData = from detail in list
+                                select new InspectionReportDTO
+                                {
+                                    DocumentNo = detail.DocumentNo,
+                                    WHName = detail.WHName,
+                                    RMCode = detail.RMCode,
+                                    RMName = detail.RMName,
+                                    InDate = Helper.NullDateToString2(detail.InDate),
+                                    ExpDate = Helper.NullDateToString2(detail.ExpDate),
+                                    LotNo = detail.LotNo != null ? detail.LotNo : "",
+                                    Bag = Helper.FormatThousand(detail.Bag),
+                                    FullBag = Helper.FormatThousand(detail.FullBag),
+                                    Total = Helper.FormatThousand(detail.Total),
+                                    CreatedBy = detail.CreatedBy,
+                                    CreatedOn = detail.CreatedOn,
+                                    PickingBag = Helper.FormatThousand(detail.PickingBag),
+                                    PickingFullBag = Helper.FormatThousand(detail.PickingFullBag),
+                                    PickingTotal = Helper.FormatThousand(detail.PickingTotal),
+                                    PickingBinRack = detail.PickingBinRack,
+                                    PickingBy = detail.PickingBy,
+                                    PickingOn = Convert.ToDateTime(detail.PickingOn),
+                                    ActionExtendDuration = Helper.FormatThousand(detail.ActionExtendDuration),
+                                    ActionExpDate = Helper.NullDateToString2(detail.ActionExpDate),
+                                    ActionDispose = detail.ActionDispose,
+                                    ApproveBy = detail.ApproveBy,
+                                    ApproveOn = Convert.ToDateTime(detail.ApproveOn),
+                                    PrintLabelBy = detail.PrintLabelBy,
+                                    PrintLabelOn = detail.PrintLabelOn,
+                                    PutawayBag = Helper.FormatThousand(detail.PutawayBag),
+                                    PutawayFullBag = Helper.FormatThousand(detail.PutawayFullBag),
+                                    PutawayTotal = Helper.FormatThousand(detail.PutawayTotal),
+                                    PutawayBinRack = detail.PutawayBinRack,
+                                    PutawayBy = detail.PutawayBy,
+                                    PutawayOn = detail.PutawayOn,
+                                    Status = detail.Status,
+                                    Memo = detail.Memo,
+                                };
+                }
+
+                status = true;
+                message = "Fetch data succeeded.";
+            }
+            catch (HttpRequestException reqpEx)
+            {
+                message = reqpEx.Message;
+                return BadRequest();
+            }
+            catch (HttpResponseException respEx)
+            {
+                message = respEx.Message;
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
+
+            obj.Add("draw", draw);
+            obj.Add("recordsTotal", recordsTotal);
+            obj.Add("recordsFiltered", recordsFiltered);
+            obj.Add("data", pagedData);
+            obj.Add("status", status);
+            obj.Add("message", message);
+
+            return Ok(obj);
+        }
+
+        [HttpGet]
+        public async Task<IHttpActionResult> GetDataReportInspection(string date, string enddate, string warehouse)
+        {
+            Dictionary<string, object> obj = new Dictionary<string, object>();
+            string message = "";
+            bool status = false;
+            HttpRequest request = HttpContext.Current.Request;
+
+
+            if (string.IsNullOrEmpty(date) && string.IsNullOrEmpty(enddate) && string.IsNullOrEmpty(warehouse))
+            {
+                throw new Exception("Parameter is required.");
+            }
+
+            IEnumerable<vQCInspection> list = Enumerable.Empty<vQCInspection>();
+            IEnumerable<InspectionReportDTO> pagedData = Enumerable.Empty<InspectionReportDTO>();
+
+            DateTime filterDate = Convert.ToDateTime(date);
+            DateTime endfilterDate = Convert.ToDateTime(enddate);
+            IQueryable<vQCInspection> query;
+
+            if (!string.IsNullOrEmpty(warehouse))
+            {
+                query = db.vQCInspections.Where(s => DbFunctions.TruncateTime(s.CreatedOn) >= DbFunctions.TruncateTime(filterDate)
+                        && DbFunctions.TruncateTime(s.CreatedOn) <= DbFunctions.TruncateTime(endfilterDate)
+                        && s.WHName.Equals(warehouse));
+            }
+            else
+            {
+                query = db.vQCInspections.Where(s => DbFunctions.TruncateTime(s.CreatedOn) >= DbFunctions.TruncateTime(filterDate)
+                        && DbFunctions.TruncateTime(s.CreatedOn) <= DbFunctions.TruncateTime(endfilterDate));
+            }
+
+            int recordsTotal = query.Count();
+            int recordsFiltered = 0;
+
+            try
+            {
+                Dictionary<string, Func<vQCInspection, object>> cols = new Dictionary<string, Func<vQCInspection, object>>();
+                cols.Add("DocumentNo", x => x.DocumentNo);
+                cols.Add("WHName", x => x.WHName);
+                cols.Add("RMCode", x => x.RMCode);
+                cols.Add("RMName", x => x.RMName);
+                cols.Add("InDate", x => x.InDate);
+                cols.Add("ExpDate", x => x.ExpDate);
+                cols.Add("LotNo", x => x.LotNo);
+                cols.Add("Bag", x => x.Bag);
+                cols.Add("FullBag", x => x.FullBag);
+                cols.Add("Total", x => x.Total);
+                cols.Add("CreatedBy", x => x.CreatedBy);
+                cols.Add("CreatedOn", x => x.CreatedOn);
+                cols.Add("PickingBag", x => x.PickingBag);
+                cols.Add("PickingFullBag", x => x.PickingFullBag);
+                cols.Add("PickingTotal", x => x.PickingTotal);
+                cols.Add("PickingBinRack", x => x.PickingBinRack);
+                cols.Add("PickingBy", x => x.PickingBy);
+                cols.Add("PickingOn", x => x.PickingOn);
+                cols.Add("ActionExtendDuration", x => x.ActionExtendDuration);
+                cols.Add("ActionExpDate", x => x.ActionExpDate);
+                cols.Add("ActionDispose", x => x.ActionDispose);
+                cols.Add("ApproveBy", x => x.ApproveBy);
+                cols.Add("ApproveOn", x => x.ApproveOn);
+                cols.Add("PrintLabelBy", x => x.PrintLabelBy);
+                cols.Add("PrintLabelOn", x => x.PrintLabelOn);
+                cols.Add("PutawayBag", x => x.PutawayBag);
+                cols.Add("PutawayFullBag", x => x.PutawayFullBag);
+                cols.Add("PutawayTotal", x => x.PutawayTotal);
+                cols.Add("PutawayBinRack", x => x.PutawayBinRack);
+                cols.Add("PutawayBy", x => x.PutawayBy);
+                cols.Add("PutawayOn", x => x.PutawayOn);
+                cols.Add("Status", x => x.Status);
+                cols.Add("Memo", x => x.Memo);
+
+                recordsFiltered = list.Count();
+                list = query.ToList();
+
+                if (list != null && list.Count() > 0)
+                {
+                    pagedData = from detail in list
+                                select new InspectionReportDTO
+                                {
+                                    DocumentNo = detail.DocumentNo,
+                                    WHName = detail.WHName,
+                                    RMCode = detail.RMCode,
+                                    RMName = detail.RMName,
+                                    InDate = Helper.NullDateToString2(detail.InDate),
+                                    ExpDate = Helper.NullDateToString2(detail.ExpDate),
+                                    LotNo = detail.LotNo != null ? detail.LotNo : "",
+                                    Bag = Helper.FormatThousand(detail.Bag),
+                                    FullBag = Helper.FormatThousand(detail.FullBag),
+                                    Total = Helper.FormatThousand(detail.Total),
+                                    CreatedBy = detail.CreatedBy,
+                                    CreatedOn = detail.CreatedOn,
+                                    PickingBag = Helper.FormatThousand(detail.PickingBag),
+                                    PickingFullBag = Helper.FormatThousand(detail.PickingFullBag),
+                                    PickingTotal = Helper.FormatThousand(detail.PickingTotal),
+                                    PickingBinRack = detail.PickingBinRack,
+                                    PickingBy = detail.PickingBy,
+                                    PickingOn = Convert.ToDateTime(detail.PickingOn),
+                                    ActionExtendDuration = Helper.FormatThousand(detail.ActionExtendDuration),
+                                    ActionExpDate = Helper.NullDateToString2(detail.ActionExpDate),
+                                    ActionDispose = detail.ActionDispose,
+                                    ApproveBy = detail.ApproveBy,
+                                    ApproveOn = Convert.ToDateTime(detail.ApproveOn),
+                                    PrintLabelBy = detail.PrintLabelBy,
+                                    PrintLabelOn = detail.PrintLabelOn,
+                                    PutawayBag = Helper.FormatThousand(detail.PutawayBag),
+                                    PutawayFullBag = Helper.FormatThousand(detail.PutawayFullBag),
+                                    PutawayTotal = Helper.FormatThousand(detail.PutawayTotal),
+                                    PutawayBinRack = detail.PutawayBinRack,
+                                    PutawayBy = detail.PutawayBy,
+                                    PutawayOn = detail.PutawayOn,
+                                    Status = detail.Status,
+                                    Memo = detail.Memo,
+                                };
+                }
+
+                status = true;
+                message = "Fetch data succeeded.";
+            }
+            catch (HttpRequestException reqpEx)
+            {
+                message = reqpEx.Message;
+                return BadRequest();
+            }
+            catch (HttpResponseException respEx)
+            {
+                message = respEx.Message;
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
+
+            obj.Add("list", pagedData);
+            obj.Add("status", status);
+            obj.Add("message", message);
+
+            return Ok(obj);
+        }
+
+
+        [HttpPost]
+        public async Task<IHttpActionResult> DatatableDetailShelfLifeExtension()
+        {
+            int draw = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("draw")[0]);
+            int start = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("start")[0]);
+            int length = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("length")[0]);
+            string search = HttpContext.Current.Request.Form.GetValues("search[value]")[0];
+            string orderCol = HttpContext.Current.Request.Form.GetValues("order[0][column]")[0];
+            string sortName = HttpContext.Current.Request.Form.GetValues("columns[" + orderCol + "][name]")[0];
+            string sortDirection = HttpContext.Current.Request.Form.GetValues("order[0][dir]")[0];
+
+            HttpRequest request = HttpContext.Current.Request;
+            string date = request["date"].ToString();
+            string enddate = request["enddate"].ToString();
+
+            Dictionary<string, object> obj = new Dictionary<string, object>();
+            string message = "";
+            bool status = false;
+
+            IEnumerable<vShelfLifeExtension> list = Enumerable.Empty<vShelfLifeExtension>();
+            IEnumerable<ShelfLifeExtensionReportDTO> pagedData = Enumerable.Empty<ShelfLifeExtensionReportDTO>();
+
+            DateTime filterDate = Convert.ToDateTime(date);
+            DateTime endfilterDate = Convert.ToDateTime(enddate);
+            IQueryable<vShelfLifeExtension> query;
+                       
+            query = db.vShelfLifeExtensions.Where(s => DbFunctions.TruncateTime(s.ExpiredDate) >= DbFunctions.TruncateTime(filterDate)
+                        && DbFunctions.TruncateTime(s.ExpiredDate) <= DbFunctions.TruncateTime(endfilterDate));
+
+            int recordsTotal = query.Count();
+            int recordsFiltered = 0;
+
+            try
+            {
+                query = query
+                        .Where(m => m.RMCode.Contains(search)
+                        || m.RMName.Contains(search)
+                        );
+
+                Dictionary<string, Func<vShelfLifeExtension, object>> cols = new Dictionary<string, Func<vShelfLifeExtension, object>>();
+                cols.Add("RMCode", x => x.RMCode);
+                cols.Add("RMName", x => x.RMName);
+                cols.Add("InDate", x => x.InDate);
+                cols.Add("LotNo", x => x.LotNo);
+                cols.Add("Qty", x => x.Qty);
+                cols.Add("ExpiredDate", x => x.ExpiredDate);
+                cols.Add("Extension", x => x.Extension);
+                cols.Add("Remark", x => x.Remark);
+                cols.Add("ShelfLifeBaseOnCOA", x => x.ShelfLifeBaseOnCOA);
+                cols.Add("Note", x => x.Note);
+
+                if (sortDirection.Equals("asc"))
+                    list = query.OrderBy(cols[sortName]);
+                else
+                    list = query.OrderByDescending(cols[sortName]);
+
+                recordsFiltered = list.Count();
+
+                list = list.Skip(start).Take(length).ToList();
+
+                if (list != null && list.Count() > 0)
+                {
+                    pagedData = from detail in list
+                                select new ShelfLifeExtensionReportDTO
+                                {
+                                    RMCode = detail.RMCode,
+                                    RMName = detail.RMName,
+                                    InDate = Helper.NullDateToString2(detail.InDate),
+                                    LotNo = detail.LotNo,
+                                    Qty = Helper.FormatThousand(detail.Qty),
+                                    ExpiredDate = Helper.NullDateToString2(detail.ExpiredDate),
+                                    Extension = detail.Extension,
+                                    Remark = detail.Remark,
+                                    ShelfLifeBaseOnCOA = detail.ShelfLifeBaseOnCOA,
+                                    Note = detail.Note,
+                                };
+                }
+
+                status = true;
+                message = "Fetch data succeeded.";
+            }
+            catch (HttpRequestException reqpEx)
+            {
+                message = reqpEx.Message;
+                return BadRequest();
+            }
+            catch (HttpResponseException respEx)
+            {
+                message = respEx.Message;
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
+
+            obj.Add("draw", draw);
+            obj.Add("recordsTotal", recordsTotal);
+            obj.Add("recordsFiltered", recordsFiltered);
+            obj.Add("data", pagedData);
+            obj.Add("status", status);
+            obj.Add("message", message);
+
+            return Ok(obj);
+        }
+
+        [HttpGet]
+        public async Task<IHttpActionResult> GetDataReportShelfLifeExtension(string date, string enddate)
+        {
+            Dictionary<string, object> obj = new Dictionary<string, object>();
+            string message = "";
+            bool status = false;
+            HttpRequest request = HttpContext.Current.Request;
+
+
+            if (string.IsNullOrEmpty(date) && string.IsNullOrEmpty(enddate))
+            {
+                throw new Exception("Parameter is required.");
+            }
+
+            IEnumerable<vShelfLifeExtension> list = Enumerable.Empty<vShelfLifeExtension>();
+            IEnumerable<ShelfLifeExtensionReportDTO> pagedData = Enumerable.Empty<ShelfLifeExtensionReportDTO>();
+
+            DateTime filterDate = Convert.ToDateTime(date);
+            DateTime endfilterDate = Convert.ToDateTime(enddate);
+            IQueryable<vShelfLifeExtension> query;
+
+            query = db.vShelfLifeExtensions.Where(s => DbFunctions.TruncateTime(s.ExpiredDate) >= DbFunctions.TruncateTime(filterDate)
+                        && DbFunctions.TruncateTime(s.ExpiredDate) <= DbFunctions.TruncateTime(endfilterDate));
+
+            int recordsTotal = query.Count();
+            int recordsFiltered = 0;
+
+            try
+            {
+                Dictionary<string, Func<vShelfLifeExtension, object>> cols = new Dictionary<string, Func<vShelfLifeExtension, object>>();
+                cols.Add("RMCode", x => x.RMCode);
+                cols.Add("RMName", x => x.RMName);
+                cols.Add("InDate", x => x.InDate);
+                cols.Add("LotNo", x => x.LotNo);
+                cols.Add("Qty", x => x.Qty);
+                cols.Add("ExpiredDate", x => x.ExpiredDate);
+                cols.Add("Extension", x => x.Extension);
+                cols.Add("Remark", x => x.Remark);
+                cols.Add("ShelfLifeBaseOnCOA", x => x.ShelfLifeBaseOnCOA);
+                cols.Add("Note", x => x.Note);
+
+                recordsFiltered = list.Count();
+                list = query.ToList();
+
+                if (list != null && list.Count() > 0)
+                {
+                    pagedData = from detail in list
+                                select new ShelfLifeExtensionReportDTO
+                                {
+                                    RMCode = detail.RMCode,
+                                    RMName = detail.RMName,
+                                    InDate = Helper.NullDateToString2(detail.InDate),
+                                    LotNo = detail.LotNo,
+                                    Qty = Helper.FormatThousand(detail.Qty),
+                                    ExpiredDate = Helper.NullDateToString2(detail.ExpiredDate),
+                                    Extension = detail.Extension,
+                                    Remark = detail.Remark,
+                                    ShelfLifeBaseOnCOA = detail.ShelfLifeBaseOnCOA,
+                                    Note = detail.Note,
+                                };
+                }
+
+                status = true;
+                message = "Fetch data succeeded.";
+            }
+            catch (HttpRequestException reqpEx)
+            {
+                message = reqpEx.Message;
+                return BadRequest();
+            }
+            catch (HttpResponseException respEx)
+            {
+                message = respEx.Message;
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
+
+            obj.Add("list2", pagedData);
+            obj.Add("status", status);
+            obj.Add("message", message);
+
+            return Ok(obj);
+        }
     }
 }

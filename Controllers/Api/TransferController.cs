@@ -29,7 +29,6 @@ namespace WMS_BE.Controllers.Api
     {
         private EIN_WMSEntities db = new EIN_WMSEntities();
 
-
         /// <summary>
         /// Get All Product master
         /// </summary>
@@ -50,13 +49,11 @@ namespace WMS_BE.Controllers.Api
                 productType = paramType[0].ToString();
             }
 
-
             var paramSearch = HttpContext.Current.Request.Params.GetValues("search");
             if (paramSearch != null && paramSearch.Length > 0 && !string.IsNullOrEmpty(paramSearch[0].ToString()))
             {
                 searchName = paramSearch[0].ToString();
             }
-
 
             var paramExSearch = HttpContext.Current.Request.Params.GetValues("exclude");
             if (paramExSearch != null && paramExSearch.Length > 0 && !string.IsNullOrEmpty(paramExSearch[0].ToString()))
@@ -101,7 +98,6 @@ namespace WMS_BE.Controllers.Api
             {
                 productType = paramType[0].ToString();
             }
-
 
             var paramSearch = HttpContext.Current.Request.Params.GetValues("material-code");
             if (paramSearch != null && paramSearch.Length > 0 && !string.IsNullOrEmpty(paramSearch[0].ToString()))
@@ -158,8 +154,6 @@ namespace WMS_BE.Controllers.Api
 
             return Ok(data);
         }
-
-
         public List<FifoStockDTO> GetFIFOData(Guid ID)
         {
             decimal QtyStock = 0;
@@ -190,8 +184,6 @@ namespace WMS_BE.Controllers.Api
                 list = query.ToList();
                 //find outstanding quantity
                 //do looping until quantity reach
-
-
 
                 if (list != null && list.Count() > 0)
                 {
@@ -244,7 +236,6 @@ namespace WMS_BE.Controllers.Api
 
             return data;
         }
-
 
         [HttpGet]
         [Route("api/transfer/transform")]
@@ -955,9 +946,7 @@ namespace WMS_BE.Controllers.Api
                         db.SaveChanges();
                         response.SetSuccess("Material code {0} to {1} success to transfer", model.ProductIDSource, model.ProductIDTarget);
 
-                    }
-
-                    
+                    }                    
                 }
                 else
                 {
@@ -972,406 +961,6 @@ namespace WMS_BE.Controllers.Api
 
             return Ok(response);
         }
-
-
-        //[HttpPost]
-        //[Route("api/transfer/save-detail")]
-        //public async Task<IHttpActionResult> SaveDetail(TransferModel model)
-        //{
-        //    ResponseModel response = new ResponseModel();
-        //    HttpRequest request = HttpContext.Current.Request;
-        //    var re = Request;
-        //    var headers = re.Headers;
-
-        //    StringBuilder sbError = new StringBuilder();
-
-        //    try
-        //    {
-        //        string token = "";
-        //        if (headers.Contains("token"))
-        //        {
-        //            token = headers.GetValues("token").First();
-        //        }
-
-        //        string activeUser = await db.Users.Where(x => x.Token.Equals(token)).Select(x => x.Username).FirstOrDefaultAsync();
-
-        //        if (activeUser == null)
-        //        {
-        //            sbError.AppendLine("User token failed");
-        //        }
-
-        //        if (string.IsNullOrEmpty(model.ItemSourceMaterialCode))
-        //        {
-        //            sbError.AppendLine("Item Source must be select");
-        //        }
-
-        //        if (string.IsNullOrEmpty(model.ItemTargetMaterialCode))
-        //        {
-        //            sbError.AppendLine("Item Target must be select");
-        //        }
-
-        //        var stocks = model.Stocks.Where(x => x.QtyTransfer > 0).ToList();
-        //        if (stocks != null && stocks.Count > 0)
-        //        {
-        //            foreach (var stock in stocks)
-        //            {
-        //                if (stock.QtyTransfer > stock.Qty)
-        //                {
-        //                    sbError.AppendLine("Qty transfer cannot over from qty stock");
-        //                }
-        //            }
-        //        }
-        //        else
-        //        {
-        //            sbError.AppendLine("Item Source must have stock");
-        //        }
-
-
-        //        if (sbError.Length < 1)
-        //        {
-        //            vProductMaster itemSource = db.vProductMasters.FirstOrDefault(x => x.MaterialCode == model.ItemSourceMaterialCode);
-        //            var transfer = new Transfer();
-        //            transfer.ID = Guid.NewGuid();
-        //            transfer.TransferNo = "TRF/" + DateTime.Now.Year.ToString() + "/" + DateTime.Now.Month.ToString("00") + "/" + Guid.NewGuid().ToString().Split('-')[0].Substring(1, 5).ToUpper();
-        //            transfer.CreatedOn = DateTime.Now;
-        //            transfer.CreatedBy = activeUser;
-        //            transfer.TransferDetails = new List<TransferDetail>();
-
-
-        //            vStockAll stockParam = new vStockAll();
-        //            bool isFirst = true;
-
-        //            foreach (var stock in stocks)
-        //            {
-        //                model.TotalTransfer += stock.QtyTransfer;
-        //                if (model.ItemSourceType == "RM")
-        //                {
-        //                    var itemStock = db.StockRMs.FirstOrDefault(x => x.ID == stock.ID);
-        //                    if (itemStock != null)
-        //                    {
-        //                        //itemStock.Quantity -= stock.QtyTransfer;
-        //                        var QtyPerBag = itemStock.QtyPerBag;
-        //                        var QuantityNew = itemStock.Quantity - stock.QtyTransfer;
-        //                        if (QuantityNew > itemStock.QtyPerBag)
-        //                        {
-        //                            var QtyRemainder = QuantityNew % itemStock.QtyPerBag;
-        //                            if (QtyRemainder > 0)
-        //                            {
-        //                                var stockRM = new StockRM();
-        //                                stockRM.ID = Helper.CreateGuid("S");
-        //                                stockRM.MaterialCode = itemStock.MaterialCode;
-        //                                stockRM.MaterialName = itemStock.MaterialName;
-        //                                stockRM.Code = string.Format("{0}{1}{2}{3}", itemStock.MaterialCode.PadRight(7), Helper.FormatThousand(QtyRemainder), itemStock.LotNumber, itemStock.InDate.ToString("yyyyMMdd").Substring(1));
-        //                                stockRM.LotNumber = itemStock.LotNumber;
-        //                                stockRM.InDate = itemStock.InDate;
-        //                                stockRM.ExpiredDate = itemStock.ExpiredDate;
-        //                                stockRM.Quantity = QtyRemainder;
-        //                                stockRM.QtyPerBag = QtyRemainder;
-        //                                stockRM.BinRackID = itemStock.BinRackID;
-        //                                stockRM.BinRackCode = itemStock.BinRackCode;
-        //                                stockRM.BinRackName = itemStock.BinRackName;
-        //                                stockRM.ReceivedAt = DateTime.Now;
-
-        //                                db.StockRMs.Add(stockRM);
-        //                            }
-
-        //                            itemStock.Quantity = QuantityNew - QtyRemainder;
-        //                        }
-        //                        else
-        //                        {
-        //                            itemStock.Code = string.Format("{0}{1}{2}{3}", itemStock.MaterialCode.PadRight(7), Helper.FormatThousand(QuantityNew), itemStock.LotNumber, itemStock.InDate.ToString("yyyyMMdd").Substring(1));
-        //                            itemStock.Quantity = QuantityNew;
-        //                            itemStock.QtyPerBag = QuantityNew;
-        //                        }
-
-        //                        if (isFirst)
-        //                        {
-        //                            stockParam.BinRackCode = itemStock.BinRackCode;
-        //                            stockParam.LotNumber = itemStock.LotNumber;
-        //                            stockParam.ExpiredDate = itemStock.ExpiredDate;
-        //                            stockParam.QtyPerBag = QtyPerBag;
-        //                            stockParam.InDate = itemStock.InDate;
-        //                            isFirst = false;
-        //                        }
-        //                    }
-        //                }
-
-        //                if (model.ItemSourceType == "SFG")
-        //                {
-        //                    var itemStock = db.StockSFGs.FirstOrDefault(x => x.ID == stock.ID);
-        //                    if (itemStock != null)
-        //                    {
-        //                        var QtyPerBag = itemStock.QtyPerBag;
-        //                        var QuantityNew = itemStock.Quantity - stock.QtyTransfer;
-        //                        if (QuantityNew > itemStock.QtyPerBag)
-        //                        {
-        //                            var QtyRemainder = QuantityNew % itemStock.QtyPerBag;
-        //                            if (QtyRemainder > 0)
-        //                            {
-        //                                var stockSFG = new StockSFG();
-        //                                stockSFG.ID = Helper.CreateGuid("S");
-        //                                stockSFG.MaterialCode = itemStock.MaterialCode;
-        //                                stockSFG.MaterialName = itemStock.MaterialName;
-        //                                stockSFG.Code = string.Format("{0}{1}{2}{3}", itemStock.MaterialCode.PadRight(7), Helper.FormatThousand(QtyRemainder), itemStock.LotNumber, itemStock.InDate.ToString("yyyyMMdd").Substring(1));
-        //                                stockSFG.LotNumber = itemStock.LotNumber;
-        //                                stockSFG.InDate = itemStock.InDate;
-        //                                stockSFG.ExpiredDate = itemStock.ExpiredDate;
-        //                                stockSFG.Quantity = QtyRemainder;
-        //                                stockSFG.QtyPerBag = QtyRemainder;
-        //                                stockSFG.BinRackID = itemStock.BinRackID;
-        //                                stockSFG.BinRackCode = itemStock.BinRackCode;
-        //                                stockSFG.BinRackName = itemStock.BinRackName;
-        //                                stockSFG.ReceivedAt = DateTime.Now;
-
-        //                                db.StockSFGs.Add(stockSFG);
-        //                            }
-
-        //                            itemStock.Quantity = QuantityNew - QtyRemainder;
-        //                        }
-        //                        else
-        //                        {
-        //                            itemStock.Code = string.Format("{0}{1}{2}{3}", itemStock.MaterialCode.PadRight(7), Helper.FormatThousand(QuantityNew), itemStock.LotNumber, itemStock.InDate.ToString("yyyyMMdd").Substring(1));
-        //                            itemStock.Quantity = QuantityNew;
-        //                            itemStock.QtyPerBag = QuantityNew;
-        //                        }
-
-
-        //                        if (isFirst)
-        //                        {
-        //                            stockParam.BinRackCode = itemStock.BinRackCode;
-        //                            stockParam.LotNumber = itemStock.LotNumber;
-        //                            stockParam.ExpiredDate = itemStock.ExpiredDate;
-        //                            stockParam.QtyPerBag = itemStock.QtyPerBag;
-        //                            stockParam.InDate = itemStock.InDate;
-        //                            isFirst = false;
-        //                            isFirst = false;
-        //                        }
-        //                    }
-        //                }
-        //            }
-
-
-        //            if (model.ItemTargetType == "RM")
-        //            {
-        //                StockRM stockRM = db.StockRMs.FirstOrDefault(x => x.BinRackCode == stockParam.BinRackCode && x.MaterialCode == model.ItemTargetMaterialCode && x.QtyPerBag == stockParam.QtyPerBag && x.LotNumber == stockParam.LotNumber && x.InDate == stockParam.InDate);
-        //                if (stockRM != null)
-        //                {
-        //                    var QuantityNew = stockRM.Quantity + model.TotalTransfer;
-        //                    if (QuantityNew > stockRM.QtyPerBag)
-        //                    {
-        //                        var QtyRemainder = QuantityNew % stockParam.QtyPerBag;
-        //                        if (QtyRemainder > 0)
-        //                        {
-        //                            var newStockRM = new StockRM();
-        //                            newStockRM.ID = Helper.CreateGuid("S");
-        //                            newStockRM.MaterialCode = stockRM.MaterialCode;
-        //                            newStockRM.MaterialName = stockRM.MaterialName;
-        //                            newStockRM.Code = string.Format("{0}{1}{2}{3}", stockRM.MaterialCode.PadRight(7), Helper.FormatThousand(QtyRemainder), stockRM.LotNumber, stockRM.InDate.ToString("yyyyMMdd").Substring(1));
-        //                            newStockRM.LotNumber = stockParam.LotNumber;
-        //                            newStockRM.InDate = stockRM.InDate;
-        //                            newStockRM.ExpiredDate = stockRM.ExpiredDate;
-        //                            newStockRM.Quantity = QtyRemainder;
-        //                            newStockRM.QtyPerBag = QtyRemainder;
-        //                            newStockRM.BinRackID = stockRM.BinRackID;
-        //                            newStockRM.BinRackCode = stockRM.BinRackCode;
-        //                            newStockRM.BinRackName = stockRM.BinRackName;
-        //                            newStockRM.ReceivedAt = DateTime.Now;
-
-        //                            db.StockRMs.Add(newStockRM);
-        //                        }
-        //                        stockRM.Quantity = QuantityNew - QtyRemainder;
-        //                    }
-        //                    else
-        //                    {
-        //                        stockRM.Code = string.Format("{0}{1}{2}{3}", stockRM.MaterialCode.PadRight(7), Helper.FormatThousand(QuantityNew), stockRM.LotNumber, stockRM.InDate.ToString("yyyyMMdd").Substring(1));
-        //                        stockRM.Quantity = QuantityNew;
-        //                        stockRM.QtyPerBag = QuantityNew;
-        //                    }
-        //                }
-        //                else
-        //                {
-        //                    var itemTarget = db.vProductMasters.FirstOrDefault(x => x.MaterialCode == model.ItemTargetMaterialCode);
-        //                    var binRack = db.BinRacks.FirstOrDefault(x => x.Code == stockParam.BinRackCode);
-
-        //                    var QtyRemainder = model.TotalTransfer % stockParam.QtyPerBag;
-        //                    if (QtyRemainder > 0)
-        //                    {
-        //                        stockRM = new StockRM();
-        //                        stockRM.ID = Helper.CreateGuid("S");
-        //                        stockRM.MaterialCode = itemTarget.MaterialCode;
-        //                        stockRM.MaterialName = itemTarget.MaterialName;
-        //                        stockRM.Code = string.Format("{0}{1}{2}{3}", itemTarget.MaterialCode.PadRight(7), Helper.FormatThousand(QtyRemainder), stockParam.LotNumber, stockParam.InDate.ToString("yyyyMMdd").Substring(1));
-        //                        stockRM.LotNumber = stockParam.LotNumber;
-        //                        stockRM.InDate = stockParam.InDate;
-        //                        stockRM.ExpiredDate = stockParam.ExpiredDate;
-        //                        stockRM.Quantity = QtyRemainder;
-        //                        stockRM.QtyPerBag = QtyRemainder;
-        //                        stockRM.BinRackID = binRack.ID;
-        //                        stockRM.BinRackCode = binRack.Code;
-        //                        stockRM.BinRackName = binRack.Name;
-        //                        stockRM.ReceivedAt = DateTime.Now;
-
-        //                        db.StockRMs.Add(stockRM);
-        //                    }
-
-        //                    var QtyNew = model.TotalTransfer - QtyRemainder;
-        //                    if (QtyNew > 0)
-        //                    {
-        //                        stockRM = new StockRM();
-        //                        stockRM.ID = Helper.CreateGuid("S");
-        //                        stockRM.MaterialCode = itemTarget.MaterialCode;
-        //                        stockRM.MaterialName = itemTarget.MaterialName;
-        //                        stockRM.Code = string.Format("{0}{1}{2}{3}", itemTarget.MaterialCode.PadRight(7), Helper.FormatThousand(stockParam.QtyPerBag), stockParam.LotNumber, stockParam.InDate.ToString("yyyyMMdd").Substring(1));
-        //                        stockRM.LotNumber = stockParam.LotNumber;
-        //                        stockRM.InDate = stockParam.InDate;
-        //                        stockRM.ExpiredDate = stockParam.ExpiredDate;
-        //                        stockRM.Quantity = QtyNew;
-        //                        stockRM.QtyPerBag = stockParam.QtyPerBag;
-        //                        stockRM.BinRackID = binRack.ID;
-        //                        stockRM.BinRackCode = binRack.Code;
-        //                        stockRM.BinRackName = binRack.Name;
-        //                        stockRM.ReceivedAt = DateTime.Now;
-
-        //                        db.StockRMs.Add(stockRM);
-        //                    }
-        //                }
-
-        //                foreach (var stock in stocks)
-        //                {
-        //                    TransferDetail _detail = new TransferDetail();
-        //                    _detail.ID = Guid.NewGuid();
-        //                    _detail.TransferID = transfer.ID;
-        //                    _detail.ProductIDSource = itemSource.MaterialCode;
-        //                    _detail.StockIDSource = stock.ID;
-        //                    _detail.Qty = stock.Qty;
-
-        //                    _detail.ProductIDTarget = stockRM.MaterialCode;
-        //                    _detail.StockIDTarget = stockRM.ID;
-        //                    _detail.QtyTransfer = stock.QtyTransfer;
-        //                    transfer.TransferDetails.Add(_detail);
-        //                }
-        //            }
-
-        //            if (model.ItemTargetType == "SFG")
-        //            {
-        //                StockSFG stockSFG = db.StockSFGs.FirstOrDefault(x => x.BinRackCode == stockParam.BinRackCode && x.MaterialCode == model.ItemTargetMaterialCode && x.QtyPerBag == stockParam.QtyPerBag && x.LotNumber == stockParam.LotNumber && x.InDate == stockParam.InDate);
-        //                if (stockSFG != null)
-        //                {
-        //                    var QuantityNew = stockSFG.Quantity + model.TotalTransfer;
-        //                    if (QuantityNew > stockSFG.QtyPerBag)
-        //                    {
-        //                        var QtyRemainder = QuantityNew % stockParam.QtyPerBag;
-        //                        if (QtyRemainder > 0)
-        //                        {
-        //                            var newStockSFG = new StockSFG();
-        //                            newStockSFG.ID = Helper.CreateGuid("S");
-        //                            newStockSFG.MaterialCode = stockSFG.MaterialCode;
-        //                            newStockSFG.MaterialName = stockSFG.MaterialName;
-        //                            newStockSFG.Code = string.Format("{0}{1}{2}{3}", stockSFG.MaterialCode.PadRight(7), Helper.FormatThousand(QtyRemainder), stockSFG.LotNumber, stockSFG.InDate.ToString("yyyyMMdd").Substring(1));
-        //                            newStockSFG.LotNumber = stockParam.LotNumber;
-        //                            newStockSFG.InDate = stockSFG.InDate;
-        //                            newStockSFG.ExpiredDate = stockSFG.ExpiredDate;
-        //                            newStockSFG.Quantity = QtyRemainder;
-        //                            newStockSFG.QtyPerBag = QtyRemainder;
-        //                            newStockSFG.BinRackID = stockSFG.BinRackID;
-        //                            newStockSFG.BinRackCode = stockSFG.BinRackCode;
-        //                            newStockSFG.BinRackName = stockSFG.BinRackName;
-        //                            newStockSFG.ReceivedAt = DateTime.Now;
-
-        //                            db.StockSFGs.Add(newStockSFG);
-        //                        }
-        //                        stockSFG.Quantity = QuantityNew - QtyRemainder;
-        //                    }
-        //                    else
-        //                    {
-        //                        stockSFG.Code = string.Format("{0}{1}{2}{3}", stockSFG.MaterialCode.PadRight(7), Helper.FormatThousand(QuantityNew), stockSFG.LotNumber, stockSFG.InDate.ToString("yyyyMMdd").Substring(1));
-        //                        stockSFG.Quantity = QuantityNew;
-        //                        stockSFG.QtyPerBag = QuantityNew;
-        //                    }
-        //                }
-        //                else
-        //                {
-        //                    var itemTarget = db.vProductMasters.FirstOrDefault(x => x.MaterialCode == model.ItemTargetMaterialCode);
-        //                    var binRack = db.BinRacks.FirstOrDefault(x => x.Code == stockParam.BinRackCode);
-
-        //                    var QtyRemainder = model.TotalTransfer % stockParam.QtyPerBag;
-        //                    if (QtyRemainder > 0)
-        //                    {
-        //                        stockSFG = new StockSFG();
-        //                        stockSFG.ID = Helper.CreateGuid("S");
-        //                        stockSFG.MaterialCode = itemTarget.MaterialCode;
-        //                        stockSFG.MaterialName = itemTarget.MaterialName;
-        //                        stockSFG.Code = string.Format("{0}{1}{2}{3}", itemTarget.MaterialCode.PadRight(7), Helper.FormatThousand(QtyRemainder), stockParam.LotNumber, stockParam.InDate.ToString("yyyyMMdd").Substring(1));
-        //                        stockSFG.LotNumber = stockParam.LotNumber;
-        //                        stockSFG.InDate = stockParam.InDate;
-        //                        stockSFG.ExpiredDate = stockParam.ExpiredDate;
-        //                        stockSFG.Quantity = QtyRemainder;
-        //                        stockSFG.QtyPerBag = QtyRemainder;
-        //                        stockSFG.BinRackID = binRack.ID;
-        //                        stockSFG.BinRackCode = binRack.Code;
-        //                        stockSFG.BinRackName = binRack.Name;
-        //                        stockSFG.ReceivedAt = DateTime.Now;
-
-        //                        db.StockSFGs.Add(stockSFG);
-        //                    }
-
-        //                    var QtyNew = model.TotalTransfer - QtyRemainder;
-        //                    if (QtyNew < 0)
-        //                    {
-        //                        stockSFG = new StockSFG();
-        //                        stockSFG.ID = Helper.CreateGuid("S");
-        //                        stockSFG.MaterialCode = itemTarget.MaterialCode;
-        //                        stockSFG.MaterialName = itemTarget.MaterialName;
-        //                        stockSFG.Code = string.Format("{0}{1}{2}{3}", itemTarget.MaterialCode.PadRight(7), Helper.FormatThousand(stockParam.QtyPerBag), stockParam.LotNumber, stockParam.InDate.ToString("yyyyMMdd").Substring(1));
-        //                        stockSFG.LotNumber = stockParam.LotNumber;
-        //                        stockSFG.InDate = stockParam.InDate;
-        //                        stockSFG.ExpiredDate = stockParam.ExpiredDate;
-        //                        stockSFG.Quantity = QtyNew;
-        //                        stockSFG.QtyPerBag = stockParam.QtyPerBag;
-        //                        stockSFG.BinRackID = binRack.ID;
-        //                        stockSFG.BinRackCode = binRack.Code;
-        //                        stockSFG.BinRackName = binRack.Name;
-        //                        stockSFG.ReceivedAt = DateTime.Now;
-
-        //                        db.StockSFGs.Add(stockSFG);
-        //                    }
-
-        //                }
-
-        //                foreach (var stock in stocks)
-        //                {
-        //                    TransferDetail _detail = new TransferDetail();
-        //                    _detail.ID = Guid.NewGuid();
-        //                    _detail.TransferID = transfer.ID;
-        //                    _detail.ProductIDSource = itemSource.MaterialCode;
-        //                    _detail.StockIDSource = stock.ID;
-        //                    _detail.Qty = stock.Qty;
-
-        //                    _detail.ProductIDTarget = stockSFG.MaterialCode;
-        //                    _detail.StockIDTarget = stockSFG.ID;
-        //                    _detail.QtyTransfer = stock.QtyTransfer;
-        //                    transfer.TransferDetails.Add(_detail);
-        //                }
-        //            }
-
-        //            transfer.QtyTotal = transfer.TransferDetails.Sum(x => x.QtyTransfer);
-        //            db.Transfers.Add(transfer);
-        //            db.SaveChanges();
-        //            response.SetSuccess("Material code {0} to {1} success to transfer", model.ItemSourceMaterialCode, model.ItemTargetMaterialCode);
-        //        }
-        //        else
-        //        {
-        //            response.SetError(sbError.ToString());
-        //        }
-
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        response.SetError(ex.Message);
-        //    }
-
-        //    return Ok(response);
-        //}
 
 
         /// <summary>
@@ -1390,17 +979,10 @@ namespace WMS_BE.Controllers.Api
             string sortName = HttpContext.Current.Request.Form.GetValues("columns[" + orderCol + "][name]")[0];
             string sortDirection = HttpContext.Current.Request.Form.GetValues("order[0][dir]")[0];
 
-
             Dictionary<string, Func<Transfer, object>> cols = new Dictionary<string, Func<Transfer, object>>();
             cols.Add("TransferNo", x => x.TransferNo);
             cols.Add("CreatedOn", x => x.CreatedOn);
             cols.Add("CreatedBy", x => x.CreatedBy);
-            //cols.Add("MaterialCodeSource", x => x.MaterialCodeSource);
-            //cols.Add("MaterialNameSource", x => x.MaterialNameSource);
-            //cols.Add("MaterialCodeTarget", x => x.MaterialCodeTarget);
-            //cols.Add("MaterialNameTarget", x => x.MaterialNameTarget);
-
-
 
             IQueryable<Transfer> query = db.Transfers.AsQueryable();
             if (!string.IsNullOrEmpty(search))
@@ -1543,9 +1125,6 @@ namespace WMS_BE.Controllers.Api
                     });
                 }
             }
-
-
-
             return Ok(list.ToList());
         }
 
@@ -1600,86 +1179,7 @@ namespace WMS_BE.Controllers.Api
                     });
                 }
             }
-
-
-
             return Ok(list.ToList());
         }
-
-        //[HttpPost]
-        //[Route("api/transfer/data-table-detail")]
-        //public IHttpActionResult GetDataDetail()
-        //{
-        //    Guid ID = Guid.Empty;
-        //    var paramType = HttpContext.Current.Request.Params.GetValues("ID");
-        //    if (paramType != null && paramType.Length > 0 && !string.IsNullOrEmpty(paramType[0].ToString()))
-        //    {
-        //        ID = Guid.Parse(paramType[0].ToString());
-        //    }
-
-        //    int draw = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("draw")[0]);
-        //    int start = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("start")[0]);
-        //    int length = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("length")[0]);
-        //    string search = HttpContext.Current.Request.Form.GetValues("search[value]")[0];
-        //    string orderCol = HttpContext.Current.Request.Form.GetValues("order[0][column]")[0];
-        //    string sortName = HttpContext.Current.Request.Form.GetValues("columns[" + orderCol + "][name]")[0];
-        //    string sortDirection = HttpContext.Current.Request.Form.GetValues("order[0][dir]")[0];
-
-
-        //    Dictionary<string, Func<vTransfer, object>> cols = new Dictionary<string, Func<vTransfer, object>>();
-        //    cols.Add("TransferNo", x => x.TransferNo);
-        //    cols.Add("CreatedOn", x => x.CreatedOn);
-        //    cols.Add("CreatedBy", x => x.CreatedBy);
-        //    //cols.Add("MaterialCodeSource", x => x.MaterialCodeSource);
-        //    //cols.Add("MaterialNameSource", x => x.MaterialNameSource);
-        //    //cols.Add("MaterialCodeTarget", x => x.MaterialCodeTarget);
-        //    //cols.Add("MaterialNameTarget", x => x.MaterialNameTarget);
-
-
-
-        //    IQueryable<vTransfer> query = db.vTransfers.Where(x => x.ID == ID);
-        //    if (!string.IsNullOrEmpty(search))
-        //    {
-        //        query = query
-        //            .Where(m => m.TransferNo.Contains(search) || m.MaterialCodeSource.Contains(search) || m.MaterialNameSource.Contains(search) || m.MaterialCodeTarget.Contains(search) || m.MaterialNameTarget.Contains(search));
-        //    }
-
-
-        //    int recordsTotal = query.Count();
-        //    int recordsFiltered = 0;
-
-        //    if (sortDirection.Equals("asc"))
-        //        query = query.OrderBy(cols[sortName]).AsQueryable();
-        //    else
-        //        query = query.OrderByDescending(cols[sortName]).AsQueryable();
-
-        //    recordsFiltered = query.Count();
-        //    var list = query.Skip(start).Take(length).ToList().Select(x => new TransferTableModel()
-        //    {
-        //        ID = x.ID,
-        //        TransferNo = x.TransferNo,
-        //        CreatedBy = x.CreatedBy,
-        //        CreatedOn = x.CreatedOn,
-        //        MaterialSource = String.Format("{0}-{1}", x.MaterialCodeSource, x.MaterialNameSource),
-        //        BinRackSource = String.Format("{0}-{1}", x.BinRackAreaNameSource, x.BinRackNameSource),
-        //        MaterialTarget = String.Format("{0}-{1}", x.MaterialCodeTarget, x.MaterialNameTarget),
-        //        BinRackTarget = String.Format("{0}-{1}", x.BinRackAreaNameTarget, x.BinRackNameTarget),
-        //        QtyStock = x.Qty,
-        //        QtyTransfer = x.QtyTransfer
-        //    }).ToList();
-
-        //    Dictionary<string, object> obj = new Dictionary<string, object>();
-        //    string message = "";
-        //    bool status = false;
-        //    obj.Add("draw", draw);
-        //    obj.Add("recordsTotal", recordsTotal);
-        //    obj.Add("recordsFiltered", recordsFiltered);
-        //    obj.Add("data", list);
-        //    obj.Add("status", status);
-        //    obj.Add("message", message);
-
-        //    return Ok(obj);
-        //}
-
     }
 }

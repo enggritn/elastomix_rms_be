@@ -427,20 +427,41 @@ namespace WMS_BE.Controllers.Api
                         throw new Exception("Barcode Left & Barcode Right harus diisi.");
                     }
 
-                    ReceivingSFGDetail cekQtyPerBag = await db.ReceivingSFGDetails.Where(s => s.ID.Equals(req.ReceiveId)).FirstOrDefaultAsync();
-
-                    string QtyPerBag = "";
                     string LotNumber = "";
+                    string QtyPerBag = "";
                     string MaterialCode = req.BarcodeLeft.Substring(0, req.BarcodeLeft.Length - 13);
-                    if (cekQtyPerBag.QtyPerBag >= 1000)
+                    ReceivingSFGDetail cekQtyPerBag = await db.ReceivingSFGDetails.Where(s => s.ID.Equals(req.ReceiveId)).FirstOrDefaultAsync();
+                    vProductMaster vProductMaster = await db.vProductMasters.Where(m => m.MaterialCode.Equals(MaterialCode)).FirstOrDefaultAsync();
+                    if (vProductMaster == null)
                     {
-                        QtyPerBag = Helper.FormatThousand(cekQtyPerBag.QtyPerBag);
-                        LotNumber = cekQtyPerBag.LotNo;
+                        throw new Exception("Material tidak dikenali.");
+                    }
+
+                    if (vProductMaster.ProdType == "SFG")
+                    {
+                        if (req.BarcodeRight.Length == 29)
+                        {
+                            QtyPerBag = req.BarcodeRight.Substring(MaterialCode.Length + 7, 8).Trim();
+                            LotNumber = req.BarcodeRight.Substring(MaterialCode.Length + 16);
+                        }
+                        else
+                        {
+                            QtyPerBag = req.BarcodeRight.Substring(MaterialCode.Length + 7, 6).Trim();
+                            LotNumber = req.BarcodeRight.Substring(MaterialCode.Length + 14);
+                        }
                     }
                     else
                     {
-                        QtyPerBag = req.BarcodeRight.Substring(MaterialCode.Length + 7, 6).Trim();
-                        LotNumber = req.BarcodeRight.Substring(MaterialCode.Length + 14);
+                        if (cekQtyPerBag.Qty >= 1000)
+                        {
+                            QtyPerBag = req.BarcodeRight.Substring(MaterialCode.Length + 7, 8).Trim();
+                            LotNumber = req.BarcodeRight.Substring(MaterialCode.Length + 16);
+                        }
+                        else
+                        {
+                            QtyPerBag = req.BarcodeRight.Substring(MaterialCode.Length + 7, 6).Trim();
+                            LotNumber = req.BarcodeRight.Substring(MaterialCode.Length + 14);
+                        }
                     }
                     string InDate = req.BarcodeLeft.Substring(MaterialCode.Length, 7);
                     string ExpiredDate = req.BarcodeLeft.Substring(MaterialCode.Length + 7, 6);
@@ -458,12 +479,6 @@ namespace WMS_BE.Controllers.Api
                     if (receiving.TransactionStatus.Equals("CLOSED"))
                     {
                         throw new Exception("Putaway tidak dapat dilakukan, transaksi sudah selesai.");
-                    }
-
-                    vProductMaster vProductMaster = await db.vProductMasters.Where(m => m.MaterialCode.Equals(receive.ProductCode)).FirstOrDefaultAsync();
-                    if (vProductMaster == null)
-                    {
-                        throw new Exception("Material tidak dikenali.");
                     }
 
                     if (req.BagQty <= 0)
@@ -736,6 +751,18 @@ namespace WMS_BE.Controllers.Api
                             printer = new PrinterDTO();
                             printer.PrinterIP = ConfigurationManager.AppSettings["printer_2_ip"].ToString();
                             printer.PrinterName = ConfigurationManager.AppSettings["printer_2_name"].ToString();
+
+                            printers.Add(printer);
+
+                            printer = new PrinterDTO();
+                            printer.PrinterIP = ConfigurationManager.AppSettings["printer_3_ip"].ToString();
+                            printer.PrinterName = ConfigurationManager.AppSettings["printer_3_name"].ToString();
+
+                            printers.Add(printer);
+
+                            printer = new PrinterDTO();
+                            printer.PrinterIP = ConfigurationManager.AppSettings["printer_4_ip"].ToString();
+                            printer.PrinterName = ConfigurationManager.AppSettings["printer_4_name"].ToString();
 
                             printers.Add(printer);
 

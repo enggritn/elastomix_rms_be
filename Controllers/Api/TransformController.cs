@@ -1,22 +1,16 @@
-﻿using ExcelDataReader;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Data;
 using System.Data.Entity;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.Http;
 using WMS_BE.Models;
 using WMS_BE.Utils;
-using OfficeOpenXml;
-using OfficeOpenXml.Style;
 using System.Drawing;
 using ZXing;
 using ZXing.QrCode;
@@ -196,7 +190,6 @@ namespace WMS_BE.Controllers.Api
 
             try
             {
-
 
                 Dictionary<string, Func<Transform, object>> cols = new Dictionary<string, Func<Transform, object>>();
                 cols.Add("Code", x => x.Code);
@@ -511,8 +504,7 @@ namespace WMS_BE.Controllers.Api
 
             IEnumerable<vStockProduct> list = Enumerable.Empty<vStockProduct>();
             IEnumerable<MaterialInfo> pagedData = Enumerable.Empty<MaterialInfo>();
-
-          
+                      
             IQueryable<vStockProduct> query = db.vStockProducts.AsQueryable();
             List<string> warehouses = db.Warehouses.Where(x => x.Type.Equals("EMIX")).Select(d => d.Code).ToList();
             query = query.Where(m => warehouses.Contains(m.WarehouseCode));
@@ -609,7 +601,6 @@ namespace WMS_BE.Controllers.Api
             IEnumerable<vProductStock> list = Enumerable.Empty<vProductStock>();
             IEnumerable<MaterialInfo> pagedData = Enumerable.Empty<MaterialInfo>();
 
-
             IQueryable<vProductStock> query = db.vProductStocks.AsQueryable();
             List<string> warehouses = db.Warehouses.Where(x => x.Type.Equals("EMIX")).Select(d => d.Code).ToList();
             
@@ -646,8 +637,6 @@ namespace WMS_BE.Controllers.Api
 
                 if (list != null && list.Count() > 0)
                 {
-
-
                     pagedData = from x in list
                                 select new MaterialInfo
                                 {
@@ -835,7 +824,6 @@ namespace WMS_BE.Controllers.Api
 
                     if (transactionStatus.Equals("CLOSED"))
                     {
-
                         //check detail
                         if (header.TransformDetails.Count() < 1)
                         {
@@ -884,227 +872,6 @@ namespace WMS_BE.Controllers.Api
             return await UpdateStatus(id, "CLOSED");
         }
 
-
-        //[HttpPost]
-        //public async Task<IHttpActionResult> Picking(OutboundPickingVM dataVM)
-        //{
-        //    Dictionary<string, object> obj = new Dictionary<string, object>();
-        //    List<CustomValidationMessage> customValidationMessages = new List<CustomValidationMessage>();
-
-        //    string message = "";
-        //    bool status = false;
-        //    var re = Request;
-        //    var headers = re.Headers;
-
-        //    try
-        //    {
-        //        string token = "";
-
-        //        if (headers.Contains("token"))
-        //        {
-        //            token = headers.GetValues("token").First();
-        //        }
-
-        //        string activeUser = await db.Users.Where(x => x.Token.Equals(token)).Select(x => x.Username).FirstOrDefaultAsync();
-
-        //        if (activeUser != null)
-        //        {
-        //            vStockAll stockAll = null;
-
-        //            if (string.IsNullOrEmpty(dataVM.OrderID))
-        //            {
-        //                throw new Exception("Order Id is required.");
-        //            }
-
-        //            OutboundOrder order = await db.OutboundOrders.Where(s => s.ID.Equals(dataVM.OrderID)).FirstOrDefaultAsync();
-
-        //            if (order == null)
-        //            {
-        //                throw new Exception("Order is not recognized.");
-        //            }
-
-
-        //            //if (!order.Transform.TransactionStatus.Equals("CONFIRMED"))
-        //            //{
-        //            //    throw new Exception("Picking is not allowed.");
-        //            //}
-
-
-        //            if (string.IsNullOrEmpty(dataVM.StockID))
-        //            {
-        //                throw new Exception("Stock is required.");
-        //            }
-
-        //            //check stock quantity
-        //            stockAll = db.vStockAlls.Where(m => m.ID.Equals(dataVM.StockID)).FirstOrDefault();
-        //            if (stockAll == null)
-        //            {
-        //                throw new Exception("Stock is not recognized.");
-        //            }
-
-
-        //            //restriction 1 : AREA TYPE
-
-        //            User userData = await db.Users.Where(x => x.Username.Equals(activeUser)).FirstOrDefaultAsync();
-        //            string userAreaType = userData.AreaType;
-
-        //            string materialAreaType = stockAll.BinRackAreaType;
-
-        //            if (!userAreaType.Equals(materialAreaType))
-        //            {
-        //                throw new Exception(string.Format("FIFO Restriction, do not allowed to pick material in area {0}", materialAreaType));
-        //            }
-
-        //            //restriction 2 : REMAINDER QTY
-
-        //            vStockAll stkAll = db.vStockAlls.Where(s => s.MaterialCode.Equals(order.MaterialCode) && s.Quantity > 0 && !s.OnInspect && s.BinRackAreaType.Equals(userAreaType))
-        //               .OrderByDescending(s => DbFunctions.TruncateTime(DateTime.Now) >= DbFunctions.TruncateTime(s.ExpiredDate))
-        //               .ThenBy(s => s.InDate)
-        //               .ThenBy(s => s.QtyPerBag).FirstOrDefault();
-        //            //.ThenBy(s => s.Quantity).FirstOrDefault();
-
-        //            if (stkAll == null)
-        //            {
-        //                throw new Exception("Stock is not available.");
-        //            }
-
-        //            if (stockAll.QtyPerBag > stkAll.QtyPerBag)
-        //            {
-        //                throw new Exception(string.Format("FIFO Restriction, must pick item with following detail = LotNo : {0} & Qty/Bag : {1}", stkAll.LotNumber, Helper.FormatThousand(stkAll.QtyPerBag)));
-        //            }
-
-        //            //restriction 3 : IN DATE
-
-        //            if (stockAll.InDate.Date > stkAll.InDate.Date)
-        //            {
-        //                throw new Exception(string.Format("FIFO Restriction, must pick item with following detail = LotNo : {0} & In Date: {1}", stkAll.LotNumber, Helper.NullDateToString(stkAll.InDate)));
-        //            }
-
-        //            //restriction 4 : EXPIRED DATE
-
-        //            if (DateTime.Now.Date >= stkAll.ExpiredDate.Date)
-        //            {
-        //                throw new Exception(string.Format("FIFO Restriction, must execute QC Inspection for material with following detail = LotNo : {0} & Qty/Bag : {1}", stkAll.LotNumber, Helper.FormatThousand(stkAll.QtyPerBag)));
-        //            }
-
-        //            if (dataVM.BagQty <= 0)
-        //            {
-        //                ModelState.AddModelError("Outbound.BagQty", "Bag Qty can not be empty or below zero.");
-        //            }
-        //            else
-        //            {
-        //                int bagQty = Convert.ToInt32(stockAll.Quantity / stockAll.QtyPerBag);
-
-        //                if (dataVM.BagQty > bagQty)
-        //                {
-        //                    ModelState.AddModelError("Outbound.BagQty", string.Format("Bag Qty exceeded. Bag Qty : {0}", bagQty));
-        //                }
-        //                else
-        //                {
-        //                    decimal requestedQty = order.TotalQty;
-        //                    decimal pickedQty = order.OutboundPickings.Sum(i => i.BagQty * i.QtyPerBag);
-        //                    decimal availableQty = requestedQty - pickedQty;
-        //                    int availableBagQty = Convert.ToInt32(Math.Ceiling(availableQty / stockAll.QtyPerBag));
-
-        //                    if (dataVM.BagQty > availableBagQty)
-        //                    {
-        //                        ModelState.AddModelError("Outbound.BagQty", string.Format("Bag Qty exceeded. Available Bag Qty : {0}", availableBagQty));
-        //                    }
-        //                }
-        //            }
-
-
-        //            if (!ModelState.IsValid)
-        //            {
-        //                foreach (var state in ModelState)
-        //                {
-        //                    string field = state.Key.Split('.')[1];
-        //                    string value = state.Value.Errors.Select(x => x.ErrorMessage).ToArray()[0];
-        //                    customValidationMessages.Add(new CustomValidationMessage(field, value));
-        //                }
-
-        //                throw new Exception("Input is not valid");
-        //            }
-
-        //            BinRack binRack = db.BinRacks.Where(m => m.Code.Equals(stockAll.BinRackCode)).FirstOrDefault();
-
-        //            OutboundPicking picking = new OutboundPicking();
-        //            picking.ID = Helper.CreateGuid("P");
-        //            picking.OutboundOrderID = order.ID;
-        //            picking.PickingMethod = "MANUAL";
-        //            picking.PickedOn = DateTime.Now;
-        //            picking.PickedBy = activeUser;
-        //            picking.BinRackID = binRack.ID;
-        //            picking.BinRackCode = stockAll.BinRackCode;
-        //            picking.BinRackName = stockAll.BinRackName;
-        //            picking.BagQty = dataVM.BagQty;
-        //            picking.QtyPerBag = stockAll.QtyPerBag;
-        //            picking.StockCode = stockAll.Code;
-        //            picking.LotNo = stockAll.LotNumber;
-        //            picking.InDate = stockAll.InDate;
-        //            picking.ExpDate = stockAll.ExpiredDate;
-
-        //            db.OutboundPickings.Add(picking);
-
-        //            //reduce stock
-
-        //            if (stockAll.Type.Equals("RM"))
-        //            {
-        //                decimal pickQty = picking.BagQty * picking.QtyPerBag;
-        //                StockRM stock = db.StockRMs.Where(m => m.ID.Equals(stockAll.ID)).FirstOrDefault();
-        //                stock.Quantity -= pickQty;
-        //            }
-        //            else if (stockAll.Type.Equals("SFG"))
-        //            {
-        //                decimal pickQty = picking.BagQty * picking.QtyPerBag;
-        //                StockSFG stock = db.StockSFGs.Where(m => m.ID.Equals(stockAll.ID)).FirstOrDefault();
-        //                stock.Quantity -= pickQty;
-        //            }
-
-
-        //            await db.SaveChangesAsync();
-
-        //            OutboundOrderDTO orderDTO = new OutboundOrderDTO
-        //            {
-        //                ID = order.ID,
-        //                MaterialCode = order.MaterialCode,
-        //                MaterialName = order.MaterialName,
-        //                OutstandingQty = Helper.FormatThousand(order.TotalQty - (order.OutboundPickings.Sum(m => m.BagQty * m.QtyPerBag))),
-        //                OutstandingBagQty = Helper.FormatThousand(Convert.ToInt32(Math.Ceiling((order.TotalQty - (order.OutboundPickings.Sum(i => i.BagQty * i.QtyPerBag))) / order.QtyPerBag))),
-
-        //            };
-
-        //            obj.Add("data", orderDTO);
-
-        //            status = true;
-        //            message = "Picking succeeded.";
-
-        //        }
-        //        else
-        //        {
-        //            message = "Token is no longer valid. Please re-login.";
-        //        }
-        //    }
-        //    catch (HttpRequestException reqpEx)
-        //    {
-        //        message = reqpEx.Message;
-        //    }
-        //    catch (HttpResponseException respEx)
-        //    {
-        //        message = respEx.Message;
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        message = ex.Message;
-        //    }
-
-
-        //    obj.Add("status", status);
-        //    obj.Add("message", message);
-        //    obj.Add("error_validation", customValidationMessages);
-
-        //    return Ok(obj);
-        //}
         [HttpPost]
         public async Task<IHttpActionResult> Picking(StockTransformPickingWebReq req)
         {
@@ -1128,8 +895,6 @@ namespace WMS_BE.Controllers.Api
 
                 if (activeUser != null)
                 {
-
-
                     if (string.IsNullOrEmpty(req.HeaderId))
                     {
                         throw new Exception("Header Id is required.");
@@ -1154,21 +919,12 @@ namespace WMS_BE.Controllers.Api
                         ModelState.AddModelError("Transform.BagQtyE", string.Format("Material tidak dikenali."));
                     }
 
-
                     string StockCode = "";
 
                     if (vProductMaster == null)
                     {
                         ModelState.AddModelError("Transform.BagQtyE", string.Format("Material tidak dikenali."));
                     }
-
-                    //string MaterialCode = vProductMaster.MaterialCode;
-                    //string QtyPerBag = vProductMaster.QtyPerBag.ToString();
-                    //string LotNumber = vProductMaster.LotNo;
-                    //string InDate = Convert.ToDateTime(receive.InDate).ToString("yyyyMMdd").Substring(1);
-                    //string ExpiredDate = Convert.ToDateTime(receive.ExpDate).ToString("yyyyMMdd").Substring(1);
-                    //StockCode = string.Format("{0}{1}{2}{3}{4}", MaterialCode.Trim(), QtyPerBag, LotNumber, InDate, ExpiredDate);
-
 
                     BinRack binRack = null;
                     if (string.IsNullOrEmpty(req.BinRackCode))
@@ -1193,7 +949,6 @@ namespace WMS_BE.Controllers.Api
                     }
 
                     //restriction 1 : AREA TYPE
-
                     User userData = await db.Users.Where(x => x.Username.Equals(activeUser)).FirstOrDefaultAsync();
                     string userAreaType = userData.AreaType;
 
@@ -1220,21 +975,18 @@ namespace WMS_BE.Controllers.Api
                     }
 
                     //restriction 2 : REMAINDER QTY
-
                     if (stockAll.QtyPerBag > stkAll.QtyPerBag)
                     {
                         throw new Exception(string.Format("FIFO Restriction, harus mengambil material dengan keterangan = LotNo : {0} & Qty/Bag : {1} pada Bin Rack {2} terlebih dahulu.", stkAll.LotNumber, Helper.FormatThousand(stkAll.QtyPerBag), stkAll.BinRackCode));
                     }
 
                     //restriction 3 : IN DATE
-
                     if (stockAll.InDate.Value.Date > stkAll.InDate.Value.Date)
                     {
                         throw new Exception(string.Format("FIFO Restriction, harus mengambil material dengan keterangan = LotNo : {0} & In Date: {1} pada Bin Rack {2} terlebih dahulu.", stkAll.LotNumber, Helper.NullDateToString(stkAll.InDate), stkAll.BinRackCode));
                     }
 
                     //restriction 4 : EXPIRED DATE
-
                     if (DateTime.Now.Date >= stkAll.ExpiredDate.Value.Date)
                     {
                         throw new Exception(string.Format("FIFO Restriction, harus melakukan QC Inspection untuk material dengan keterangan = LotNo : {0} & Qty/Bag : {1} pada Bin Rack {2} terlebih dahulu.", stkAll.LotNumber, Helper.FormatThousand(stkAll.QtyPerBag), stkAll.BinRackCode));
@@ -1264,7 +1016,6 @@ namespace WMS_BE.Controllers.Api
                             }
                         }
                     }
-
 
                     if (!ModelState.IsValid)
                     {
@@ -1364,7 +1115,6 @@ namespace WMS_BE.Controllers.Api
 
                             db.LogPrintRMs.Add(logPrintRM);
                         }
-
 
                         //new stock
                         //qty per bag based on target
@@ -1721,7 +1471,6 @@ namespace WMS_BE.Controllers.Api
                             }
                             lastSeries = startSeries;
 
-
                             TransformDetail detail = new TransformDetail();
                             detail.ID = Helper.CreateGuid("TRFd");
                             detail.TransformID = trf.ID;
@@ -1963,7 +1712,6 @@ namespace WMS_BE.Controllers.Api
 
             string MaterialType = vProductMaster.ProdType;
 
-
             try
             {
                 query = query
@@ -2014,9 +1762,6 @@ namespace WMS_BE.Controllers.Api
                                     PrintedAt = Helper.NullDateTimeToString(x.PrintedAt),
                                     PrintedBy = x.PrintedBy,
                                     PrintBarcodeAction = string.IsNullOrEmpty(x.PrintedBy) && x.LastSeries > 0,
-
-                                    //PickedBy = x.PickedBy,
-                                    //PickedOn = Helper.NullDateTimeToString(x.PickedOn)
                                 };
                 }
 
@@ -2083,7 +1828,6 @@ namespace WMS_BE.Controllers.Api
                         throw new Exception("Data tidak dikenali.");
                     }
 
-
                     vProductMaster material = db.vProductMasters.Where(m => m.MaterialCode.Equals(detail.MaterialCode)).FirstOrDefault();
                     if (material == null)
                     {
@@ -2112,16 +1856,12 @@ namespace WMS_BE.Controllers.Api
                     }
 
                     int fullBag = Convert.ToInt32(detail.Qty / detail.QtyPerBag);
-
                     int lastSeries = detail.LastSeries - fullBag;
-
 
                     //get last series
                     seq = Convert.ToInt32(lastSeries + 1);
 
-
                     List<string> bodies = new List<string>();
-
 
                     string Domain = HttpContext.Current.Request.Url.Scheme + "://" + HttpContext.Current.Request.Url.Authority + HttpContext.Current.Request.ApplicationPath.TrimEnd('/');
 
@@ -2153,7 +1893,6 @@ namespace WMS_BE.Controllers.Api
                         expiredDate = dt2.ToString("yyyyMMdd").Substring(2);
                         expiredDate2 = dt2.ToString("yyyy-MM-dd");
 
-
                         string qr2 = detail.MaterialCode.PadRight(len) + inDate + expiredDate;
                         string qrImg2 = GenerateQRCode(qr2);
                         dto.Field5 = detail.LotNo;
@@ -2172,7 +1911,6 @@ namespace WMS_BE.Controllers.Api
 
                         //delete 
                     }
-
 
                     using (MemoryStream stream = new MemoryStream())
                     {
@@ -2213,6 +1951,18 @@ namespace WMS_BE.Controllers.Api
                             printer = new PrinterDTO();
                             printer.PrinterIP = ConfigurationManager.AppSettings["printer_2_ip"].ToString();
                             printer.PrinterName = ConfigurationManager.AppSettings["printer_2_name"].ToString();
+
+                            printers.Add(printer);
+
+                            printer = new PrinterDTO();
+                            printer.PrinterIP = ConfigurationManager.AppSettings["printer_3_ip"].ToString();
+                            printer.PrinterName = ConfigurationManager.AppSettings["printer_3_name"].ToString();
+
+                            printers.Add(printer);
+
+                            printer = new PrinterDTO();
+                            printer.PrinterIP = ConfigurationManager.AppSettings["printer_4_ip"].ToString();
+                            printer.PrinterName = ConfigurationManager.AppSettings["printer_4_name"].ToString();
 
                             printers.Add(printer);
 
@@ -2343,8 +2093,6 @@ namespace WMS_BE.Controllers.Api
             }
 
             Transform transform = db.Transforms.Where(m => m.ID.ToString().Equals(OrderId)).FirstOrDefault();
-            //string warehouseCode = request["warehouseCode"].ToString();
-            //string areaCode = request["areaCode"].ToString();
 
             IEnumerable<vStockAll> list = Enumerable.Empty<vStockAll>();
             List<FifoStockDTO> data = new List<FifoStockDTO>();
@@ -2353,7 +2101,6 @@ namespace WMS_BE.Controllers.Api
             List<string> warehouses = db.Warehouses.Where(x => x.Type.Equals("EMIX")).Select(d => d.Code).ToList();
             query = query.Where(m => warehouses.Contains(m.WarehouseCode));
             int totalRow = query.Count();
-
 
             decimal requestedQty = transform.TotalQty;
             decimal pickedQty = transform.TransformDetails.Where(x => x.Transform.MaterialCodeTarget == x.MaterialCode).Sum(i => i.Qty);
@@ -2410,7 +2157,6 @@ namespace WMS_BE.Controllers.Api
                         {
                             break;
                         }
-
                     }
                 }
 
@@ -2442,5 +2188,285 @@ namespace WMS_BE.Controllers.Api
             return Ok(obj);
         }
 
+
+        [HttpPost]
+        public async Task<IHttpActionResult> DatatableDetailTransform()
+        {
+            int draw = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("draw")[0]);
+            int start = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("start")[0]);
+            int length = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("length")[0]);
+            string search = HttpContext.Current.Request.Form.GetValues("search[value]")[0];
+            string orderCol = HttpContext.Current.Request.Form.GetValues("order[0][column]")[0];
+            string sortName = HttpContext.Current.Request.Form.GetValues("columns[" + orderCol + "][name]")[0];
+            string sortDirection = HttpContext.Current.Request.Form.GetValues("order[0][dir]")[0];
+
+            HttpRequest request = HttpContext.Current.Request;
+            string date = request["date"].ToString();
+            string enddate = request["enddate"].ToString();
+            string warehouseCode = request["warehouseCode"].ToString();
+
+            Dictionary<string, object> obj = new Dictionary<string, object>();
+            string message = "";
+            bool status = false;
+
+            IEnumerable<vTransform> list = Enumerable.Empty<vTransform>();
+            IEnumerable<TransformDTOReport> pagedData = Enumerable.Empty<TransformDTOReport>();
+
+            DateTime filterDate = Convert.ToDateTime(date);
+            DateTime endfilterDate = Convert.ToDateTime(enddate);
+            IQueryable<vTransform> query;
+
+            if (!string.IsNullOrEmpty(warehouseCode))
+            {
+                query = db.vTransforms.Where(s => DbFunctions.TruncateTime(s.PutawayOn) >= DbFunctions.TruncateTime(filterDate)
+                        && DbFunctions.TruncateTime(s.PutawayOn) <= DbFunctions.TruncateTime(endfilterDate)
+                        && s.WHName.Equals(warehouseCode));
+            }
+            else
+            {               
+                query = db.vTransforms.Where(s => DbFunctions.TruncateTime(s.PutawayOn) >= DbFunctions.TruncateTime(filterDate)
+                        && DbFunctions.TruncateTime(s.PutawayOn) <= DbFunctions.TruncateTime(endfilterDate));
+            }
+
+            int recordsTotal = query.Count();
+            int recordsFiltered = 0;
+
+            try
+            {
+                query = query
+                        .Where(m => m.SourceRMCode.Contains(search)
+                        || m.SourceRMName.Contains(search)
+                        );
+
+                Dictionary<string, Func<vTransform, object>> cols = new Dictionary<string, Func<vTransform, object>>();
+                cols.Add("DocumentNo", x => x.DocumentNo);
+                cols.Add("WHName", x => x.WHName);
+                cols.Add("SourceRMCode", x => x.SourceRMCode);
+                cols.Add("SourceRMName", x => x.SourceRMName);
+                cols.Add("TransformQty", x => x.TransformQty);
+                cols.Add("TargetRMCode", x => x.TargetRMCode);
+                cols.Add("TargetRMName", x => x.TargetRMName);
+                cols.Add("SourceBinRack", x => x.SourceBinRack);
+                cols.Add("SourceInDate", x => x.SourceInDate);
+                cols.Add("SourceExpDate", x => x.SourceExpDate);
+                cols.Add("SourceLotNo", x => x.SourceLotNo);
+                cols.Add("SourceBag", x => x.SourceBag);
+                cols.Add("SourceFullBag", x => x.SourceFullBag);
+                cols.Add("SourceTotal", x => x.SourceTotal);
+                cols.Add("PickingBy", x => x.PickingBy);
+                cols.Add("PickingOn", x => x.PickingOn);
+                cols.Add("TargetBinRack", x => x.TargetBinRack);
+                cols.Add("TargetInDate", x => x.TargetInDate);
+                cols.Add("TargetExpDate", x => x.TargetExpDate);
+                cols.Add("TargetLotNo", x => x.TargetLotNo);
+                cols.Add("TargetBag", x => x.TargetBag);
+                cols.Add("TargetFullBag", x => x.TargetFullBag);
+                cols.Add("TargetTotal", x => x.TargetTotal);
+                cols.Add("PutawayBy", x => x.PutawayBy);
+                cols.Add("PutawayOn", x => x.PutawayOn);
+                cols.Add("Status", x => x.Status);
+                cols.Add("Memo", x => x.Memo);
+
+                if (sortDirection.Equals("asc"))
+                    list = query.OrderBy(cols[sortName]);
+                else
+                    list = query.OrderByDescending(cols[sortName]);
+
+                recordsFiltered = list.Count();
+
+                list = list.Skip(start).Take(length).ToList();
+
+                if (list != null && list.Count() > 0)
+                {
+                    pagedData = from detail in list
+                                select new TransformDTOReport
+                                {
+                                    DocumentNo = detail.DocumentNo,
+                                    WHName = detail.WHName,
+                                    SourceRMCode = detail.SourceRMCode,
+                                    SourceRMName = detail.SourceRMName,
+                                    TransformQty = Helper.FormatThousand(Convert.ToInt32(detail.TransformQty)),
+                                    TargetRMCode = detail.TargetRMCode,
+                                    TargetRMName = detail.TargetRMName,
+                                    SourceBinRack = detail.SourceBinRack,
+                                    SourceInDate = Helper.NullDateToString2(detail.SourceInDate),
+                                    SourceExpDate = Helper.NullDateToString2(detail.SourceExpDate),
+                                    SourceLotNo = detail.SourceLotNo != null ? detail.SourceLotNo : "",
+                                    SourceBag = Helper.FormatThousand(detail.SourceBag),
+                                    SourceFullBag = Helper.FormatThousand(detail.SourceFullBag),
+                                    SourceTotal = Helper.FormatThousand(detail.SourceTotal),
+                                    PickingBy = detail.PickingBy,
+                                    PickingOn = Convert.ToDateTime(detail.PickingOn),
+                                    TargetBinRack = detail.TargetBinRack,
+                                    TargetInDate = Helper.NullDateToString2(detail.TargetInDate),
+                                    TargetExpDate = Helper.NullDateToString2(detail.TargetExpDate),
+                                    TargetLotNo = detail.TargetLotNo != null ? detail.TargetLotNo : "",
+                                    TargetBag = Helper.FormatThousand(detail.TargetBag),
+                                    TargetFullBag = Helper.FormatThousand(detail.TargetFullBag),
+                                    TargetTotal = Helper.FormatThousand(detail.TargetTotal),
+                                    PutawayBy = detail.PutawayBy,
+                                    PutawayOn = Convert.ToDateTime(detail.PutawayOn),
+                                    Status = detail.Status,
+                                    Memo = detail.Memo,
+                                };
+                }
+
+                status = true;
+                message = "Fetch data succeeded.";
+            }
+            catch (HttpRequestException reqpEx)
+            {
+                message = reqpEx.Message;
+                return BadRequest();
+            }
+            catch (HttpResponseException respEx)
+            {
+                message = respEx.Message;
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
+
+            obj.Add("draw", draw);
+            obj.Add("recordsTotal", recordsTotal);
+            obj.Add("recordsFiltered", recordsFiltered);
+            obj.Add("data", pagedData);
+            obj.Add("status", status);
+            obj.Add("message", message);
+
+            return Ok(obj);
+        }
+
+        [HttpGet]
+        public async Task<IHttpActionResult> GetDataReportTransform(string date, string enddate, string warehouse)
+        {
+            Dictionary<string, object> obj = new Dictionary<string, object>();
+            string message = "";
+            bool status = false;
+            HttpRequest request = HttpContext.Current.Request;
+
+
+            if (string.IsNullOrEmpty(date) && string.IsNullOrEmpty(enddate) && string.IsNullOrEmpty(warehouse))
+            {
+                throw new Exception("Parameter is required.");
+            }
+
+            IEnumerable<vTransform> list = Enumerable.Empty<vTransform>();
+            IEnumerable<TransformDTOReport> pagedData = Enumerable.Empty<TransformDTOReport>();
+
+            DateTime filterDate = Convert.ToDateTime(date);
+            DateTime endfilterDate = Convert.ToDateTime(enddate);
+            IQueryable<vTransform> query;
+
+            if (!string.IsNullOrEmpty(warehouse))
+            {
+                query = db.vTransforms.Where(s => DbFunctions.TruncateTime(s.PutawayOn) >= DbFunctions.TruncateTime(filterDate)
+                        && DbFunctions.TruncateTime(s.PutawayOn) <= DbFunctions.TruncateTime(endfilterDate)
+                        && s.WHName.Equals(warehouse));
+            }
+            else
+            {
+                query = db.vTransforms.Where(s => DbFunctions.TruncateTime(s.PutawayOn) >= DbFunctions.TruncateTime(filterDate)
+                        && DbFunctions.TruncateTime(s.PutawayOn) <= DbFunctions.TruncateTime(endfilterDate));
+            }
+
+            int recordsTotal = query.Count();
+            int recordsFiltered = 0;
+
+            try
+            {
+                Dictionary<string, Func<vTransform, object>> cols = new Dictionary<string, Func<vTransform, object>>();
+                cols.Add("DocumentNo", x => x.DocumentNo);
+                cols.Add("WHName", x => x.WHName);
+                cols.Add("SourceRMCode", x => x.SourceRMCode);
+                cols.Add("SourceRMName", x => x.SourceRMName);
+                cols.Add("TransformQty", x => x.TransformQty);
+                cols.Add("TargetRMCode", x => x.TargetRMCode);
+                cols.Add("TargetRMName", x => x.TargetRMName);
+                cols.Add("SourceBinRack", x => x.SourceBinRack);
+                cols.Add("SourceInDate", x => x.SourceInDate);
+                cols.Add("SourceExpDate", x => x.SourceExpDate);
+                cols.Add("SourceLotNo", x => x.SourceLotNo);
+                cols.Add("SourceBag", x => x.SourceBag);
+                cols.Add("SourceFullBag", x => x.SourceFullBag);
+                cols.Add("SourceTotal", x => x.SourceTotal);
+                cols.Add("PickingBy", x => x.PickingBy);
+                cols.Add("PickingOn", x => x.PickingOn);
+                cols.Add("TargetBinRack", x => x.TargetBinRack);
+                cols.Add("TargetInDate", x => x.TargetInDate);
+                cols.Add("TargetExpDate", x => x.TargetExpDate);
+                cols.Add("TargetLotNo", x => x.TargetLotNo);
+                cols.Add("TargetBag", x => x.TargetBag);
+                cols.Add("TargetFullBag", x => x.TargetFullBag);
+                cols.Add("TargetTotal", x => x.TargetTotal);
+                cols.Add("PutawayBy", x => x.PutawayBy);
+                cols.Add("PutawayOn", x => x.PutawayOn);
+                cols.Add("Status", x => x.Status);
+                cols.Add("Memo", x => x.Memo);
+
+                recordsFiltered = list.Count();
+                list = query.ToList();
+
+                if (list != null && list.Count() > 0)
+                {
+                    pagedData = from detail in list
+                                select new TransformDTOReport
+                                {
+                                    DocumentNo = detail.DocumentNo,
+                                    WHName = detail.WHName,
+                                    SourceRMCode = detail.SourceRMCode,
+                                    SourceRMName = detail.SourceRMName,
+                                    TransformQty = Helper.FormatThousand(Convert.ToInt32(detail.TransformQty)),
+                                    TargetRMCode = detail.TargetRMCode,
+                                    TargetRMName = detail.TargetRMName,
+                                    SourceBinRack = detail.SourceBinRack,
+                                    SourceInDate = Helper.NullDateToString2(detail.SourceInDate),
+                                    SourceExpDate = Helper.NullDateToString2(detail.SourceExpDate),
+                                    SourceLotNo = detail.SourceLotNo != null ? detail.SourceLotNo : "",
+                                    SourceBag = Helper.FormatThousand(detail.SourceBag),
+                                    SourceFullBag = Helper.FormatThousand(detail.SourceFullBag),
+                                    SourceTotal = Helper.FormatThousand(detail.SourceTotal),
+                                    PickingBy = detail.PickingBy,
+                                    PickingOn = Convert.ToDateTime(detail.PickingOn),
+                                    TargetBinRack = detail.TargetBinRack,
+                                    TargetInDate = Helper.NullDateToString2(detail.TargetInDate),
+                                    TargetExpDate = Helper.NullDateToString2(detail.TargetExpDate),
+                                    TargetLotNo = detail.TargetLotNo != null ? detail.TargetLotNo : "",
+                                    TargetBag = Helper.FormatThousand(detail.TargetBag),
+                                    TargetFullBag = Helper.FormatThousand(detail.TargetFullBag),
+                                    TargetTotal = Helper.FormatThousand(detail.TargetTotal),
+                                    PutawayBy = detail.PutawayBy,
+                                    PutawayOn = Convert.ToDateTime(detail.PutawayOn),
+                                    Status = detail.Status,
+                                    Memo = detail.Memo,
+                                };
+                }
+
+                status = true;
+                message = "Fetch data succeeded.";
+            }
+            catch (HttpRequestException reqpEx)
+            {
+                message = reqpEx.Message;
+                return BadRequest();
+            }
+            catch (HttpResponseException respEx)
+            {
+                message = respEx.Message;
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
+
+            obj.Add("list", pagedData);
+            obj.Add("status", status);
+            obj.Add("message", message);
+
+            return Ok(obj);
+        }
     }
 }

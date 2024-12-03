@@ -1007,6 +1007,18 @@ namespace WMS_BE.Controllers.Api
 
                             printers.Add(printer);
 
+                            printer = new PrinterDTO();
+                            printer.PrinterIP = ConfigurationManager.AppSettings["printer_3_ip"].ToString();
+                            printer.PrinterName = ConfigurationManager.AppSettings["printer_3_name"].ToString();
+
+                            printers.Add(printer);
+
+                            printer = new PrinterDTO();
+                            printer.PrinterIP = ConfigurationManager.AppSettings["printer_4_ip"].ToString();
+                            printer.PrinterName = ConfigurationManager.AppSettings["printer_4_name"].ToString();
+
+                            printers.Add(printer);
+
                             string folder_name = "";
                             foreach (PrinterDTO printerDTO in printers)
                             {
@@ -2926,317 +2938,281 @@ namespace WMS_BE.Controllers.Api
             return Ok(obj);
         }
 
-        
-        //[HttpPost]
-        //public async Task<IHttpActionResult> Print(ReceivingPrintVM receivingPrintVM)
-        //{
-        //    Dictionary<string, object> obj = new Dictionary<string, object>();
-        //    List<CustomValidationMessage> customValidationMessages = new List<CustomValidationMessage>();
 
-        //    string message = "";
-        //    bool status = false;
-        //    var re = Request;
-        //    var headers = re.Headers;
-        //    ReceivingBarcodeDTO data = new ReceivingBarcodeDTO();
+        [HttpPost]
+        public async Task<IHttpActionResult> DatatableDetailOtherOutbound()
+        {
+            int draw = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("draw")[0]);
+            int start = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("start")[0]);
+            int length = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("length")[0]);
+            string search = HttpContext.Current.Request.Form.GetValues("search[value]")[0];
+            string orderCol = HttpContext.Current.Request.Form.GetValues("order[0][column]")[0];
+            string sortName = HttpContext.Current.Request.Form.GetValues("columns[" + orderCol + "][name]")[0];
+            string sortDirection = HttpContext.Current.Request.Form.GetValues("order[0][dir]")[0];
 
-        //    try
-        //    {
-        //        string token = "";
+            HttpRequest request = HttpContext.Current.Request;
+            string date = request["date"].ToString();
+            string enddate = request["enddate"].ToString();
+            string warehouseCode = request["warehouseCode"].ToString();
 
-        //        if (headers.Contains("token"))
-        //        {
-        //            token = headers.GetValues("token").First();
-        //        }
+            Dictionary<string, object> obj = new Dictionary<string, object>();
+            string message = "";
+            bool status = false;
 
-        //        string activeUser = await db.Users.Where(x => x.Token.Equals(token)).Select(x => x.Username).FirstOrDefaultAsync();
+            IEnumerable<vOutbound> list = Enumerable.Empty<vOutbound>();
+            IEnumerable<OutbounReportDTO> pagedData = Enumerable.Empty<OutbounReportDTO>();
 
-        //        if (activeUser != null)
-        //        {
-        //            ReceivingDetail receivingDetail = await db.ReceivingDetails.Where(s => s.ID.Equals(receivingPrintVM.ReceivingDetailID)).FirstOrDefaultAsync();
+            DateTime filterDate = Convert.ToDateTime(date);
+            DateTime endfilterDate = Convert.ToDateTime(enddate);
+            IQueryable<vOutbound> query;
 
-        //            if (receivingDetail == null)
-        //            {
-        //                throw new Exception("Receiving is not recognized.");
-        //            }
-        //            else
-        //            {
-        //                //check status already closed
-        //            }
+            if (!string.IsNullOrEmpty(warehouseCode))
+            {
+                query = db.vOutbounds.Where(s => DbFunctions.TruncateTime(s.CreateOn) >= DbFunctions.TruncateTime(filterDate)
+                        && DbFunctions.TruncateTime(s.CreateOn) <= DbFunctions.TruncateTime(endfilterDate)
+                        && s.WHName.Equals(warehouseCode));
+            }
+            else
+            {
+                query = db.vOutbounds.Where(s => DbFunctions.TruncateTime(s.CreateOn) >= DbFunctions.TruncateTime(filterDate)
+                        && DbFunctions.TruncateTime(s.CreateOn) <= DbFunctions.TruncateTime(endfilterDate));
+            }
 
+            int recordsTotal = query.Count();
+            int recordsFiltered = 0;
 
-        //            if (receivingPrintVM.PrintQty <= 0)
-        //            {
-        //                ModelState.AddModelError("Receiving.PrintQty", "Bag Qty can not be empty or below zero.");
-        //            }
-        //            else
-        //            {
-        //                //check to list barcode available qty for printing
-        //                int availableBagQty = 0;
-        //                if (receivingPrintVM.Type.Equals("Inspection"))
-        //                {
-        //                    Inspection inspection = receivingDetail.Inspections.Where(m => m.ID.Equals(receivingPrintVM.ID)).FirstOrDefault();
-        //                    availableBagQty = Convert.ToInt32(inspection.InspectionQty / receivingDetail.QtyPerBag);
-        //                }
-        //                else if (receivingPrintVM.Type.Equals("Judgement"))
-        //                {
-        //                    Judgement judgement = receivingDetail.Judgements.Where(m => m.ID.Equals(receivingPrintVM.ID)).FirstOrDefault();
-        //                    availableBagQty = Convert.ToInt32(judgement.JudgementQty / receivingDetail.QtyPerBag);
-        //                }
-        //                else
-        //                {
-        //                    throw new Exception("Type not recognized.");
-        //                }
+            try
+            {
+                query = query
+                        .Where(m => m.RMCode.Contains(search)
+                        || m.RMName.Contains(search)
+                        );
 
-        //                if (receivingPrintVM.PrintQty > availableBagQty)
-        //                {
-        //                    ModelState.AddModelError("Receiving.PrintQty", string.Format("Bag Qty exceeded. Available Bag Qty : {0}", availableBagQty));
-        //                }
+                Dictionary<string, Func<vOutbound, object>> cols = new Dictionary<string, Func<vOutbound, object>>();
+                cols.Add("DocumentNo", x => x.DocumentNo);
+                cols.Add("WHName", x => x.WHName);
+                cols.Add("RMCode", x => x.RMCode);
+                cols.Add("RMName", x => x.RMName);
+                cols.Add("InDate", x => x.InDate);
+                cols.Add("ExpDate", x => x.ExpDate);
+                cols.Add("LotNo", x => x.LotNo);
+                cols.Add("Bag", x => x.Bag);
+                cols.Add("FullBag", x => x.FullBag);
+                cols.Add("Total", x => x.Total);
+                cols.Add("CreateBy", x => x.CreateBy);
+                cols.Add("CreateOn", x => x.CreateOn);
+                cols.Add("PickingBag", x => x.PickingBag);
+                cols.Add("PickingFullBag", x => x.PickingFullBag);
+                cols.Add("PickingTotal", x => x.Total);
+                cols.Add("PickingBinRack", x => x.PickingBinRack);
+                cols.Add("PickingBy", x => x.PickingBy);
+                cols.Add("PickingOn", x => x.PickingOn);
+                cols.Add("PutawayBag", x => x.PutawayBag);
+                cols.Add("PutawayFullBag", x => x.PutawayFullBag);
+                cols.Add("PutawayTotal", x => x.Total);
+                cols.Add("PutawayBinRack", x => x.PutawayBinRack);
+                cols.Add("PutawayBy", x => x.PutawayBy);
+                cols.Add("PutawayOn", x => x.PutawayOn);
+                cols.Add("Status", x => x.Status);
+                cols.Add("Memo", x => x.Memo);
 
-        //                string[] listPrinter = { ConfigurationManager.AppSettings["printer_1_ip"].ToString(), ConfigurationManager.AppSettings["printer_2_ip"].ToString() };
-        //                if (!listPrinter.Contains(receivingPrintVM.Printer))
-        //                {
-        //                    ModelState.AddModelError("Receiving.ListPrinter", "Printer not found.");
-        //                }
-        //            }
+                if (sortDirection.Equals("asc"))
+                    list = query.OrderBy(cols[sortName]);
+                else
+                    list = query.OrderByDescending(cols[sortName]);
 
+                recordsFiltered = list.Count();
 
-        //            if (!ModelState.IsValid)
-        //            {
-        //                foreach (var state in ModelState)
-        //                {
-        //                    string field = state.Key.Split('.')[1];
-        //                    string value = state.Value.Errors.Select(x => x.ErrorMessage).ToArray()[0];
-        //                    customValidationMessages.Add(new CustomValidationMessage(field, value));
-        //                }
+                list = list.Skip(start).Take(length).ToList();
 
-        //                throw new Exception("Input is not valid");
-        //            }
+                if (list != null && list.Count() > 0)
+                {
+                    pagedData = from detail in list
+                                select new OutbounReportDTO
+                                {
+                                    DocumentNo = detail.DocumentNo,
+                                    WHName = detail.WHName,
+                                    RMCode = detail.RMCode,
+                                    RMName = detail.RMName,
+                                    InDate = Helper.NullDateToString2(detail.InDate),
+                                    ExpDate = Helper.NullDateToString2(detail.ExpDate),
+                                    LotNo = detail.LotNo != null ? detail.LotNo : "",
+                                    Bag = Helper.FormatThousand(detail.Bag),
+                                    FullBag = Helper.FormatThousand(detail.FullBag),
+                                    Total = Helper.FormatThousand(detail.Total),
+                                    CreateBy = detail.CreateBy,
+                                    CreateOn = detail.CreateOn,
+                                    PickingBag = Helper.FormatThousand(detail.PickingBag),
+                                    PickingFullBag = Helper.FormatThousand(detail.PickingFullBag),
+                                    PickingTotal = Helper.FormatThousand(detail.Total),
+                                    PickingBinRack = detail.PickingBinRack,
+                                    PickingBy = detail.PickingBy,
+                                    PickingOn = detail.PickingOn,
+                                    PutawayBag = Helper.FormatThousand(detail.PutawayBag),
+                                    PutawayFullBag = Helper.FormatThousand(detail.PutawayFullBag),
+                                    PutawayTotal = Helper.FormatThousand(detail.Total),
+                                    PutawayBinRack = detail.PutawayBinRack,
+                                    PutawayBy = detail.PutawayBy,
+                                    PutawayOn = Convert.ToDateTime(detail.PutawayOn),
+                                    Status = detail.Status,
+                                    Memo = detail.Memo,
+                                };
+                }
 
+                status = true;
+                message = "Fetch data succeeded.";
+            }
+            catch (HttpRequestException reqpEx)
+            {
+                message = reqpEx.Message;
+                return BadRequest();
+            }
+            catch (HttpResponseException respEx)
+            {
+                message = respEx.Message;
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
 
-        //            //create pdf file to specific printer folder for middleware printing
+            obj.Add("draw", draw);
+            obj.Add("recordsTotal", recordsTotal);
+            obj.Add("recordsFiltered", recordsFiltered);
+            obj.Add("data", pagedData);
+            obj.Add("status", status);
+            obj.Add("message", message);
 
-        //            decimal totalQty = 0;
-        //            decimal qtyPerBag = 0;
+            return Ok(obj);
+        }
 
-        //            if (receivingPrintVM.Type.Equals("Inspection"))
-        //            {
-        //                Inspection dat = db.Inspections.Where(m => m.ID.Equals(receivingPrintVM.ID)).FirstOrDefault();
-        //                RawMaterial rm = db.RawMaterials.Where(m => m.MaterialCode.Equals(dat.ReceivingDetail.Receiving.MaterialCode)).FirstOrDefault();
-        //                data.MaterialCode = dat.ReceivingDetail.Receiving.MaterialCode;
-        //                data.MaterialName = dat.ReceivingDetail.Receiving.MaterialName;
-        //                data.RawMaterialMaker = rm.Maker;
-        //                data.StockCode = dat.ReceivingDetail.StockCode;
-        //                data.LotNo = dat.ReceivingDetail.LotNo;
-        //                data.InDate = dat.ReceivingDetail.InDate.ToString("dd/MM/yyyy");
-        //                data.ExpDate = dat.ReceivingDetail.ExpDate.Value.ToString("dd/MM/yyyy");
-        //                data.QtyPerBag = Helper.FormatThousand(dat.ReceivingDetail.QtyPerBag);
-        //                data.BagQty = Helper.FormatThousand(Convert.ToInt32(dat.InspectionQty / dat.ReceivingDetail.QtyPerBag));
-        //                data.Qty = Helper.FormatThousand(dat.InspectionQty);
-        //                data.UoM = dat.ReceivingDetail.UoM;
-        //                data.StartSeries = string.Format("{0}", dat.LastSeries - Convert.ToInt32(dat.InspectionQty / dat.ReceivingDetail.QtyPerBag) + 1);
-        //                //data.StartSeries = string.Format("{0}", dat.LastSeries - Convert.ToInt32(dat.InspectionQty / dat.ReceivingDetail.QtyPerBag) + 1);
-
-        //                totalQty = dat.InspectionQty;
-        //                qtyPerBag = dat.ReceivingDetail.QtyPerBag;
-        //            }
-        //            else if (receivingPrintVM.Type.Equals("Judgement"))
-        //            {
-        //                Judgement dat = db.Judgements.Where(m => m.ID.Equals(receivingPrintVM.ID)).FirstOrDefault();
-        //                RawMaterial rm = db.RawMaterials.Where(m => m.MaterialCode.Equals(dat.ReceivingDetail.Receiving.MaterialCode)).FirstOrDefault();
-        //                data.MaterialCode = dat.ReceivingDetail.Receiving.MaterialCode;
-        //                data.MaterialName = dat.ReceivingDetail.Receiving.MaterialName;
-        //                data.RawMaterialMaker = rm.Maker;
-        //                data.StockCode = dat.ReceivingDetail.StockCode;
-        //                data.LotNo = dat.ReceivingDetail.LotNo;
-        //                data.InDate = dat.ReceivingDetail.InDate.ToString("dd/MM/yyyy");
-        //                data.ExpDate = dat.ReceivingDetail.ExpDate.Value.ToString("dd/MM/yyyy");
-        //                data.QtyPerBag = Helper.FormatThousand(dat.ReceivingDetail.QtyPerBag);
-        //                data.BagQty = Helper.FormatThousand(Convert.ToInt32(dat.JudgementQty / dat.ReceivingDetail.QtyPerBag));
-        //                data.Qty = Helper.FormatThousand(dat.JudgementQty);
-        //                data.UoM = dat.ReceivingDetail.UoM;
-        //                data.StartSeries = string.Format("{0}", dat.LastSeries - Convert.ToInt32(dat.JudgementQty / dat.ReceivingDetail.QtyPerBag) + 1);
-        //                //data.StartSeries = string.Format("{0}", dat.LastSeries - Convert.ToInt32(dat.JudgementQty / dat.ReceivingDetail.QtyPerBag) + 1);
-
-        //                totalQty = dat.JudgementQty;
-        //                qtyPerBag = dat.ReceivingDetail.QtyPerBag;
-        //            }
-        //            else
-        //            {
-        //                throw new Exception("Type not recognized.");
-        //            }
-
-
-        //            int seq = 0;
-
-
-        //            int fullBag = receivingPrintVM.PrintQty;
-        //            seq = Convert.ToInt32(data.StartSeries);
-
-
-        //            List<string> bodies = new List<string>();
-
-        //            int series = receivingPrintVM.UseSeries ? 1 : 0;
-
-        //            string Domain = HttpContext.Current.Request.Url.Scheme + "://" + HttpContext.Current.Request.Url.Authority + HttpContext.Current.Request.ApplicationPath.TrimEnd('/');
-
-        //            for (int i = 0; i < fullBag; i++)
-        //            {
-        //                string runningNumber = "";
-        //                if (series == 1)
-        //                {
-        //                    runningNumber = string.Format("{0:D5}", seq++);
-        //                }
-        //                else
-        //                {
-        //                    runningNumber = string.Format("{0:D5}", 1);
-        //                }
-
-        //                LabelDTO dto = new LabelDTO();
-        //                string qr1 = data.MaterialCode.PadRight(7) + " " + runningNumber + " " + data.QtyPerBag.PadLeft(6) + " " + data.LotNo;
-        //                dto.Field3 = Domain + "/" + GenerateQRCode(qr1);
-
-        //                string inDate = "";
-        //                string inDate2 = "";
-        //                string inDate3 = "";
-        //                string expiredDate = "";
-        //                string expiredDate2 = "";
-        //                if (!string.IsNullOrEmpty(data.InDate))
-        //                {
-        //                    try
-        //                    {
-
-        //                        DateTime dt = DateTime.ParseExact(data.InDate, "dd/MM/yyyy", null);
-        //                        dto.Field4 = dt.ToString("MMMM").ToUpper();
-        //                        inDate = dt.ToString("yyyyMMdd").Substring(1);
-        //                        inDate2 = dt.ToString("yyyMMdd");
-        //                        inDate2 = inDate2.Substring(1);
-        //                        inDate3 = dt.ToString("yyyy-MM-dd");
-        //                    }
-        //                    catch (Exception e)
-        //                    {
-
-        //                    }
-        //                }
-
-        //                if (!string.IsNullOrEmpty(data.ExpDate))
-        //                {
-        //                    try
-        //                    {
-
-        //                        DateTime dt = DateTime.ParseExact(data.ExpDate, "dd/MM/yyyy", null);
-        //                        expiredDate = dt.ToString("yyyyMMdd").Substring(2);
-        //                        expiredDate2 = dt.ToString("yyyy-MM-dd");
-        //                    }
-        //                    catch (Exception e)
-        //                    {
-
-        //                    }
-        //                }
-        //                string qr2 = data.MaterialCode.PadRight(7) + inDate + expiredDate;
-        //                dto.Field5 = data.LotNo;
-        //                dto.Field6 = Domain + "/" + GenerateQRCode(qr2);
-        //                dto.Field7 = data.RawMaterialMaker;
-        //                dto.Field8 = data.MaterialName;
-        //                dto.Field9 = data.QtyPerBag.ToString();
-        //                dto.Field10 = data.UoM.ToUpper();
-        //                dto.Field11 = inDate2;
-        //                dto.Field12 = data.MaterialCode;
-        //                dto.Field13 = inDate3;
-        //                dto.Field14 = expiredDate2;
-        //                String body = RenderViewToString("Values", "~/Views/Receiving/Label.cshtml", dto);
-        //                bodies.Add(body);
-        //            }
+        [HttpGet]
+        public async Task<IHttpActionResult> GetDataReportOtherOutbound(string date, string enddate, string warehouse)
+        {
+            Dictionary<string, object> obj = new Dictionary<string, object>();
+            string message = "";
+            bool status = false;
+            HttpRequest request = HttpContext.Current.Request;
 
 
-        //            using (MemoryStream stream = new MemoryStream())
-        //            {
-        //                using (var pdfWriter = new PdfWriter(stream))
-        //                {
+            if (string.IsNullOrEmpty(date) && string.IsNullOrEmpty(enddate) && string.IsNullOrEmpty(warehouse))
+            {
+                throw new Exception("Parameter is required.");
+            }
 
-        //                    PdfDocument pdf = new PdfDocument(pdfWriter);
-        //                    PdfMerger merger = new PdfMerger(pdf);
-        //                    //loop in here, try
-        //                    foreach (string body in bodies)
-        //                    {
-        //                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        //                        PdfDocument temp = new PdfDocument(new PdfWriter(baos));
-        //                        Rectangle rectangle = new Rectangle(283.464566928f, 212.598425232f);
-        //                        PageSize pageSize = new PageSize(rectangle);
-        //                        Document document = new Document(temp, pageSize);
-        //                        PdfPage page = temp.AddNewPage(pageSize);
-        //                        HtmlConverter.ConvertToPdf(body, temp, null);
-        //                        temp = new PdfDocument(new PdfReader(new ByteArrayInputStream(baos.ToByteArray())));
-        //                        merger.Merge(temp, 1, temp.GetNumberOfPages());
-        //                        temp.Close();
-        //                    }
-        //                    pdf.Close();
+            IEnumerable<vOutbound> list = Enumerable.Empty<vOutbound>();
+            IEnumerable<OutbounReportDTO> pagedData = Enumerable.Empty<OutbounReportDTO>();
 
-        //                    byte[] file = stream.ToArray();
-        //                    MemoryStream output = new MemoryStream();
-        //                    output.Write(file, 0, file.Length);
-        //                    output.Position = 0;
+            DateTime filterDate = Convert.ToDateTime(date);
+            DateTime endfilterDate = Convert.ToDateTime(enddate);
+            IQueryable<vOutbound> query;
 
-        //                    List<PrinterDTO> printers = new List<PrinterDTO>();
+            if (!string.IsNullOrEmpty(warehouse))
+            {
+                query = db.vOutbounds.Where(s => DbFunctions.TruncateTime(s.CreateOn) >= DbFunctions.TruncateTime(filterDate)
+                        && DbFunctions.TruncateTime(s.CreateOn) <= DbFunctions.TruncateTime(endfilterDate)
+                        && s.WHName.Equals(warehouse));
+            }
+            else
+            {
+                query = db.vOutbounds.Where(s => DbFunctions.TruncateTime(s.CreateOn) >= DbFunctions.TruncateTime(filterDate)
+                        && DbFunctions.TruncateTime(s.CreateOn) <= DbFunctions.TruncateTime(endfilterDate));
+            }
 
-        //                    PrinterDTO printer = new PrinterDTO();
-        //                    printer.PrinterIP = ConfigurationManager.AppSettings["printer_1_ip"].ToString();
-        //                    printer.PrinterName = ConfigurationManager.AppSettings["printer_1_name"].ToString();
+            int recordsTotal = query.Count();
+            int recordsFiltered = 0;
 
-        //                    printers.Add(printer);
+            try
+            {       
+                Dictionary<string, Func<vOutbound, object>> cols = new Dictionary<string, Func<vOutbound, object>>();
+                cols.Add("DocumentNo", x => x.DocumentNo);
+                cols.Add("WHName", x => x.WHName);
+                cols.Add("RMCode", x => x.RMCode);
+                cols.Add("RMName", x => x.RMName);
+                cols.Add("InDate", x => x.InDate);
+                cols.Add("ExpDate", x => x.ExpDate);
+                cols.Add("LotNo", x => x.LotNo);
+                cols.Add("Bag", x => x.Bag);
+                cols.Add("FullBag", x => x.FullBag);
+                cols.Add("Total", x => x.Total);
+                cols.Add("CreateBy", x => x.CreateBy);
+                cols.Add("CreateOn", x => x.CreateOn);
+                cols.Add("PickingBag", x => x.PickingBag);
+                cols.Add("PickingFullBag", x => x.PickingFullBag);
+                cols.Add("PickingTotal", x => x.Total);
+                cols.Add("PickingBinRack", x => x.PickingBinRack);
+                cols.Add("PickingBy", x => x.PickingBy);
+                cols.Add("PickingOn", x => x.PickingOn);
+                cols.Add("PutawayBag", x => x.PutawayBag);
+                cols.Add("PutawayFullBag", x => x.PutawayFullBag);
+                cols.Add("PutawayTotal", x => x.Total);
+                cols.Add("PutawayBinRack", x => x.PutawayBinRack);
+                cols.Add("PutawayBy", x => x.PutawayBy);
+                cols.Add("PutawayOn", x => x.PutawayOn);
+                cols.Add("Status", x => x.Status);
+                cols.Add("Memo", x => x.Memo);
 
-        //                    printer = new PrinterDTO();
-        //                    printer.PrinterIP = ConfigurationManager.AppSettings["printer_2_ip"].ToString();
-        //                    printer.PrinterName = ConfigurationManager.AppSettings["printer_2_name"].ToString();
+                recordsFiltered = list.Count();
+                list = query.ToList();
 
-        //                    printers.Add(printer);
+                if (list != null && list.Count() > 0)
+                {
+                    pagedData = from detail in list
+                                select new OutbounReportDTO
+                                {
+                                    DocumentNo = detail.DocumentNo,
+                                    WHName = detail.WHName,
+                                    RMCode = detail.RMCode,
+                                    RMName = detail.RMName,
+                                    InDate = Helper.NullDateToString2(detail.InDate),
+                                    ExpDate = Helper.NullDateToString2(detail.ExpDate),
+                                    LotNo = detail.LotNo != null ? detail.LotNo : "",
+                                    Bag = Helper.FormatThousand(detail.Bag),
+                                    FullBag = Helper.FormatThousand(detail.FullBag),
+                                    Total = Helper.FormatThousand(detail.Total),
+                                    CreateBy = detail.CreateBy,
+                                    CreateOn = detail.CreateOn,
+                                    PickingBag = Helper.FormatThousand(detail.PickingBag),
+                                    PickingFullBag = Helper.FormatThousand(detail.PickingFullBag),
+                                    PickingTotal = Helper.FormatThousand(detail.Total),
+                                    PickingBinRack = detail.PickingBinRack,
+                                    PickingBy = detail.PickingBy,
+                                    PickingOn = detail.PickingOn,
+                                    PutawayBag = Helper.FormatThousand(detail.PutawayBag),
+                                    PutawayFullBag = Helper.FormatThousand(detail.PutawayFullBag),
+                                    PutawayTotal = Helper.FormatThousand(detail.Total),
+                                    PutawayBinRack = detail.PutawayBinRack,
+                                    PutawayBy = detail.PutawayBy,
+                                    PutawayOn = Convert.ToDateTime(detail.PutawayOn),
+                                    Status = detail.Status,
+                                    Memo = detail.Memo,
+                                };
+                }
 
-        //                    string folder_name = "";
-        //                    foreach (PrinterDTO printerDTO in printers)
-        //                    {
-        //                        if (printerDTO.PrinterIP.Equals(receivingPrintVM.Printer))
-        //                        {
-        //                            folder_name = printerDTO.PrinterName;
-        //                        }
-        //                    }
+                status = true;
+                message = "Fetch data succeeded.";
+            }
+            catch (HttpRequestException reqpEx)
+            {
+                message = reqpEx.Message;
+                return BadRequest();
+            }
+            catch (HttpResponseException respEx)
+            {
+                message = respEx.Message;
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
 
-        //                    string file_name = string.Format("{0}.pdf", DateTime.Now.ToString("yyyyMMddHHmmss"));
+            obj.Add("list", pagedData);
+            obj.Add("status", status);
+            obj.Add("message", message);
 
-        //                    using (Stream fileStream = new FileStream(string.Format(@"C:\RMI_PRINTER_SERVICE\{0}\{1}", folder_name, file_name), FileMode.CreateNew))
-        //                    {
-        //                        output.CopyTo(fileStream);
-        //                    }
-        //                }
-        //            }
-
-        //            status = true;
-        //            message = "Print succeeded. Please wait.";
-
-        //        }
-        //        else
-        //        {
-        //            message = "Token is no longer valid. Please re-login.";
-        //        }
-        //    }
-        //    catch (HttpRequestException reqpEx)
-        //    {
-        //        message = reqpEx.Message;
-        //    }
-        //    catch (HttpResponseException respEx)
-        //    {
-        //        message = respEx.Message;
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        message = ex.Message;
-        //    }
-
-        //    obj.Add("data", data);
-        //    obj.Add("status", status);
-        //    obj.Add("message", message);
-        //    obj.Add("error_validation", customValidationMessages);
-
-        //    return Ok(obj);
-        //}
-
+            return Ok(obj);
+        }
     }
 }

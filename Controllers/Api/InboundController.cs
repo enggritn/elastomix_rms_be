@@ -1,22 +1,16 @@
-﻿using ExcelDataReader;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Data;
 using System.Data.Entity;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.Http;
 using WMS_BE.Models;
 using WMS_BE.Utils;
-using OfficeOpenXml;
-using OfficeOpenXml.Style;
 using System.Drawing;
 using System.Configuration;
 using ZXing;
@@ -195,11 +189,6 @@ namespace WMS_BE.Controllers.Api
                         }
                     }
 
-                    //if (string.IsNullOrEmpty(dataVM.Remarks))
-                    //{
-                    //    ModelState.AddModelError("Inbound.Remarks", "Remarks is required.");
-                    //}
-
                     if (!ModelState.IsValid)
                     {
                         foreach (var state in ModelState)
@@ -263,7 +252,6 @@ namespace WMS_BE.Controllers.Api
 
                     status = true;
                     message = "Create data succeeded.";
-
                 }
                 else
                 {
@@ -353,7 +341,6 @@ namespace WMS_BE.Controllers.Api
                     DateTime now = DateTime.Now;
                     DateTime transactionDate = new DateTime(tokenDate.LoginDate.Year, tokenDate.LoginDate.Month, tokenDate.LoginDate.Day, now.Hour, now.Minute, now.Second);
 
-
                     header.ModifiedBy = activeUser;
                     header.ModifiedOn = transactionDate;
                     header.Remarks = dataVM.Remarks;
@@ -362,7 +349,6 @@ namespace WMS_BE.Controllers.Api
 
                     status = true;
                     message = "Update data succeeded.";
-
                 }
                 else
                 {
@@ -426,10 +412,8 @@ namespace WMS_BE.Controllers.Api
                     ModifiedOn = InboundHeader.ModifiedOn.ToString()
                 };
 
-
                 status = true;
                 message = "Fetch data succeded.";
-
             }
             catch (HttpRequestException reqpEx)
             {
@@ -501,8 +485,6 @@ namespace WMS_BE.Controllers.Api
 
                 if (list != null && list.Count() > 0)
                 {
-
-
                     pagedData = from x in list
                                 select new InboundMaterialDTO
                                 {
@@ -585,7 +567,6 @@ namespace WMS_BE.Controllers.Api
                 cols.Add("CreatedOn", x => x.CreatedOn);
                 cols.Add("OutstandingBagQty", x => Convert.ToInt32(Math.Ceiling((x.Qty - (x.InboundReceives.Sum(i => i.Qty * i.QtyPerBag))) / x.QtyPerBag)));
                 cols.Add("OutstandingRemainderQty", x => Convert.ToInt32(Math.Ceiling((x.Qty - (x.InboundReceives.Sum(i => i.Qty * i.QtyPerBag))) / x.QtyPerBag)));
-
 
                 if (sortDirection.Equals("asc"))
                     list = query.OrderBy(cols[sortName]);
@@ -673,7 +654,6 @@ namespace WMS_BE.Controllers.Api
 
                 if (activeUser != null)
                 {
-
                     InboundHeader header = null;
                     vStockProduct stockProduct = null;
                     if (string.IsNullOrEmpty(dataVM.HeaderID))
@@ -697,8 +677,6 @@ namespace WMS_BE.Controllers.Api
                         }
                     }
 
-
-
                     if (string.IsNullOrEmpty(dataVM.MaterialCode))
                     {
                         //ModelState.AddModelError("Inbound.MaterialCode", "Material Code is required.");
@@ -720,14 +698,12 @@ namespace WMS_BE.Controllers.Api
                                 throw new Exception("Material is already exist.");
                             }
                         }
-
                     }
 
                     if (dataVM.Qty <= 0)
                     {
                         ModelState.AddModelError("Inbound.Qty", "Receive Qty is required.");
                     }
-
 
                     if (!ModelState.IsValid)
                     {
@@ -760,10 +736,7 @@ namespace WMS_BE.Controllers.Api
                         CreatedOn = transactionDate
                     };
 
-
                     header.InboundOrders.Add(order);
-
-
 
                     await db.SaveChangesAsync();
 
@@ -842,7 +815,6 @@ namespace WMS_BE.Controllers.Api
                         status = true;
                         message = "Remove Detail succeeded.";
                     }
-
                 }
                 else
                 {
@@ -867,7 +839,6 @@ namespace WMS_BE.Controllers.Api
 
             return Ok(obj);
         }
-
 
         public async Task<IHttpActionResult> UpdateStatus(string id, string transactionStatus)
         {
@@ -939,7 +910,6 @@ namespace WMS_BE.Controllers.Api
                         {
                             throw new Exception("Inbound Order can not be empty.");
                         }
-
 
                         //automated logic check
                         //warehouse type = outsource will auto generate picking -> auto picked
@@ -1036,7 +1006,6 @@ namespace WMS_BE.Controllers.Api
                     {
                         throw new Exception("Material tidak dikenali.");
                     }
-
 
                     string StockCode = "";
 
@@ -1314,7 +1283,6 @@ namespace WMS_BE.Controllers.Api
                             }
                             else
                             {
-
                                 stockRM = new StockRM();
                                 if (!order.InboundHeader.WarehouseCode.Equals("2003") || !order.InboundHeader.WarehouseCode.Equals("2004"))
                                 {
@@ -1402,139 +1370,7 @@ namespace WMS_BE.Controllers.Api
 
             return Ok(obj);
         }
-        //[HttpPost]
-        //public async Task<IHttpActionResult> DatatableReceive(string HeaderID)
-        //{
-        //    int draw = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("draw")[0]);
-        //    int start = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("start")[0]);
-        //    int length = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("length")[0]);
-        //    string search = HttpContext.Current.Request.Form.GetValues("search[value]")[0];
-        //    string orderCol = HttpContext.Current.Request.Form.GetValues("order[0][column]")[0];
-        //    string sortName = HttpContext.Current.Request.Form.GetValues("columns[" + orderCol + "][name]")[0];
-        //    string sortDirection = HttpContext.Current.Request.Form.GetValues("order[0][dir]")[0];
-
-        //    Dictionary<string, object> obj = new Dictionary<string, object>();
-        //    string message = "";
-        //    bool status = false;
-        //    HttpRequest request = HttpContext.Current.Request;
-
-        //    IEnumerable<InboundReceive> list = Enumerable.Empty<InboundReceive>();
-        //    IEnumerable<InboundReceiveDTO> pagedData = Enumerable.Empty<InboundReceiveDTO>();
-        //    InboundOrderDTO orderDTO = new InboundOrderDTO();
-        //    try
-        //    {
-        //        if (string.IsNullOrEmpty(HeaderID))
-        //        {
-        //            throw new Exception("Id is required.");
-        //        }
-        //        InboundOrder order = db.InboundOrders.Where(m => m.InboundID.Equals(HeaderID)).FirstOrDefault();
-
-        //        if (order == null)
-        //        {
-        //            throw new Exception("Data tidak ditemukan.");
-
-        //        }
-        //        bool receiveAction = false;
-        //        if (order.InboundHeader.TransactionStatus.Equals("CONFIRMED") && (order.InboundReceives.Sum(m => m.Qty) - order.Qty) > 0)
-        //        {
-        //            receiveAction = true;
-        //        }
-        //        orderDTO = new InboundOrderDTO
-        //        {
-        //            ID = order.ID,
-        //            MaterialCode = order.MaterialCode,
-        //            MaterialName = order.MaterialName,
-        //            MaterialType = order.MaterialType,
-        //            Qty = Helper.FormatThousand(order.Qty),
-        //            QtyPerBag = Helper.FormatThousand(order.QtyPerBag),
-        //            ReceiveQty = Helper.FormatThousand(order.InboundReceives.Sum(m => m.Qty)),
-        //            DiffQty = Helper.FormatThousand(order.InboundReceives.Sum(m => m.Qty) - order.Qty),
-        //            OutstandingQty = Helper.FormatThousand(order.Qty - (order.InboundReceives.Sum(m => m.Qty))),
-        //            CreatedBy = order.CreatedBy,
-        //            CreatedOn = Helper.NullDateTimeToString(order.CreatedOn),
-        //            ReceiveAction = receiveAction,
-
-
-        //        };
-        //        IQueryable<InboundReceive> query = order.InboundReceives.AsQueryable();
-        //        IEnumerable<InboundReceive> tempList = await query.OrderBy(m => m.ReceivedOn).ToListAsync();
-        //        Dictionary<string, Func<InboundReceive, object>> cols = new Dictionary<string, Func<InboundReceive, object>>();
-        //        cols.Add("ID", x => x.ID);
-        //        cols.Add("InboundOrderID", x => x.InboundOrderID);
-        //        cols.Add("StockCode", x => x.StockCode);
-        //        cols.Add("LotNo", x => x.LotNo);
-        //        cols.Add("InDate", x => x.InDate);
-        //        cols.Add("ExpDate", x => x.ExpDate);
-        //        cols.Add("Qty", x => x.Qty);
-        //        cols.Add("QtyPerBag", x => x.QtyPerBag);
-        //        cols.Add("BagQty", x => Convert.ToInt32(Math.Floor(x.Qty / x.QtyPerBag)));
-        //        cols.Add("ReceivedBy", x => x.ReceivedBy);
-        //        cols.Add("ReceivedOn", x => x.ReceivedOn);
-        //        cols.Add("PutawayQty", x => x.InboundPutaways.Sum(m => m.PutawayQty));
-        //        cols.Add("PutawayBagQty", x => x.InboundPutaways.Sum(m => m.PutawayQty / m.QtyPerBag));
-        //        cols.Add("OutstandingQty", x => x.Qty - x.InboundPutaways.Sum(m => m.PutawayQty));
-        //        cols.Add("OutstandingBagQty", x => x.Qty - x.InboundPutaways.Sum(m => m.PutawayQty));
-        //        cols.Add("PutawayAction", x => x.Qty > x.InboundPutaways.Sum(m => m.PutawayQty));
-
-        //        if (sortDirection.Equals("asc"))
-        //            list = query.OrderBy(cols[sortName]);
-        //        else
-        //            list = query.OrderByDescending(cols[sortName]);
-
-        //        list = list.Skip(start).Take(length).ToList();
-
-        //        if (list != null && list.Count() > 0)
-        //        {
-        //            pagedData = from data in list
-        //                        select new InboundReceiveDTO
-        //                        {
-        //                            ID = data.ID,
-        //                            InboundOrderID = data.InboundOrderID,
-        //                            StockCode = data.StockCode,
-        //                            LotNo = data.LotNo,
-        //                            InDate = Helper.NullDateToString(data.InDate),
-        //                            ExpDate = Helper.NullDateToString(data.ExpDate),
-        //                            Qty = Helper.FormatThousand(data.Qty),
-        //                            QtyPerBag = Helper.FormatThousand(data.QtyPerBag),
-        //                            BagQty = Helper.FormatThousand(data.Qty / data.QtyPerBag),
-        //                            ReceivedBy = data.ReceivedBy,
-        //                            ReceivedOn = Helper.NullDateTimeToString(data.ReceivedOn),
-        //                            PutawayQty = Helper.FormatThousand(data.InboundPutaways.Sum(m => m.PutawayQty)),
-        //                            PutawayBagQty = Helper.FormatThousand(data.InboundPutaways.Sum(m => m.PutawayQty / m.QtyPerBag)),
-        //                            OutstandingQty = Helper.FormatThousand(data.Qty - data.InboundPutaways.Sum(m => m.PutawayQty)),
-        //                            OutstandingBagQty = Helper.FormatThousand(data.Qty - data.InboundPutaways.Sum(m => m.PutawayQty) / data.QtyPerBag),
-        //                            //PrintBarcodeAction = data.LastSeries > 0 && data.Qty > data.InboundPutaways.Sum(m => m.PutawayQty),
-        //                            PutawayAction = data.Qty > data.InboundPutaways.Sum(m => m.PutawayQty),
-        //                            PrintBarcodeAction = data.LastSeries > 0 && data.Qty > data.InboundPutaways.Sum(m => m.PutawayQty),
-
-        //                        };
-        //        }
-
-        //        status = true;
-        //        message = "Fetch data succeeded.";
-        //    }
-        //    catch (HttpRequestException reqpEx)
-        //    {
-        //        message = reqpEx.Message;
-        //        return BadRequest();
-        //    }
-        //    catch (HttpResponseException respEx)
-        //    {
-        //        message = respEx.Message;
-        //        return NotFound();
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        message = ex.Message;
-        //    }
-
-        //    obj.Add("draw", draw);
-        //    obj.Add("data", pagedData);
-        //    obj.Add("status", status);
-        //    obj.Add("message", message);
-
-        //    return Ok(obj);
-        //}
+        
         [HttpPost]
         public async Task<IHttpActionResult> DatatableReceive(string HeaderID)
         {
@@ -1662,7 +1498,6 @@ namespace WMS_BE.Controllers.Api
             var headers = re.Headers;
             string binRackCode = string.Empty;
 
-
             int receiveBagQty = 0;
             int putBagQty = 0;
             int availableBagQty = 0;
@@ -1691,7 +1526,6 @@ namespace WMS_BE.Controllers.Api
                     {
                         throw new Exception("Data tidak dikenali.");
                     }
-
 
                     if (!receive.InboundOrder.InboundHeader.TransactionStatus.Equals("CONFIRMED"))
                     {
@@ -1727,8 +1561,6 @@ namespace WMS_BE.Controllers.Api
                             ModelState.AddModelError("req.PutawayQTY", string.Format("Bag Qty exceeded. Available Bag Qty : {0}", availableBagQty));
                         }
                     }
-
-
 
                     BinRack binRack = null;
                     if (string.IsNullOrEmpty(req.BinRackCode))
@@ -1833,18 +1665,15 @@ namespace WMS_BE.Controllers.Api
                         }
                     }
 
-
                     await db.SaveChangesAsync();
 
                     status = true;
                     message = "Putaway berhasil.";
 
-
                     receive = await db.InboundReceives.Where(s => s.ID.Equals(req.ReceiveId)).FirstOrDefaultAsync();
                     receiveBagQty = Convert.ToInt32(receive.Qty / receive.QtyPerBag);
                     putBagQty = Convert.ToInt32(receive.InboundPutaways.Sum(s => s.PutawayQty / s.QtyPerBag));
                     availableBagQty = receiveBagQty - putBagQty;
-
                 }
                 else
                 {
@@ -1949,14 +1778,6 @@ namespace WMS_BE.Controllers.Api
                                     BagQty = Helper.FormatThousand(data.PutawayQty / data.QtyPerBag),
                                     PutBy = data.PutBy,
                                     PutOn = Helper.NullDateTimeToString(data.PutOn),
-                                    //commented by bhov
-                                    //INI APA COBA MAKSUDNYA ELAH, GOBLOOOOOOOOOK
-                                    //PutawayQty = Helper.FormatThousand(data.InboundReceive.InboundPutaways.Sum(m => m.PutawayQty)),
-                                    //PutawayBagQty = Helper.FormatThousand(data.InboundReceive.InboundPutaways.Sum(m => m.PutawayQty / m.QtyPerBag)),
-                                    //OutstandingQty = Helper.FormatThousand(data.InboundReceive.Qty - data.InboundReceive.InboundPutaways.Sum(m => m.PutawayQty)),
-                                    //OutstandingBagQty = Helper.FormatThousand(data.InboundReceive.Qty - data.InboundReceive.InboundPutaways.Sum(m => m.PutawayQty) / data.QtyPerBag),
-                                    //PrintBarcodeAction = data.InboundReceive.LastSeries > 0
-                                    //PutawayAction = data.Qty > data.InboundPutaways.Sum(m => m.PutawayQty)
                                 };
                 }
 
@@ -2043,7 +1864,6 @@ namespace WMS_BE.Controllers.Api
                     decimal qtyPerBag = 0;
 
                     int seq = 0;
-
                     int len = 7;
 
                     if (material.MaterialCode.Length > 7)
@@ -2052,16 +1872,12 @@ namespace WMS_BE.Controllers.Api
                     }
 
                     int fullBag = Convert.ToInt32(receive.Qty / receive.QtyPerBag);
-
                     int lastSeries = receive.LastSeries;
-
 
                     //get last series
                     seq = Convert.ToInt32(lastSeries);
 
-
                     List<string> bodies = new List<string>();
-
 
                     string Domain = HttpContext.Current.Request.Url.Scheme + "://" + HttpContext.Current.Request.Url.Authority + HttpContext.Current.Request.ApplicationPath.TrimEnd('/');
 
@@ -2093,7 +1909,6 @@ namespace WMS_BE.Controllers.Api
                         expiredDate = dt2.ToString("yyyyMMdd").Substring(2);
                         expiredDate2 = dt2.ToString("yyyy-MM-dd");
 
-
                         string qr2 = receive.InboundOrder.MaterialCode.PadRight(len) + inDate + expiredDate;
                         string qrImg2 = GenerateQRCode(qr2);
                         dto.Field5 = receive.LotNo;
@@ -2108,10 +1923,8 @@ namespace WMS_BE.Controllers.Api
                         dto.Field14 = expiredDate2;
                         String body = RenderViewToString("Values", "~/Views/Receiving/Label.cshtml", dto);
                         bodies.Add(body);
-
                         //delete 
                     }
-
 
                     using (MemoryStream stream = new MemoryStream())
                     {
@@ -2155,6 +1968,18 @@ namespace WMS_BE.Controllers.Api
 
                             printers.Add(printer);
 
+                            printer = new PrinterDTO();
+                            printer.PrinterIP = ConfigurationManager.AppSettings["printer_3_ip"].ToString();
+                            printer.PrinterName = ConfigurationManager.AppSettings["printer_3_name"].ToString();
+
+                            printers.Add(printer);
+
+                            printer = new PrinterDTO();
+                            printer.PrinterIP = ConfigurationManager.AppSettings["printer_4_ip"].ToString();
+                            printer.PrinterName = ConfigurationManager.AppSettings["printer_4_name"].ToString();
+
+                            printers.Add(printer);
+
                             string folder_name = "";
                             foreach (PrinterDTO printerDTO in printers)
                             {
@@ -2175,7 +2000,6 @@ namespace WMS_BE.Controllers.Api
 
                     status = true;
                     message = "Print barcode berhasil. Mohon menunggu.";
-
                 }
                 else
                 {
@@ -2323,7 +2147,6 @@ namespace WMS_BE.Controllers.Api
 
             return Ok(obj);
         }
-
 
         [HttpPost]
         public async Task<IHttpActionResult> DatatableDetailOtherInbound()
@@ -2550,6 +2373,249 @@ namespace WMS_BE.Controllers.Api
             }
 
             obj.Add("list", pagedData);
+            obj.Add("status", status);
+            obj.Add("message", message);
+
+            return Ok(obj);
+        }
+
+        [HttpPost]
+        public async Task<IHttpActionResult> DatatableDetailOtherInbound2()
+        {
+            int draw = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("draw")[0]);
+            int start = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("start")[0]);
+            int length = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("length")[0]);
+            string search = HttpContext.Current.Request.Form.GetValues("search[value]")[0];
+            string orderCol = HttpContext.Current.Request.Form.GetValues("order[0][column]")[0];
+            string sortName = HttpContext.Current.Request.Form.GetValues("columns[" + orderCol + "][name]")[0];
+            string sortDirection = HttpContext.Current.Request.Form.GetValues("order[0][dir]")[0];
+
+            HttpRequest request = HttpContext.Current.Request;
+            string date = request["date"].ToString();
+            string enddate = request["enddate"].ToString();
+            string warehouseCode = request["warehouseCode"].ToString();
+
+            Dictionary<string, object> obj = new Dictionary<string, object>();
+            string message = "";
+            bool status = false;
+
+            IEnumerable<vInbound2> list = Enumerable.Empty<vInbound2>();
+            IEnumerable<OtherInbound2DTOReport> pagedData = Enumerable.Empty<OtherInbound2DTOReport>();
+
+            DateTime filterDate = Convert.ToDateTime(date);
+            DateTime endfilterDate = Convert.ToDateTime(enddate);
+            IQueryable<vInbound2> query;
+
+            if (!string.IsNullOrEmpty(warehouseCode))
+            {
+                query = db.vInbound2.Where(s => DbFunctions.TruncateTime(s.CreateOn) == DbFunctions.TruncateTime(filterDate)
+                        && s.WHName.Equals(warehouseCode));
+            }
+            else
+            {
+                query = db.vInbound2.Where(s => DbFunctions.TruncateTime(s.CreateOn) == DbFunctions.TruncateTime(filterDate));
+            }
+
+            int recordsTotal = query.Count();
+            int recordsFiltered = 0;
+
+            try
+            {
+                query = query
+                        .Where(m => m.RMCode.Contains(search)
+                        || m.RMName.Contains(search)
+                        );
+
+                Dictionary<string, Func<vInbound2, object>> cols = new Dictionary<string, Func<vInbound2, object>>();
+                cols.Add("DocumentNo", x => x.DocumentNo);
+                cols.Add("WHName", x => x.WHName);
+                cols.Add("RMCode", x => x.RMCode);
+                cols.Add("RMName", x => x.RMName);
+                cols.Add("InDate", x => x.InDate);
+                cols.Add("ExpDate", x => x.ExpDate);
+                cols.Add("LotNo", x => x.LotNo);
+                cols.Add("Bag", x => x.Bag);
+                cols.Add("FullBag", x => x.FullBag);
+                cols.Add("Total", x => x.Total);
+                cols.Add("CreateBy", x => x.CreateBy);
+                cols.Add("CreateOn", x => x.CreateOn);
+                cols.Add("QtyPutaway", x => x.QtyPutaway);
+                cols.Add("PutawayBy", x => x.PutawayBy);
+                cols.Add("PutawayOn", x => x.PutawayOn);
+                cols.Add("BinRack", x => x.BinRack);
+                cols.Add("Status", x => x.Status);
+                cols.Add("Memo", x => x.Memo);
+
+                if (sortDirection.Equals("asc"))
+                    list = query.OrderBy(cols[sortName]);
+                else
+                    list = query.OrderByDescending(cols[sortName]);
+
+                recordsFiltered = list.Count();
+
+                list = list.Skip(start).Take(length).ToList();
+
+                if (list != null && list.Count() > 0)
+                {
+                    pagedData = from detail in list
+                                select new OtherInbound2DTOReport
+                                {
+                                    DocumentNo = detail.DocumentNo,
+                                    WHName = detail.WHName,
+                                    RMCode = detail.RMCode,
+                                    RMName = detail.RMName,
+                                    InDate = Helper.NullDateToString2(detail.InDate),
+                                    ExpDate = Helper.NullDateToString2(detail.ExpDate),
+                                    LotNo = detail.LotNo != null ? detail.LotNo : "",
+                                    Bag = Helper.FormatThousand(detail.Bag),
+                                    FullBag = Helper.FormatThousand(detail.FullBag),
+                                    Total = Helper.FormatThousand(detail.Total),
+                                    CreateBy = detail.CreateBy,
+                                    CreateOn = detail.CreateOn,
+                                    QtyPutaway = Helper.FormatThousand(detail.QtyPutaway),
+                                    PutawayBy = detail.PutawayBy,
+                                    PutawayOn = Convert.ToDateTime(detail.PutawayOn),
+                                    BinRack = detail.BinRack != null ? detail.BinRack : "",
+                                    Status = detail.Status,
+                                    Memo = detail.Memo,
+                                };
+                }
+
+                status = true;
+                message = "Fetch data succeeded.";
+            }
+            catch (HttpRequestException reqpEx)
+            {
+                message = reqpEx.Message;
+                return BadRequest();
+            }
+            catch (HttpResponseException respEx)
+            {
+                message = respEx.Message;
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
+
+            obj.Add("draw", draw);
+            obj.Add("recordsTotal", recordsTotal);
+            obj.Add("recordsFiltered", recordsFiltered);
+            obj.Add("data", pagedData);
+            obj.Add("status", status);
+            obj.Add("message", message);
+
+            return Ok(obj);
+        }
+
+        [HttpGet]
+        public async Task<IHttpActionResult> GetDataReportOtherInbound2(string date, string enddate, string warehouse)
+        {
+            Dictionary<string, object> obj = new Dictionary<string, object>();
+            string message = "";
+            bool status = false;
+            HttpRequest request = HttpContext.Current.Request;
+
+
+            if (string.IsNullOrEmpty(date) && string.IsNullOrEmpty(warehouse))
+            {
+                throw new Exception("Parameter is required.");
+            }
+
+            IEnumerable<vInbound2> list = Enumerable.Empty<vInbound2>();
+            IEnumerable<OtherInbound2DTOReport> pagedData = Enumerable.Empty<OtherInbound2DTOReport>();
+
+            DateTime filterDate = Convert.ToDateTime(date);
+            DateTime endfilterDate = Convert.ToDateTime(enddate);
+            IQueryable<vInbound2> query;
+
+            if (!string.IsNullOrEmpty(warehouse))
+            {
+                query = db.vInbound2.Where(s => DbFunctions.TruncateTime(s.CreateOn) >= DbFunctions.TruncateTime(filterDate)
+                        && DbFunctions.TruncateTime(s.CreateOn) <= DbFunctions.TruncateTime(endfilterDate)
+                        && s.WHName.Equals(warehouse));
+            }
+            else
+            {
+                query = db.vInbound2.Where(s => DbFunctions.TruncateTime(s.CreateOn) >= DbFunctions.TruncateTime(filterDate)
+                        && DbFunctions.TruncateTime(s.CreateOn) <= DbFunctions.TruncateTime(endfilterDate));
+            }
+
+            int recordsTotal = query.Count();
+            int recordsFiltered = 0;
+
+            try
+            {
+                Dictionary<string, Func<vInbound2, object>> cols = new Dictionary<string, Func<vInbound2, object>>();
+
+                cols.Add("DocumentNo", x => x.DocumentNo);
+                cols.Add("WHName", x => x.WHName);
+                cols.Add("RMCode", x => x.RMCode);
+                cols.Add("RMName", x => x.RMName);
+                cols.Add("InDate", x => x.InDate);
+                cols.Add("ExpDate", x => x.ExpDate);
+                cols.Add("LotNo", x => x.LotNo);
+                cols.Add("Bag", x => x.Bag);
+                cols.Add("FullBag", x => x.FullBag);
+                cols.Add("Total", x => x.Total);
+                cols.Add("CreateBy", x => x.CreateBy);
+                cols.Add("CreateOn", x => x.CreateOn);
+                cols.Add("QtyPutaway", x => x.QtyPutaway);
+                cols.Add("PutawayBy", x => x.PutawayBy);
+                cols.Add("PutawayOn", x => x.PutawayOn);
+                cols.Add("BinRack", x => x.BinRack);
+                cols.Add("Status", x => x.Status);
+                cols.Add("Memo", x => x.Memo);
+
+                recordsFiltered = list.Count();
+                list = query.ToList();
+
+                if (list != null && list.Count() > 0)
+                {
+                    pagedData = from detail in list
+                                select new OtherInbound2DTOReport
+                                {
+                                    DocumentNo = detail.DocumentNo,
+                                    WHName = detail.WHName,
+                                    RMCode = detail.RMCode,
+                                    RMName = detail.RMName,
+                                    InDate = Helper.NullDateToString2(detail.InDate),
+                                    ExpDate = Helper.NullDateToString2(detail.ExpDate),
+                                    LotNo = detail.LotNo != null ? detail.LotNo : "",
+                                    Bag = Helper.FormatThousand(detail.Bag),
+                                    FullBag = Helper.FormatThousand(detail.FullBag),
+                                    Total = Helper.FormatThousand(detail.Total),
+                                    CreateBy = detail.CreateBy,
+                                    CreateOn = detail.CreateOn,
+                                    QtyPutaway = Helper.FormatThousand(detail.QtyPutaway),
+                                    PutawayBy = detail.PutawayBy,
+                                    PutawayOn = Convert.ToDateTime(detail.PutawayOn),
+                                    BinRack = detail.BinRack != null ? detail.BinRack : "",
+                                    Status = detail.Status,
+                                    Memo = detail.Memo,
+                                };
+                }
+
+                status = true;
+                message = "Fetch data succeeded.";
+            }
+            catch (HttpRequestException reqpEx)
+            {
+                message = reqpEx.Message;
+                return BadRequest();
+            }
+            catch (HttpResponseException respEx)
+            {
+                message = respEx.Message;
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
+
+            obj.Add("list2", pagedData);
             obj.Add("status", status);
             obj.Add("message", message);
 

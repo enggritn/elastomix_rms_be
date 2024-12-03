@@ -252,147 +252,18 @@ namespace WMS_BE.Models
         public string BalanceQty { get; set; }
     }
 
-    //public class IssueSlipListDTO
-    //{
-    //    public string ID { get; set; }
-    //    public string DetailID { get; set; }
-    //    public string StockCode { get; set; }
-    //    public string LotNo { get; set; }
-    //    public string MaterialCode { get; set; }
-    //    public string MaterialName { get; set; }
-    //    public string UsageSupplyQty { get; set; }
-    //    public string UsageBinRackID { get; set; }
-    //    public string UsageBinRackCode { get; set; }
-    //    public string UsageBinRackName { get; set; }
-    //    public string UsagePickingMethod { get; set; }
-    //    public string UsagePickedBy { get; set; }
-    //    public string UsagePickedOn { get; set; }
-    //    public bool UsageQRLabel { get; set; }
-    //    public bool UsagePackage { get; set; }
-    //    public string UsageInspectionMethod { get; set; }
-    //    public string UsageInspectedBy { get; set; }
-    //    public string UsageInspectedOn { get; set; }
-    //    public bool UsageExpDate { get; set; }
-    //    public bool UsageApproveStamp { get; set; }
-    //    public string UsageJudgementMethod { get; set; }
-    //    public string UsageJudgeBy { get; set; }
-    //    public string UsageJudgeOn { get; set; }
-    //    public string ReturnActualQty { get; set; }
-    //    public string ReturnBinRackID { get; set; }
-    //    public string ReturnBinRackCode { get; set; }
-    //    public string ReturnBinRackName { get; set; }
-    //    public string ReturnPutawayMethod { get; set; }
-    //    public string ReturnPutBy { get; set; }
-    //    public string ReturnPutOn { get; set; }
-    //    public bool ReturnQRLabel { get; set; }
-    //    public bool ReturnPackage { get; set; }
-    //    public string ReturnInspectionMethod { get; set; }
-    //    public string ReturnInspectedBy { get; set; }
-    //    public string ReturnInspectedOn { get; set; }
-    //}
-
-    //public class UsagePickingVM
-    //{
-    //    public string HeaderID { get; set; }
-    //    public string StockCode { get; set; }
-    //    public string LotNo { get; set; }
-    //    public string MaterialCode { get; set; }
-    //    public string MaterialName { get; set; }
-    //    public decimal SupplyQty { get; set; }
-    //    public string BinRackID { get; set; }
-    //    public string BinRackCode { get; set; }
-    //    public string BinRackName { get; set; }
-    //    public string BinRackAreaID { get; set; }
-    //    public string BinRackAreaCode { get; set; }
-    //    public string BinRackAreaName { get; set; }
-    //    public string WarehouseID { get; set; }
-    //    public string WarehouseCode { get; set; }
-    //    public string WarehouseName { get; set; }
-    //    public string PickingMethod { get; set; }
-    //    public string PickedBy { get; set; }
-    //    public DateTime PickedOn { get; set; }
-    //}
-
-    //public class UsageInspectionVM
-    //{
-    //    public string HeaderID { get; set; }
-    //    public string StockCode { get; set; }
-    //    public string LotNo { get; set; }
-    //    public string MaterialCode { get; set; }
-    //    public string MaterialName { get; set; }
-    //    public bool QRLabel { get; set; }
-    //    public bool Package { get; set; }
-    //    public string InspectionMethod { get; set; }
-    //    public string InspectedBy { get; set; }
-    //    public DateTime InspectedOn { get; set; }
-    //}
-
-    //public class UsageJudgementVM
-    //{
-    //    public string HeaderID { get; set; }
-    //    public string StockCode { get; set; }
-    //    public string LotNo { get; set; }
-    //    public string MaterialCode { get; set; }
-    //    public string MaterialName { get; set; }
-    //    public bool ExpDate { get; set; }
-    //    public bool ApproveStamp { get; set; }
-    //    public string JudgementMethod { get; set; }
-    //    public string JudgeBy { get; set; }
-    //    public DateTime JudgeOn { get; set; }
-    //}
-
-    //public class ReturnPutawayVM
-    //{
-    //    public string HeaderID { get; set; }
-    //    public string StockCode { get; set; }
-    //    public string LotNo { get; set; }
-    //    public string MaterialCode { get; set; }
-    //    public string MaterialName { get; set; }
-    //    public decimal ActualReturnQty { get; set; }
-    //    public string BinRackID { get; set; }
-    //    public string BinRackCode { get; set; }
-    //    public string BinRackName { get; set; }
-    //    public string PutawayMethod { get; set; }
-    //    public string PutBy { get; set; }
-    //    public DateTime PutOn { get; set; }
-    //}
-
-    //public class ReturnInspectionVM
-    //{
-    //    public string HeaderID { get; set; }
-    //    public string StockCode { get; set; }
-    //    public string LotNo { get; set; }
-    //    public string MaterialCode { get; set; }
-    //    public string MaterialName { get; set; }
-    //    public bool QRLabel { get; set; }
-    //    public bool Package { get; set; }
-    //    public string InspectionMethod { get; set; }
-    //    public string InspectedBy { get; set; }
-    //    public DateTime InspectedOn { get; set; }
-    //}
-
-    //public class RecommendedStockDTO
-    //{
-    //    public string ID { get; set; }
-    //    public string StockCode { get; set; }
-    //    public string LotNo { get; set; }
-    //    public string BinRackID { get; set; }
-    //    public string BinRackCode { get; set; }
-    //    public string BinRackName { get; set; }
-    //    public string BinRackAreaID { get; set; }
-    //    public string BinRackAreaCode { get; set; }
-    //    public string BinRackAreaName { get; set; }
-    //    public string WarehouseID { get; set; }
-    //    public string WarehouseCode { get; set; }
-    //    public string WarehouseName { get; set; }
-    //    public string RawMaterialID { get; set; }
-    //    public string MaterialCode { get; set; }
-    //    public string MaterialName { get; set; }
-    //    public string ExpDate { get; set; }
-    //    public string InDate { get; set; }
-    //    public string Qty { get; set; }
-    //    public string ReceivedAt { get; set; }
-    //    public bool IsExpired { get; set; }
-    //    public bool QCInspected { get; set; }
-    //}
+    public class ListTransactionDTOReport
+    {
+        public string RMCode { get; set; }
+        public string RMName { get; set; }
+        public string WHName { get; set; }
+        public string InOut { get; set; }
+        public string TransactionDate { get; set; }
+        public string InQty { get; set; }
+        public string OutQty { get; set; }
+        public string InventoryQty { get; set; }
+        public string InOutType { get; set; }
+        public string CreateBy { get; set; }
+        public DateTime CreateOn { get; set; }
+    }
 }

@@ -583,6 +583,12 @@
     <Compile Include="Models\vDataInOutSummary.cs">
       <DependentUpon>AppModels.tt</DependentUpon>
     </Compile>
+    <Compile Include="Models\vInbound2.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vIssueSlipListTransaction.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
     <Compile Include="Models\vIssueSlipOrder.cs">
       <DependentUpon>AppModels.tt</DependentUpon>
     </Compile>
@@ -607,7 +613,13 @@
     <Compile Include="Models\vMaterialRequestDetail.cs">
       <DependentUpon>AppModels.tt</DependentUpon>
     </Compile>
+    <Compile Include="Models\vMovement.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
     <Compile Include="Models\vOtherInbound.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vOutbound.cs">
       <DependentUpon>AppModels.tt</DependentUpon>
     </Compile>
     <Compile Include="Models\vOutboundPicked.cs">
@@ -646,6 +658,9 @@
     <Compile Include="Models\vQCInspectExpired2.cs">
       <DependentUpon>AppModels.tt</DependentUpon>
     </Compile>
+    <Compile Include="Models\vQCInspection.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
     <Compile Include="Models\vQCInspectNonExpired.cs">
       <DependentUpon>AppModels.tt</DependentUpon>
     </Compile>
@@ -667,6 +682,9 @@
     <Compile Include="Models\vReceivingReport3.cs">
       <DependentUpon>AppModels.tt</DependentUpon>
     </Compile>
+    <Compile Include="Models\vReceivingReport4.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
     <Compile Include="Models\vReceivingSFG.cs">
       <DependentUpon>AppModels.tt</DependentUpon>
     </Compile>
@@ -686,6 +704,9 @@
       <DependentUpon>AppModels.tt</DependentUpon>
     </Compile>
     <Compile Include="Models\vSFGRecipeCalculation.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vShelfLifeExtension.cs">
       <DependentUpon>AppModels.tt</DependentUpon>
     </Compile>
     <Compile Include="Models\vStockAll.cs">
@@ -729,6 +750,9 @@
       <DependentUpon>AppModels.tt</DependentUpon>
     </Compile>
     <Compile Include="Models\vTransferSourceSFG.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vTransform.cs">
       <DependentUpon>AppModels.tt</DependentUpon>
     </Compile>
     <Compile Include="Models\Warehouse.cs">

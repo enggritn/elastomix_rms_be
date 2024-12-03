@@ -1,31 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Data;
 using System.Data.Entity;
-using System.IO;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.Http;
 using WMS_BE.Models;
 using WMS_BE.Utils;
-using ExcelDataReader;
-using OfficeOpenXml;
-using OfficeOpenXml.Style;
-using System.Drawing;
-
 namespace WMS_BE.Controllers.Api
 {
     [Route("api/movement")]
     public class MovementController : ApiController
     {
         private EIN_WMSEntities db = new EIN_WMSEntities();
-
 
         [HttpGet]
         [Route("api/movement/warehouse")]
@@ -120,8 +110,6 @@ namespace WMS_BE.Controllers.Api
                 products = products.Where(x => x.MaterialCode.Contains(searchName) || x.MaterialName.Contains(searchName));
             }
 
-
-
             list = products
                 .GroupBy(x => x.MaterialCode)
                 .Select(x => x.FirstOrDefault())
@@ -153,7 +141,6 @@ namespace WMS_BE.Controllers.Api
             {
                 productType = paramType[0].ToString();
             }
-
 
             var paramSearch = HttpContext.Current.Request.Params.GetValues("material-code");
             if (paramSearch != null && paramSearch.Length > 0 && !string.IsNullOrEmpty(paramSearch[0].ToString()))
@@ -230,7 +217,6 @@ namespace WMS_BE.Controllers.Api
                 {
                     foreach (var detail in details) 
                     {
-
                         if (string.IsNullOrEmpty(detail.NewArea))
                         {
                             ModelState.AddModelError("Movement.AreaList", string.Format("Warehouse must be select."));
@@ -255,8 +241,7 @@ namespace WMS_BE.Controllers.Api
                             {
                                 ModelState.AddModelError("Movement.BinRackCode", string.Format("New Bin Rack can not be same with old Bin Rack."));
                             }
-                        }
-                                                                    
+                        }                                                                    
 
                         if (detail.QtyTransfer > detail.QtyAvailable)
                         {
@@ -392,7 +377,6 @@ namespace WMS_BE.Controllers.Api
                             mv.ModifiedBy = activeUser;
                             db.Movements.Add(mv);
                         }
-
                     }
 
                     db.SaveChanges();
@@ -449,7 +433,6 @@ namespace WMS_BE.Controllers.Api
             string sortName = HttpContext.Current.Request.Form.GetValues("columns[" + orderCol + "][name]")[0];
             string sortDirection = HttpContext.Current.Request.Form.GetValues("order[0][dir]")[0];
 
-
             Dictionary<string, Func<Movement, object>> cols = new Dictionary<string, Func<Movement, object>>();
             cols.Add("ID", x => x.ID);
             cols.Add("Code", x => x.Code);
@@ -473,7 +456,6 @@ namespace WMS_BE.Controllers.Api
                 movements = movements
                     .Where(m => m.MaterialCode.Contains(search) || m.MaterialName.Contains(search) || m.NewBinRackCode.Contains(search) || m.NewBinRackName.Contains(search) || m.PrevBinRackCode.Contains(search) || m.PrevBinRackName.Contains(search));
             }
-
 
             int recordsTotal = movements.Count();
             int recordsFiltered = 0;
@@ -520,29 +502,7 @@ namespace WMS_BE.Controllers.Api
 
                     list.Add(itemList);
                 }
-            }
-
-            //var list = movements.Skip(start).Take(length).ToList()
-            //    .Select(x => new MovementVM() { 
-            //    ID = x.ID,
-            //    Code = x.Code,
-            //    LotNo = x.LotNo,
-            //    InDate = x.InDate.ToString(),
-            //    ExpDate = x.ExpDate.ToString(),
-            //    MaterialCode = x.MaterialCode,
-            //    MaterialName = x.MaterialName,
-            //    PrevBinRackID = x.PrevBinRackID,
-            //    PrevBinRackCode = x.PrevBinRackCode,
-            //    PrevBinRackName = x.PrevBinRackName,
-            //    Qty = x.Qty.HasValue ? x.Qty.Value : 0,
-            //    QtyPerBag = x.QtyPerBag.HasValue ? x.QtyPerBag.Value : 0,
-            //    NewBinRackID = x.ID,
-            //    NewBinRackCode = x.NewBinRackCode,
-            //    NewBinRackName = x.NewBinRackName,
-            //    CreatedBy = x.CreatedBy,
-            //    CreatedOn = x.CreatedOn
-
-            //    }).ToList();
+            }            
 
             Dictionary<string, object> obj = new Dictionary<string, object>();
             string message = "";
@@ -632,8 +592,6 @@ namespace WMS_BE.Controllers.Api
                 }
             }
 
-
-
             return Ok(list.ToList());
         }
 
@@ -688,9 +646,6 @@ namespace WMS_BE.Controllers.Api
                     });
                 }
             }
-
-
-
             return Ok(list.ToList());
         }
 
@@ -771,10 +726,7 @@ namespace WMS_BE.Controllers.Api
             {
                 vStocks = vStocks
                     .Where(m => m.MaterialCode.Contains(search) || m.MaterialName.Contains(search) || m.BinRackAreaName.Contains(search));
-            }
-
-            
-
+            }         
 
             int recordsTotal = vStocks.Count();
             int recordsFiltered = 0;
@@ -831,6 +783,250 @@ namespace WMS_BE.Controllers.Api
             return Ok(obj);
         }
 
+        [HttpPost]
+        [Route("api/movement/DatatableDetailMovement")]
+        public async Task<IHttpActionResult> DatatableDetailMovement()
+        {
+            int draw = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("draw")[0]);
+            int start = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("start")[0]);
+            int length = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("length")[0]);
+            string search = HttpContext.Current.Request.Form.GetValues("search[value]")[0];
+            string orderCol = HttpContext.Current.Request.Form.GetValues("order[0][column]")[0];
+            string sortName = HttpContext.Current.Request.Form.GetValues("columns[" + orderCol + "][name]")[0];
+            string sortDirection = HttpContext.Current.Request.Form.GetValues("order[0][dir]")[0];
 
+            HttpRequest request = HttpContext.Current.Request;
+            string date = request["date"].ToString();
+            string enddate = request["enddate"].ToString();
+            string warehouseCode = request["warehouseCode"].ToString();
+
+            Dictionary<string, object> obj = new Dictionary<string, object>();
+            string message = "";
+            bool status = false;
+
+            IEnumerable<vMovement> list = Enumerable.Empty<vMovement>();
+            IEnumerable<MovementDTOReport> pagedData = Enumerable.Empty<MovementDTOReport>();
+
+            DateTime filterDate = Convert.ToDateTime(date);
+            DateTime endfilterDate = Convert.ToDateTime(enddate);
+            IQueryable<vMovement> query;
+
+            if (!string.IsNullOrEmpty(warehouseCode))
+            {
+                query = db.vMovements.Where(s => DbFunctions.TruncateTime(s.PutawayOn) >= DbFunctions.TruncateTime(filterDate)
+                        && DbFunctions.TruncateTime(s.PutawayOn) <= DbFunctions.TruncateTime(endfilterDate)
+                        && s.WHName.Equals(warehouseCode));
+            }
+            else
+            {
+                query = db.vMovements.Where(s => DbFunctions.TruncateTime(s.PutawayOn) >= DbFunctions.TruncateTime(filterDate)
+                        && DbFunctions.TruncateTime(s.PutawayOn) <= DbFunctions.TruncateTime(endfilterDate));
+            }
+
+            int recordsTotal = query.Count();
+            int recordsFiltered = 0;
+
+            try
+            {
+                query = query
+                        .Where(m => m.RMCode.Contains(search)
+                        || m.RMName.Contains(search)
+                        );
+
+                Dictionary<string, Func<vMovement, object>> cols = new Dictionary<string, Func<vMovement, object>>();
+                cols.Add("WHName", x => x.WHName);
+                cols.Add("RMCode", x => x.RMCode);
+                cols.Add("RMName", x => x.RMName);
+                cols.Add("InDate", x => x.InDate);
+                cols.Add("ExpDate", x => x.ExpDate);
+                cols.Add("LotNo", x => x.LotNo);
+                cols.Add("OriginBag", x => x.OriginBag);
+                cols.Add("OriginFullBag", x => x.OriginFullBag);
+                cols.Add("OriginTotal", x => x.OriginTotal);
+                cols.Add("OriginBinRack", x => x.OriginBinRack);
+                cols.Add("PutawayBy", x => x.PutawayBy);
+                cols.Add("PutawayOn", x => x.PutawayOn);
+                cols.Add("DestinationBag", x => x.DestinationBag);
+                cols.Add("DestinationFullBag", x => x.DestinationFullBag);
+                cols.Add("DestinationTotal", x => x.DestinationTotal);
+                cols.Add("DestinationBinRack", x => x.DestinationBinRack);
+                cols.Add("Status", x => x.Status);
+                cols.Add("Memo", x => x.Memo);
+
+                if (sortDirection.Equals("asc"))
+                    list = query.OrderBy(cols[sortName]);
+                else
+                    list = query.OrderByDescending(cols[sortName]);
+
+                recordsFiltered = list.Count();
+
+                list = list.Skip(start).Take(length).ToList();
+
+                if (list != null && list.Count() > 0)
+                {
+                    pagedData = from detail in list
+                        select new MovementDTOReport
+                        {
+                            WHName = detail.WHName,
+                            RMCode = detail.RMCode,
+                            RMName = detail.RMName,
+                            InDate = Helper.NullDateToString2(detail.InDate),
+                            ExpDate = Helper.NullDateToString2(detail.ExpDate),
+                            LotNo = detail.LotNo != null ? detail.LotNo : "",
+                            OriginBag = Helper.FormatThousand(detail.OriginBag),
+                            OriginFullBag = Helper.FormatThousand(detail.OriginFullBag),
+                            OriginTotal = Helper.FormatThousand(detail.OriginTotal),
+                            OriginBinRack = detail.OriginBinRack,
+                            PutawayBy = detail.PutawayBy,
+                            PutawayOn = Convert.ToDateTime(detail.PutawayOn),
+                            DestinationBag = Helper.FormatThousand(detail.DestinationBag),
+                            DestinationFullBag = Helper.FormatThousand(detail.DestinationFullBag),
+                            DestinationTotal = Helper.FormatThousand(detail.DestinationTotal),
+                            DestinationBinRack = detail.DestinationBinRack,
+                            Status = detail.Status,
+                            Memo = detail.Memo,
+                        };
+                }
+
+                status = true;
+                message = "Fetch data succeeded.";
+            }
+            catch (HttpRequestException reqpEx)
+            {
+                message = reqpEx.Message;
+                return BadRequest();
+            }
+            catch (HttpResponseException respEx)
+            {
+                message = respEx.Message;
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
+
+            obj.Add("draw", draw);
+            obj.Add("recordsTotal", recordsTotal);
+            obj.Add("recordsFiltered", recordsFiltered);
+            obj.Add("data", pagedData);
+            obj.Add("status", status);
+            obj.Add("message", message);
+
+            return Ok(obj);
+        }
+
+        [HttpGet]
+        [Route("api/movement/GetDataReportMovement")]
+        public async Task<IHttpActionResult> GetDataReportMovement(string date, string enddate, string warehouse)
+        {
+            Dictionary<string, object> obj = new Dictionary<string, object>();
+            string message = "";
+            bool status = false;
+            HttpRequest request = HttpContext.Current.Request;
+
+
+            if (string.IsNullOrEmpty(date) && string.IsNullOrEmpty(enddate) && string.IsNullOrEmpty(warehouse))
+            {
+                throw new Exception("Parameter is required.");
+            }
+
+            IEnumerable<vMovement> list = Enumerable.Empty<vMovement>();
+            IEnumerable<MovementDTOReport> pagedData = Enumerable.Empty<MovementDTOReport>();
+
+            DateTime filterDate = Convert.ToDateTime(date);
+            DateTime endfilterDate = Convert.ToDateTime(enddate);
+            IQueryable<vMovement> query;
+
+            if (!string.IsNullOrEmpty(warehouse))
+            {
+                query = db.vMovements.Where(s => DbFunctions.TruncateTime(s.PutawayOn) >= DbFunctions.TruncateTime(filterDate)
+                        && DbFunctions.TruncateTime(s.PutawayOn) <= DbFunctions.TruncateTime(endfilterDate)
+                        && s.WHName.Equals(warehouse));
+            }
+            else
+            {
+                query = db.vMovements.Where(s => DbFunctions.TruncateTime(s.PutawayOn) >= DbFunctions.TruncateTime(filterDate)
+                        && DbFunctions.TruncateTime(s.PutawayOn) <= DbFunctions.TruncateTime(endfilterDate));
+            }
+
+            int recordsTotal = query.Count();
+            int recordsFiltered = 0;
+
+            try
+            {
+                Dictionary<string, Func<vMovement, object>> cols = new Dictionary<string, Func<vMovement, object>>();
+                cols.Add("WHName", x => x.WHName);
+                cols.Add("RMCode", x => x.RMCode);
+                cols.Add("RMName", x => x.RMName);
+                cols.Add("InDate", x => x.InDate);
+                cols.Add("ExpDate", x => x.ExpDate);
+                cols.Add("LotNo", x => x.LotNo);
+                cols.Add("OriginBag", x => x.OriginBag);
+                cols.Add("OriginFullBag", x => x.OriginFullBag);
+                cols.Add("OriginTotal", x => x.OriginTotal);
+                cols.Add("OriginBinRack", x => x.OriginBinRack);
+                cols.Add("PutawayBy", x => x.PutawayBy);
+                cols.Add("PutawayOn", x => x.PutawayOn);
+                cols.Add("DestinationBag", x => x.DestinationBag);
+                cols.Add("DestinationFullBag", x => x.DestinationFullBag);
+                cols.Add("DestinationTotal", x => x.DestinationTotal);
+                cols.Add("DestinationBinRack", x => x.DestinationBinRack);
+                cols.Add("Status", x => x.Status);
+                cols.Add("Memo", x => x.Memo);
+
+                recordsFiltered = list.Count();
+                list = query.ToList();
+
+                if (list != null && list.Count() > 0)
+                {
+                    pagedData = from detail in list
+                        select new MovementDTOReport
+                        {
+                            WHName = detail.WHName,
+                            RMCode = detail.RMCode,
+                            RMName = detail.RMName,
+                            InDate = Helper.NullDateToString2(detail.InDate),
+                            ExpDate = Helper.NullDateToString2(detail.ExpDate),
+                            LotNo = detail.LotNo != null ? detail.LotNo : "",
+                            OriginBag = Helper.FormatThousand(detail.OriginBag),
+                            OriginFullBag = Helper.FormatThousand(detail.OriginFullBag),
+                            OriginTotal = Helper.FormatThousand(Convert.ToInt32(detail.OriginTotal)),
+                            OriginBinRack = detail.OriginBinRack,
+                            PutawayBy = detail.PutawayBy,
+                            PutawayOn = Convert.ToDateTime(detail.PutawayOn),
+                            DestinationBag = Helper.FormatThousand(detail.DestinationBag),
+                            DestinationFullBag = Helper.FormatThousand(detail.DestinationFullBag),
+                            DestinationTotal = Helper.FormatThousand(detail.DestinationTotal),
+                            DestinationBinRack = detail.DestinationBinRack,
+                            Status = detail.Status,
+                            Memo = detail.Memo,
+                        };
+                }
+
+                status = true;
+                message = "Fetch data succeeded.";
+            }
+            catch (HttpRequestException reqpEx)
+            {
+                message = reqpEx.Message;
+                return BadRequest();
+            }
+            catch (HttpResponseException respEx)
+            {
+                message = respEx.Message;
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
+
+            obj.Add("list", pagedData);
+            obj.Add("status", status);
+            obj.Add("message", message);
+
+            return Ok(obj);
+        }
     }
 }

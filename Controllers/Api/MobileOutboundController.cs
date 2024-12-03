@@ -1219,9 +1219,42 @@ namespace WMS_BE.Controllers.Api
                         throw new Exception("Order Id is required.");
                     }
 
+                    string LotNumber = "";
+                    string QtyPerBag = "";
                     string MaterialCode = dataVM.BarcodeLeft.Substring(0, dataVM.BarcodeLeft.Length - 13);
-                    string QtyPerBag = dataVM.BarcodeRight.Substring(MaterialCode.Length + 7, 6).Trim();
-                    string LotNumber = dataVM.BarcodeRight.Substring(MaterialCode.Length + 14);
+                    RawMaterial cekQtyPerBag = await db.RawMaterials.Where(s => s.MaterialCode.Equals(MaterialCode)).FirstOrDefaultAsync();
+                    vProductMaster vProductMaster = await db.vProductMasters.Where(m => m.MaterialCode.Equals(MaterialCode)).FirstOrDefaultAsync();
+                    if (vProductMaster == null)
+                    {
+                        throw new Exception("Material tidak dikenali.");
+                    }
+
+                    if (vProductMaster.ProdType == "SFG")
+                    {
+                        if (dataVM.BarcodeRight.Length == 29)
+                        {
+                            QtyPerBag = dataVM.BarcodeRight.Substring(MaterialCode.Length + 7, 8).Trim();
+                            LotNumber = dataVM.BarcodeRight.Substring(MaterialCode.Length + 16);
+                        }
+                        else
+                        {
+                            QtyPerBag = dataVM.BarcodeRight.Substring(MaterialCode.Length + 7, 6).Trim();
+                            LotNumber = dataVM.BarcodeRight.Substring(MaterialCode.Length + 14);
+                        }
+                    }
+                    else
+                    {
+                        if (cekQtyPerBag.Qty >= 1000)
+                        {
+                            QtyPerBag = dataVM.BarcodeRight.Substring(MaterialCode.Length + 7, 8).Trim();
+                            LotNumber = dataVM.BarcodeRight.Substring(MaterialCode.Length + 16);
+                        }
+                        else
+                        {
+                            QtyPerBag = dataVM.BarcodeRight.Substring(MaterialCode.Length + 7, 6).Trim();
+                            LotNumber = dataVM.BarcodeRight.Substring(MaterialCode.Length + 14);
+                        }
+                    }
                     string InDate = dataVM.BarcodeLeft.Substring(MaterialCode.Length, 7);
                     string ExpDate = dataVM.BarcodeLeft.Substring(MaterialCode.Length + 7, 6);
 

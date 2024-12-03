@@ -623,6 +623,175 @@ namespace WMS_BE.Controllers.Api
             return Ok(obj);
         }
 
+        [HttpPost]
+        public async Task<IHttpActionResult> DatatableDetailReceiving4()
+        {
+            int draw = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("draw")[0]);
+            int start = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("start")[0]);
+            int length = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("length")[0]);
+            string search = HttpContext.Current.Request.Form.GetValues("search[value]")[0];
+            string orderCol = HttpContext.Current.Request.Form.GetValues("order[0][column]")[0];
+            string sortName = HttpContext.Current.Request.Form.GetValues("columns[" + orderCol + "][name]")[0];
+            string sortDirection = HttpContext.Current.Request.Form.GetValues("order[0][dir]")[0];
+
+            HttpRequest request = HttpContext.Current.Request;
+            string date = request["date"].ToString();
+            string enddate = request["enddate"].ToString();
+            string warehouseCode = request["warehouseCode"].ToString();
+            string sourceType = request["sourceType"].ToString();
+
+            Dictionary<string, object> obj = new Dictionary<string, object>();
+            string message = "";
+            bool status = false;
+
+            IEnumerable<vReceivingReport4> list = Enumerable.Empty<vReceivingReport4>();
+            IEnumerable<ReceivingDetailDTOReport4> pagedData = Enumerable.Empty<ReceivingDetailDTOReport4>();
+
+            DateTime filterDate = Convert.ToDateTime(date);
+            DateTime endfilterDate = Convert.ToDateTime(enddate);
+            IQueryable<vReceivingReport4> query;
+
+            if (!string.IsNullOrEmpty(sourceType) && !string.IsNullOrEmpty(warehouseCode))
+            {
+                query = db.vReceivingReport4.Where(s => DbFunctions.TruncateTime(s.Schedule) >= DbFunctions.TruncateTime(filterDate)
+                        && DbFunctions.TruncateTime(s.Schedule) <= DbFunctions.TruncateTime(endfilterDate)
+                        && s.SourceCode.Equals(warehouseCode)
+                        && s.SourceType.Equals(sourceType));
+            }
+            else
+            {
+                if (!string.IsNullOrEmpty(sourceType))
+                {
+                    query = db.vReceivingReport4.Where(s => DbFunctions.TruncateTime(s.Schedule) >= DbFunctions.TruncateTime(filterDate)
+                            && DbFunctions.TruncateTime(s.Schedule) <= DbFunctions.TruncateTime(endfilterDate)
+                            && s.SourceType.Equals(sourceType));
+                }
+                else if (!string.IsNullOrEmpty(warehouseCode))
+                {
+                    query = db.vReceivingReport4.Where(s => DbFunctions.TruncateTime(s.Schedule) >= DbFunctions.TruncateTime(filterDate)
+                            && DbFunctions.TruncateTime(s.Schedule) <= DbFunctions.TruncateTime(endfilterDate)
+                            && s.SourceCode.Equals(warehouseCode));
+                }
+                else
+                {
+                    query = db.vReceivingReport4.Where(s => DbFunctions.TruncateTime(s.Schedule) >= DbFunctions.TruncateTime(filterDate)
+                            && DbFunctions.TruncateTime(s.Schedule) <= DbFunctions.TruncateTime(endfilterDate));
+                }
+            }
+
+            int recordsTotal = query.Count();
+            int recordsFiltered = 0;
+
+            try
+            {
+                query = query
+                        .Where(m => m.MaterialCode.Contains(search)
+                        || m.MaterialName.Contains(search)
+                        );
+
+                Dictionary<string, Func<vReceivingReport4, object>> cols = new Dictionary<string, Func<vReceivingReport4, object>>();
+                cols.Add("PONo", x => x.PONo);
+                cols.Add("Supplier", x => x.Supplier);
+                cols.Add("MaterialCode", x => x.MaterialCode);
+                cols.Add("MaterialName", x => x.MaterialName);
+                cols.Add("Schedule", x => x.Schedule);
+                cols.Add("TotalQtyPo", x => x.TotalQtyPo);
+                cols.Add("InDate", x => x.InDate);
+                cols.Add("ExpDate", x => x.ExpDate);
+                cols.Add("LotNo", x => x.LotNo);
+                cols.Add("QtyPerBag", x => x.QtyPerBag);
+                cols.Add("QtyBag", x => x.QtyBag);
+                cols.Add("Total", x => x.Total);
+                cols.Add("DoNo", x => x.DoNo);
+                cols.Add("OK", x => x.Ok);
+                cols.Add("NgDamage", x => x.NgDamage);
+                cols.Add("NgWet", x => x.NgDamage);
+                cols.Add("NgContamination", x => x.NgDamage);
+                cols.Add("COA", x => x.COA);
+                cols.Add("StatusPo", x => x.StatusPo);
+                cols.Add("ReceivedBy", x => x.ReceivedBy);
+                cols.Add("ReceivedOn", x => x.ReceivedOn);
+                cols.Add("QtyPutaway", x => x.QtyPutaway);
+                cols.Add("PutawayBy", x => x.ReceivedBy);
+                cols.Add("PutawayOn", x => x.ReceivedOn);
+                cols.Add("Area", x => x.Area);
+                cols.Add("RackNo", x => x.RackNo);
+                cols.Add("Status", x => x.Status);
+                cols.Add("Remarks", x => x.Remarks);
+
+                if (sortDirection.Equals("asc"))
+                    list = query.OrderBy(cols[sortName]);
+                else
+                    list = query.OrderByDescending(cols[sortName]);
+
+                recordsFiltered = list.Count();
+
+                list = list.Skip(start).Take(length).ToList();
+
+                if (list != null && list.Count() > 0)
+                {
+                    pagedData = from detail in list
+                        select new ReceivingDetailDTOReport4
+                        {
+                            PONo = detail.PONo,
+                            Supplier = detail.Supplier,
+                            MaterialCode = detail.MaterialCode,
+                            MaterialName = detail.MaterialName,
+                            Schedule = Helper.NullDateToString2(detail.Schedule),
+                            TotalQtyPo = Helper.FormatThousand(detail.TotalQtyPo),
+                            InDate = Helper.NullDateToString2(detail.InDate),
+                            ExpDate = Helper.NullDateToString2(detail.ExpDate),
+                            LotNo = detail.LotNo != null ? detail.LotNo : "",
+                            QtyPerBag = Helper.FormatThousand(detail.QtyPerBag),
+                            QtyBag = Helper.FormatThousand(detail.QtyBag),
+                            Total = Helper.FormatThousand(detail.Total),
+                            DoNo = detail.DoNo,
+                            Ok = Helper.FormatThousand(detail.Ok),
+                            NgDamage = Helper.FormatThousand(detail.NgDamage),
+                            NgWet = Helper.FormatThousand(detail.NgDamage),
+                            NgContamination = Helper.FormatThousand(detail.NgDamage),
+                            COA = detail.COA,
+                            StatusPo = detail.StatusPo,
+                            ReceivedBy = detail.ReceivedBy,
+                            ReceivedOn = detail.ReceivedOn,
+                            QtyPutaway = Helper.FormatThousand(detail.QtyPutaway),
+                            PutawayBy = detail.ReceivedBy,
+                            PutawayOn = detail.PutawayOn,
+                            Area = detail.Area != null ? detail.Area : "",
+                            RackNo = detail.RackNo != null ? detail.RackNo : "",
+                            Status = detail.Status,
+                            Remarks = detail.Remarks,
+                        };
+                }
+
+                status = true;
+                message = "Fetch data succeeded.";
+            }
+            catch (HttpRequestException reqpEx)
+            {
+                message = reqpEx.Message;
+                return BadRequest();
+            }
+            catch (HttpResponseException respEx)
+            {
+                message = respEx.Message;
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
+
+            obj.Add("draw", draw);
+            obj.Add("recordsTotal", recordsTotal);
+            obj.Add("recordsFiltered", recordsFiltered);
+            obj.Add("data", pagedData);
+            obj.Add("status", status);
+            obj.Add("message", message);
+
+            return Ok(obj);
+        }
+
         [HttpGet]
         public async Task<IHttpActionResult> GetDataReportReceiving(string date, string warehouse, string sourcetype)
         {
@@ -1001,6 +1170,154 @@ namespace WMS_BE.Controllers.Api
             }
 
             obj.Add("list3", pagedData);
+            obj.Add("status", status);
+            obj.Add("message", message);
+
+            return Ok(obj);
+        }
+
+        [HttpGet]
+        public async Task<IHttpActionResult>GetDataReportReceiving4(string date, string enddate, string warehouse, string sourcetype)
+        {
+            Dictionary<string, object> obj = new Dictionary<string, object>();
+            string message = "";
+            bool status = false;
+            HttpRequest request = HttpContext.Current.Request;
+
+
+            if (string.IsNullOrEmpty(date) && string.IsNullOrEmpty(enddate) && string.IsNullOrEmpty(warehouse) && string.IsNullOrEmpty(sourcetype))
+            {
+                throw new Exception("Parameter is required.");
+            }
+
+            IEnumerable<vReceivingReport4> list = Enumerable.Empty<vReceivingReport4>();
+            IEnumerable<ReceivingDetailDTOReport4> pagedData = Enumerable.Empty<ReceivingDetailDTOReport4>();
+
+            DateTime filterDate = Convert.ToDateTime(date);
+            DateTime endfilterDate = Convert.ToDateTime(enddate);
+            IQueryable<vReceivingReport4> query;
+
+            if (!string.IsNullOrEmpty(sourcetype) && !string.IsNullOrEmpty(warehouse))
+            {
+                query = db.vReceivingReport4.Where(s => DbFunctions.TruncateTime(s.Schedule) >= DbFunctions.TruncateTime(filterDate)
+                        && DbFunctions.TruncateTime(s.Schedule) <= DbFunctions.TruncateTime(endfilterDate)
+                        && s.SourceCode.Equals(warehouse)
+                        && s.SourceType.Equals(sourcetype));
+            }
+            else
+            {
+                if (!string.IsNullOrEmpty(sourcetype))
+                {
+                    query = db.vReceivingReport4.Where(s => DbFunctions.TruncateTime(s.Schedule) >= DbFunctions.TruncateTime(filterDate)
+                            && DbFunctions.TruncateTime(s.Schedule) <= DbFunctions.TruncateTime(endfilterDate)
+                            && s.SourceType.Equals(sourcetype));
+                }
+                else if (!string.IsNullOrEmpty(warehouse))
+                {
+                    query = db.vReceivingReport4.Where(s => DbFunctions.TruncateTime(s.Schedule) >= DbFunctions.TruncateTime(filterDate)
+                            && DbFunctions.TruncateTime(s.Schedule) <= DbFunctions.TruncateTime(endfilterDate)
+                            && s.SourceCode.Equals(warehouse));
+                }
+                else
+                {
+                    query = db.vReceivingReport4.Where(s => DbFunctions.TruncateTime(s.Schedule) >= DbFunctions.TruncateTime(filterDate)
+                            && DbFunctions.TruncateTime(s.Schedule) <= DbFunctions.TruncateTime(endfilterDate));
+                }
+            }
+
+            int recordsTotal = query.Count();
+            int recordsFiltered = 0;
+
+            try
+            {
+                Dictionary<string, Func<vReceivingReport4, object>> cols = new Dictionary<string, Func<vReceivingReport4, object>>();
+                cols.Add("PONo", x => x.PONo);
+                cols.Add("Supplier", x => x.Supplier);
+                cols.Add("MaterialCode", x => x.MaterialCode);
+                cols.Add("MaterialName", x => x.MaterialName);
+                cols.Add("Schedule", x => x.Schedule);
+                cols.Add("TotalQtyPo", x => x.TotalQtyPo);
+                cols.Add("InDate", x => x.InDate);
+                cols.Add("ExpDate", x => x.ExpDate);
+                cols.Add("LotNo", x => x.LotNo);
+                cols.Add("QtyPerBag", x => x.QtyPerBag);
+                cols.Add("QtyBag", x => x.QtyBag);
+                cols.Add("Total", x => x.Total);
+                cols.Add("DoNo", x => x.DoNo);
+                cols.Add("OK", x => x.Ok);
+                cols.Add("NgDamage", x => x.NgDamage);
+                cols.Add("NgWet", x => x.NgDamage);
+                cols.Add("NgContamination", x => x.NgDamage);
+                cols.Add("COA", x => x.COA);
+                cols.Add("StatusPo", x => x.StatusPo);
+                cols.Add("ReceivedBy", x => x.ReceivedBy);
+                cols.Add("ReceivedOn", x => x.ReceivedOn);
+                cols.Add("QtyPutaway", x => x.QtyPutaway);
+                cols.Add("PutawayBy", x => x.ReceivedBy);
+                cols.Add("PutawayOn", x => x.ReceivedOn);
+                cols.Add("Area", x => x.Area);
+                cols.Add("RackNo", x => x.RackNo);
+                cols.Add("Status", x => x.Status);
+                cols.Add("Remarks", x => x.Remarks);
+
+                recordsFiltered = list.Count();
+                list = query.ToList();
+
+                if (list != null && list.Count() > 0)
+                {
+                    pagedData = from detail in list
+                        select new ReceivingDetailDTOReport4
+                        {
+                            PONo = detail.PONo,
+                            Supplier = detail.Supplier,
+                            MaterialCode = detail.MaterialCode,
+                            MaterialName = detail.MaterialName,
+                            Schedule = Helper.NullDateToString2(detail.Schedule),
+                            TotalQtyPo = Helper.FormatThousand(detail.TotalQtyPo),
+                            InDate = Helper.NullDateToString2(detail.InDate),
+                            ExpDate = Helper.NullDateToString2(detail.ExpDate),
+                            LotNo = detail.LotNo != null ? detail.LotNo : "",
+                            QtyPerBag = Helper.FormatThousand(detail.QtyPerBag),
+                            QtyBag = Helper.FormatThousand(detail.QtyBag),
+                            Total = Helper.FormatThousand(detail.Total),
+                            DoNo = detail.DoNo,
+                            Ok = Helper.FormatThousand(detail.Ok),
+                            NgDamage = Helper.FormatThousand(detail.NgDamage),
+                            NgWet = Helper.FormatThousand(detail.NgDamage),
+                            NgContamination = Helper.FormatThousand(detail.NgDamage),
+                            COA = detail.COA,
+                            StatusPo = detail.StatusPo,
+                            ReceivedBy = detail.ReceivedBy,
+                            ReceivedOn = detail.ReceivedOn,
+                            QtyPutaway = Helper.FormatThousand(detail.QtyPutaway),
+                            PutawayBy = detail.ReceivedBy,
+                            PutawayOn = detail.PutawayOn,
+                            Area = detail.Area != null ? detail.Area : "",
+                            RackNo = detail.RackNo != null ? detail.RackNo : "",
+                            Status = detail.Status,
+                            Remarks = detail.Remarks,
+                        };
+                }
+
+                status = true;
+                message = "Fetch data succeeded.";
+            }
+            catch (HttpRequestException reqpEx)
+            {
+                message = reqpEx.Message;
+                return BadRequest();
+            }
+            catch (HttpResponseException respEx)
+            {
+                message = respEx.Message;
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
+
+            obj.Add("list4", pagedData);
             obj.Add("status", status);
             obj.Add("message", message);
 
@@ -2870,6 +3187,18 @@ namespace WMS_BE.Controllers.Api
                             printer = new PrinterDTO();
                             printer.PrinterIP = ConfigurationManager.AppSettings["printer_2_ip"].ToString();
                             printer.PrinterName = ConfigurationManager.AppSettings["printer_2_name"].ToString();
+
+                            printers.Add(printer);
+
+                            printer = new PrinterDTO();
+                            printer.PrinterIP = ConfigurationManager.AppSettings["printer_3_ip"].ToString();
+                            printer.PrinterName = ConfigurationManager.AppSettings["printer_3_name"].ToString();
+
+                            printers.Add(printer);
+
+                            printer = new PrinterDTO();
+                            printer.PrinterIP = ConfigurationManager.AppSettings["printer_4_ip"].ToString();
+                            printer.PrinterName = ConfigurationManager.AppSettings["printer_4_name"].ToString();
 
                             printers.Add(printer);
 

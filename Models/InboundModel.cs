@@ -171,32 +171,25 @@ namespace WMS_BE.Models
         public bool PutawayAction { get; set; }
     }
 
-    //public class InboundDetailVM
-    //{
-    //    public string InboundOrderID { get; set; }
-    //    public string DoNo { get; set; }
-    //    public string LotNo { get; set; }
-    //    public decimal Qty { get; set; }
-    //}
-
-    //public class InboundCoaVM
-    //{
-    //    public string ID { get; set; }
-    //    public bool IsChecked { get; set; }
-    //}
-
-    //public class InboundInspectionVM
-    //{
-    //    public string ID { get; set; }
-    //    public int OKBagQty { get; set; }
-    //    public int DamageQty { get; set; }
-    //    public int WetQty { get; set; }
-    //    public int ContaminationQty { get; set; }
-    //}
-
-    //public class InboundJudgementVM
-    //{
-    //    public string ID { get; set; }
-    //    public int OKBagQty { get; set; }
-    //}
+    public class OtherInbound2DTOReport
+    {
+        public string DocumentNo { get; set; }
+        public string WHName { get; set; }
+        public string RMCode { get; set; }
+        public string RMName { get; set; }
+        public string InDate { get; set; }
+        public string ExpDate { get; set; }
+        public string LotNo { get; set; }
+        public string Bag { get; set; }
+        public string FullBag { get; set; }
+        public string Total { get; set; }
+        public string CreateBy { get; set; }
+        public DateTime CreateOn { get; set; }
+        public string QtyPutaway { get; set; }
+        public string PutawayBy { get; set; }
+        public DateTime PutawayOn { get; set; }
+        public string BinRack { get; set; }
+        public string Status { get; set; }
+        public string Memo { get; set; }
+    }
 }

@@ -1641,6 +1641,18 @@ namespace WMS_BE.Controllers.Api
 
                             printers.Add(printer);
 
+                            printer = new PrinterDTO();
+                            printer.PrinterIP = ConfigurationManager.AppSettings["printer_3_ip"].ToString();
+                            printer.PrinterName = ConfigurationManager.AppSettings["printer_3_name"].ToString();
+
+                            printers.Add(printer);
+
+                            printer = new PrinterDTO();
+                            printer.PrinterIP = ConfigurationManager.AppSettings["printer_4_ip"].ToString();
+                            printer.PrinterName = ConfigurationManager.AppSettings["printer_4_name"].ToString();
+
+                            printers.Add(printer);
+
                             string folder_name = "";
                             foreach (PrinterDTO printerDTO in printers)
                             {
