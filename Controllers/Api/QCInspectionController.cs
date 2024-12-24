@@ -734,6 +734,21 @@ namespace WMS_BE.Controllers.Api
             Dictionary<string, object> obj = new Dictionary<string, object>();
             string message = "";
             bool status = false;
+            var re = Request;
+            var headers = re.Headers;
+
+            string token = "";
+
+            if (headers.Contains("token"))
+            {
+                token = headers.GetValues("token").First();
+            }
+
+            string activeUser = await db.Users.Where(x => x.Token.Equals(token)).Select(x => x.Username).FirstOrDefaultAsync();
+
+            User userData = await db.Users.Where(x => x.Username.Equals(activeUser)).FirstOrDefaultAsync();
+            string userAreaType = userData.AreaType;
+
             HttpRequest request = HttpContext.Current.Request;
 
             IEnumerable<vQCInspectExpired2> list = Enumerable.Empty<vQCInspectExpired2>();
@@ -807,6 +822,11 @@ namespace WMS_BE.Controllers.Api
                 }
             }
 
+            if (userAreaType == "PRODUCTION")
+            {
+                List<string> materialcode = db.SemiFinishGoods.Where(x => x.IsActive.Equals(true)).Select(d => d.MaterialCode).ToList();
+                query = query.Where(a => materialcode.Contains(a.MaterialCode));
+            }
 
             recordsTotal = query.Count();
             int recordsFiltered = 0;
@@ -927,6 +947,21 @@ namespace WMS_BE.Controllers.Api
             Dictionary<string, object> obj = new Dictionary<string, object>();
             string message = "";
             bool status = false;
+            var re = Request;
+            var headers = re.Headers;
+
+            string token = "";
+
+            if (headers.Contains("token"))
+            {
+                token = headers.GetValues("token").First();
+            }
+
+            string activeUser = await db.Users.Where(x => x.Token.Equals(token)).Select(x => x.Username).FirstOrDefaultAsync();
+
+            User userData = await db.Users.Where(x => x.Username.Equals(activeUser)).FirstOrDefaultAsync();
+            string userAreaType = userData.AreaType;
+
             HttpRequest request = HttpContext.Current.Request;
 
             IEnumerable<vQCInspectNonExpired2> list = Enumerable.Empty<vQCInspectNonExpired2>();
@@ -1000,6 +1035,11 @@ namespace WMS_BE.Controllers.Api
                 }
             }
 
+            if (userAreaType == "PRODUCTION")
+            {
+                List<string> materialcode = db.SemiFinishGoods.Where(x => x.IsActive.Equals(true)).Select(d => d.MaterialCode).ToList();
+                query = query.Where(a => materialcode.Contains(a.MaterialCode));
+            }
 
             recordsTotal = query.Count();
             int recordsFiltered = 0;

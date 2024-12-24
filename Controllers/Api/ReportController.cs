@@ -161,7 +161,21 @@ namespace WMS_BE.Controllers.Api
 
             Dictionary<string, object> obj = new Dictionary<string, object>();
             string message = "";
-            bool status = false;
+            bool status = false; 
+            var re = Request;
+            var headers = re.Headers;
+
+            string token = "";
+
+            if (headers.Contains("token"))
+            {
+                token = headers.GetValues("token").First();
+            }
+
+            string activeUser = await db.Users.Where(x => x.Token.Equals(token)).Select(x => x.Username).FirstOrDefaultAsync();
+
+            User userData = await db.Users.Where(x => x.Username.Equals(activeUser)).FirstOrDefaultAsync();
+            string userAreaType = userData.AreaType;
 
             IEnumerable<vStockAll> list = Enumerable.Empty<vStockAll>();
             IEnumerable<ActualStockDTO> pagedData = Enumerable.Empty<ActualStockDTO>();
@@ -181,6 +195,11 @@ namespace WMS_BE.Controllers.Api
             if (!string.IsNullOrEmpty(binRackCode))
             {
                 query = query.Where(m => m.BinRackCode.Equals(binRackCode));
+            }
+
+            if (userAreaType == "PRODUCTION")
+            {
+                query = query.Where(a => a.BinRackAreaType.Equals(userAreaType));
             }
 
             int recordsTotal = query.Count();
@@ -297,7 +316,21 @@ namespace WMS_BE.Controllers.Api
 
             Dictionary<string, object> obj = new Dictionary<string, object>();
             string message = "";
-            bool status = false; 
+            bool status = false;
+            var re = Request;
+            var headers = re.Headers;
+
+            string token = "";
+
+            if (headers.Contains("token"))
+            {
+                token = headers.GetValues("token").First();
+            }
+
+            string activeUser = await db.Users.Where(x => x.Token.Equals(token)).Select(x => x.Username).FirstOrDefaultAsync();
+
+            User userData = await db.Users.Where(x => x.Username.Equals(activeUser)).FirstOrDefaultAsync();
+            string userAreaType = userData.AreaType;
 
             IEnumerable<vStockAll> list = Enumerable.Empty<vStockAll>();
             IEnumerable<ActualStockDTO> pagedData = Enumerable.Empty<ActualStockDTO>();
@@ -321,6 +354,11 @@ namespace WMS_BE.Controllers.Api
             {
                 filterExpDate = Convert.ToDateTime(expDate);
                 query = query.Where(m => DbFunctions.TruncateTime(m.ExpiredDate) == DbFunctions.TruncateTime(filterExpDate));                
+            }
+
+            if (userAreaType == "PRODUCTION")
+            {
+                query = query.Where(a => a.BinRackAreaType.Equals(userAreaType));
             }
 
             int recordsTotal = query.Count();

@@ -479,7 +479,8 @@ namespace WMS_BE.Controllers.Api
                     string InDate = req.BarcodeLeft.Substring(MaterialCode.Length, 7);
                     string ExpiredDate = req.BarcodeLeft.Substring(MaterialCode.Length + 7, 6);
 
-                    string QtyPerBag2 = QtyPerBag.Replace(',', '.');
+                    string QtyPerBag2 = QtyPerBag.Replace(',', '.'); //replace ini akan error jika diterapkan di server production
+
                     string StockCode = string.Format("{0}{1}{2}{3}{4}", MaterialCode.Trim(), QtyPerBag, LotNumber, InDate, ExpiredDate);
 
                     BinRack binRack = null;
@@ -541,7 +542,7 @@ namespace WMS_BE.Controllers.Api
                             InDate = inDate,
                             ExpDate = expiredDate,
                             BagQty = req.BagQty,
-                            QtyPerBag = Convert.ToDecimal(QtyPerBag2),
+                            QtyPerBag = Convert.ToDecimal(QtyPerBag),
                             BinRackCode = binRack.Code,
                             BinRackName = binRack.Name,
                             ActualBagQty = req.BagQty,
@@ -558,7 +559,7 @@ namespace WMS_BE.Controllers.Api
                         stockOpnameItem.BagQty = req.BagQty;
                         if (req.BagQty == 1 && Convert.ToDecimal(QtyPerBag) > vProductMaster.QtyPerBag)
                         {
-                            stockOpnameItem.QtyPerBag = Convert.ToDecimal(QtyPerBag2);
+                            stockOpnameItem.QtyPerBag = Convert.ToDecimal(QtyPerBag);
                         }
                         else
                         {
@@ -589,7 +590,7 @@ namespace WMS_BE.Controllers.Api
                             stockOpnameItem.BagQty = req.BagQty;
                             if (req.BagQty == 1 && Convert.ToDecimal(QtyPerBag) > vProductMaster.QtyPerBag)
                             {
-                                stockOpnameItem.QtyPerBag = Convert.ToDecimal(QtyPerBag2);
+                                stockOpnameItem.QtyPerBag = Convert.ToDecimal(QtyPerBag);
                             }
                             else
                             {

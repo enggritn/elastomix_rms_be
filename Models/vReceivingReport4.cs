@@ -14,6 +14,7 @@ namespace WMS_BE.Models
     
     public partial class vReceivingReport4
     {
+        public string DestinationName { get; set; }
         public string SourceCode { get; set; }
         public string SourceType { get; set; }
         public string PONo { get; set; }

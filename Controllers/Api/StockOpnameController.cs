@@ -537,12 +537,33 @@ namespace WMS_BE.Controllers.Api
             Dictionary<string, object> obj = new Dictionary<string, object>();
             string message = "";
             bool status = false;
+            var re = Request;
+            var headers = re.Headers;
+
+            string token = "";
+
+            if (headers.Contains("token"))
+            {
+                token = headers.GetValues("token").First();
+            }
+
+            string activeUser = await db.Users.Where(x => x.Token.Equals(token)).Select(x => x.Username).FirstOrDefaultAsync();
+
+            User userData = await db.Users.Where(x => x.Username.Equals(activeUser)).FirstOrDefaultAsync();
+            string userAreaType = userData.AreaType;
+
             HttpRequest request = HttpContext.Current.Request;
 
             IEnumerable<StockOpnameDetail> list = Enumerable.Empty<StockOpnameDetail>();
             IEnumerable<StockOpnameDetailDTO> pagedData = Enumerable.Empty<StockOpnameDetailDTO>();
 
             IQueryable<StockOpnameDetail> query = db.StockOpnameDetails.Where(s => s.HeaderID.Equals(HeaderID)).AsQueryable();
+
+            if (userAreaType == "PRODUCTION")
+            {
+                List<string> binrackarea = db.BinRackAreas.Where(x => x.Type.Equals(userAreaType)).Select(d => d.Code).ToList();
+                query = query.Where(a => binrackarea.Contains(a.BinRackCode.Substring(0, 5)));
+            }
 
             int recordsTotal = query.Count();
             int recordsFiltered = 0;

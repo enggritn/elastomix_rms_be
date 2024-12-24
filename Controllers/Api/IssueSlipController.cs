@@ -2951,7 +2951,12 @@ namespace WMS_BE.Controllers.Api
             HttpRequest request = HttpContext.Current.Request;
             string date = request["date"].ToString();
             string enddate = request["enddate"].ToString();
-            string warehouseCode = request["warehouseCode"].ToString();
+            string materialcode = request["materialcode"].ToString();
+
+            if (string.IsNullOrEmpty(date) && string.IsNullOrEmpty(enddate) && string.IsNullOrEmpty(materialcode))
+            {
+                throw new Exception("Parameter is required.");
+            }
 
             Dictionary<string, object> obj = new Dictionary<string, object>();
             string message = "";
@@ -2964,11 +2969,11 @@ namespace WMS_BE.Controllers.Api
             DateTime endfilterDate = Convert.ToDateTime(enddate);
             IQueryable<vIssueSlipListTransaction> query;
 
-            if (!string.IsNullOrEmpty(warehouseCode))
+            if (!string.IsNullOrEmpty(materialcode))
             {
                 query = db.vIssueSlipListTransactions.Where(s => DbFunctions.TruncateTime(s.CreateOn) >= DbFunctions.TruncateTime(filterDate)
                         && DbFunctions.TruncateTime(s.CreateOn) <= DbFunctions.TruncateTime(endfilterDate)
-                        && s.WHName.Equals(warehouseCode));
+                        && s.RMCode.Equals(materialcode));
             }
             else
             {
@@ -3056,7 +3061,7 @@ namespace WMS_BE.Controllers.Api
         }
 
         [HttpGet]
-        public async Task<IHttpActionResult> GetDataReportListTransaction(string date, string enddate, string warehouse)
+        public async Task<IHttpActionResult> GetDataReportListTransaction(string date, string enddate, string materialcode)
         {
             Dictionary<string, object> obj = new Dictionary<string, object>();
             string message = "";
@@ -3064,7 +3069,7 @@ namespace WMS_BE.Controllers.Api
             HttpRequest request = HttpContext.Current.Request;
 
 
-            if (string.IsNullOrEmpty(date) && string.IsNullOrEmpty(enddate) && string.IsNullOrEmpty(warehouse))
+            if (string.IsNullOrEmpty(date) && string.IsNullOrEmpty(enddate) && string.IsNullOrEmpty(materialcode))
             {
                 throw new Exception("Parameter is required.");
             }
@@ -3076,11 +3081,11 @@ namespace WMS_BE.Controllers.Api
             DateTime endfilterDate = Convert.ToDateTime(enddate);
             IQueryable<vIssueSlipListTransaction> query;
 
-            if (!string.IsNullOrEmpty(warehouse))
+            if (!string.IsNullOrEmpty(materialcode))
             {
                 query = db.vIssueSlipListTransactions.Where(s => DbFunctions.TruncateTime(s.CreateOn) >= DbFunctions.TruncateTime(filterDate)
                         && DbFunctions.TruncateTime(s.CreateOn) <= DbFunctions.TruncateTime(endfilterDate)
-                        && s.WHName.Equals(warehouse));
+                        && s.RMCode.Equals(materialcode));
             }
             else
             {

@@ -294,7 +294,7 @@ namespace WMS_BE.Controllers.Api
                     }
                     else
                     {
-                        product = db.vStockProducts.Where(m => m.MaterialCode.Equals(dataVM.MaterialCode)).FirstOrDefault();
+                        product = db.vStockProducts.Where(m => m.MaterialCode.Equals(dataVM.MaterialCode) && m.TotalQty > 0).FirstOrDefault();
                         if (product == null)
                         {
                             throw new Exception("Source Material Code not found.");

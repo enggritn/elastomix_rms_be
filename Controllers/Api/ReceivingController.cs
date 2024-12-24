@@ -637,7 +637,7 @@ namespace WMS_BE.Controllers.Api
             HttpRequest request = HttpContext.Current.Request;
             string date = request["date"].ToString();
             string enddate = request["enddate"].ToString();
-            string warehouseCode = request["warehouseCode"].ToString();
+            string warehouseName = request["warehouseName"].ToString();
             string sourceType = request["sourceType"].ToString();
 
             Dictionary<string, object> obj = new Dictionary<string, object>();
@@ -651,11 +651,11 @@ namespace WMS_BE.Controllers.Api
             DateTime endfilterDate = Convert.ToDateTime(enddate);
             IQueryable<vReceivingReport4> query;
 
-            if (!string.IsNullOrEmpty(sourceType) && !string.IsNullOrEmpty(warehouseCode))
+            if (!string.IsNullOrEmpty(sourceType) && !string.IsNullOrEmpty(warehouseName))
             {
                 query = db.vReceivingReport4.Where(s => DbFunctions.TruncateTime(s.Schedule) >= DbFunctions.TruncateTime(filterDate)
                         && DbFunctions.TruncateTime(s.Schedule) <= DbFunctions.TruncateTime(endfilterDate)
-                        && s.SourceCode.Equals(warehouseCode)
+                        && s.DestinationName.Equals(warehouseName)
                         && s.SourceType.Equals(sourceType));
             }
             else
@@ -666,11 +666,11 @@ namespace WMS_BE.Controllers.Api
                             && DbFunctions.TruncateTime(s.Schedule) <= DbFunctions.TruncateTime(endfilterDate)
                             && s.SourceType.Equals(sourceType));
                 }
-                else if (!string.IsNullOrEmpty(warehouseCode))
+                else if (!string.IsNullOrEmpty(warehouseName))
                 {
                     query = db.vReceivingReport4.Where(s => DbFunctions.TruncateTime(s.Schedule) >= DbFunctions.TruncateTime(filterDate)
                             && DbFunctions.TruncateTime(s.Schedule) <= DbFunctions.TruncateTime(endfilterDate)
-                            && s.SourceCode.Equals(warehouseCode));
+                            && s.DestinationName.Equals(warehouseName));
                 }
                 else
                 {
@@ -1201,7 +1201,7 @@ namespace WMS_BE.Controllers.Api
             {
                 query = db.vReceivingReport4.Where(s => DbFunctions.TruncateTime(s.Schedule) >= DbFunctions.TruncateTime(filterDate)
                         && DbFunctions.TruncateTime(s.Schedule) <= DbFunctions.TruncateTime(endfilterDate)
-                        && s.SourceCode.Equals(warehouse)
+                        && s.DestinationName.Equals(warehouse)
                         && s.SourceType.Equals(sourcetype));
             }
             else
@@ -1216,7 +1216,7 @@ namespace WMS_BE.Controllers.Api
                 {
                     query = db.vReceivingReport4.Where(s => DbFunctions.TruncateTime(s.Schedule) >= DbFunctions.TruncateTime(filterDate)
                             && DbFunctions.TruncateTime(s.Schedule) <= DbFunctions.TruncateTime(endfilterDate)
-                            && s.SourceCode.Equals(warehouse));
+                            && s.DestinationName.Equals(warehouse));
                 }
                 else
                 {
