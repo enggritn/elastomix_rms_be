@@ -184,10 +184,10 @@ namespace WMS_BE.Models
         public string FullBag { get; set; }
         public string Total { get; set; }
         public string CreateBy { get; set; }
-        public DateTime CreateOn { get; set; }
+        public string CreateOn { get; set; }
         public string QtyPutaway { get; set; }
         public string PutawayBy { get; set; }
-        public DateTime PutawayOn { get; set; }
+        public string PutawayOn { get; set; }
         public string BinRack { get; set; }
         public string Status { get; set; }
         public string Memo { get; set; }

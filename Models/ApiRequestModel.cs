@@ -625,6 +625,7 @@ namespace WMS_BE.Models
         public decimal QtyPerBag { get; set; }
         public int BagQty { get; set; }
         public string BinRackCode { get; set; }
+        public string PickingType { get; set; }
     }
     public class PickingDisposeWebReq
     {

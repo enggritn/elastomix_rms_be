@@ -12,7 +12,7 @@ namespace WMS_BE.Models
     using System;
     using System.Collections.Generic;
     
-    public partial class vOutbound
+    public partial class vInbound3
     {
         public string DocumentNo { get; set; }
         public string WHName { get; set; }
@@ -26,20 +26,11 @@ namespace WMS_BE.Models
         public decimal Total { get; set; }
         public string CreateBy { get; set; }
         public System.DateTime CreateOn { get; set; }
-        public int PickingBag { get; set; }
-        public decimal PickingFullBag { get; set; }
-        public Nullable<decimal> PickingTotal { get; set; }
-        public string PickingBinRack { get; set; }
-        public string PickingBy { get; set; }
-        public System.DateTime PickingOn { get; set; }
-        public Nullable<decimal> PutawayBag { get; set; }
-        public Nullable<decimal> PutawayFullBag { get; set; }
-        public Nullable<decimal> PutawayTotal { get; set; }
-        public string PutawayBinRack { get; set; }
+        public Nullable<decimal> QtyPutaway { get; set; }
         public string PutawayBy { get; set; }
         public Nullable<System.DateTime> PutawayOn { get; set; }
+        public string BinRack { get; set; }
         public string Status { get; set; }
         public string Memo { get; set; }
-        public string ID { get; set; }
     }
 }

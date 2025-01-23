@@ -644,6 +644,7 @@ namespace WMS_BE.Controllers.Api
             string message = "";
             bool status = false;
 
+            IEnumerable<BinRack> listWHName = Enumerable.Empty<BinRack>();
             IEnumerable<vReceivingReport4> list = Enumerable.Empty<vReceivingReport4>();
             IEnumerable<ReceivingDetailDTOReport4> pagedData = Enumerable.Empty<ReceivingDetailDTOReport4>();
 
@@ -651,35 +652,37 @@ namespace WMS_BE.Controllers.Api
             DateTime endfilterDate = Convert.ToDateTime(enddate);
             IQueryable<vReceivingReport4> query;
 
+            // Ambil data dari BinRack untuk mendapatkan WHName sesuai warehousecode
+            listWHName = db.BinRacks.Where(br => br.WarehouseCode.Equals(warehouseName)).ToList();
+
+            var warehouseNames = listWHName.Select(br => br.WarehouseName).ToList();
+
             if (!string.IsNullOrEmpty(sourceType) && !string.IsNullOrEmpty(warehouseName))
             {
-                query = db.vReceivingReport4.Where(s => DbFunctions.TruncateTime(s.Schedule) >= DbFunctions.TruncateTime(filterDate)
-                        && DbFunctions.TruncateTime(s.Schedule) <= DbFunctions.TruncateTime(endfilterDate)
-                        && s.DestinationName.Equals(warehouseName)
+                query = db.vReceivingReport4.Where(s => DbFunctions.TruncateTime(s.ReceivedOn) >= DbFunctions.TruncateTime(filterDate)
+                        && DbFunctions.TruncateTime(s.ReceivedOn) <= DbFunctions.TruncateTime(endfilterDate)
+                        && warehouseNames.Contains(s.DestinationName)
                         && s.SourceType.Equals(sourceType));
+            }
+            else if (!string.IsNullOrEmpty(sourceType) && string.IsNullOrEmpty(warehouseName))
+            {
+                query = db.vReceivingReport4.Where(s => DbFunctions.TruncateTime(s.ReceivedOn) >= DbFunctions.TruncateTime(filterDate)
+                            && DbFunctions.TruncateTime(s.ReceivedOn) <= DbFunctions.TruncateTime(endfilterDate)
+                            && s.SourceType.Equals(sourceType));
+            } 
+            else if (string.IsNullOrEmpty(sourceType) && !string.IsNullOrEmpty(warehouseName))
+            {
+                query = db.vReceivingReport4.Where(s => DbFunctions.TruncateTime(s.ReceivedOn) >= DbFunctions.TruncateTime(filterDate)
+                            && DbFunctions.TruncateTime(s.ReceivedOn) <= DbFunctions.TruncateTime(endfilterDate)
+                            && warehouseNames.Contains(s.DestinationName));
             }
             else
             {
-                if (!string.IsNullOrEmpty(sourceType))
-                {
-                    query = db.vReceivingReport4.Where(s => DbFunctions.TruncateTime(s.Schedule) >= DbFunctions.TruncateTime(filterDate)
-                            && DbFunctions.TruncateTime(s.Schedule) <= DbFunctions.TruncateTime(endfilterDate)
-                            && s.SourceType.Equals(sourceType));
-                }
-                else if (!string.IsNullOrEmpty(warehouseName))
-                {
-                    query = db.vReceivingReport4.Where(s => DbFunctions.TruncateTime(s.Schedule) >= DbFunctions.TruncateTime(filterDate)
-                            && DbFunctions.TruncateTime(s.Schedule) <= DbFunctions.TruncateTime(endfilterDate)
-                            && s.DestinationName.Equals(warehouseName));
-                }
-                else
-                {
-                    query = db.vReceivingReport4.Where(s => DbFunctions.TruncateTime(s.Schedule) >= DbFunctions.TruncateTime(filterDate)
-                            && DbFunctions.TruncateTime(s.Schedule) <= DbFunctions.TruncateTime(endfilterDate));
-                }
+                query = db.vReceivingReport4.Where(s => DbFunctions.TruncateTime(s.ReceivedOn) >= DbFunctions.TruncateTime(filterDate)
+                           && DbFunctions.TruncateTime(s.ReceivedOn) <= DbFunctions.TruncateTime(endfilterDate));
             }
 
-            int recordsTotal = query.Count();
+                int recordsTotal = query.Count();
             int recordsFiltered = 0;
 
             try
@@ -753,10 +756,10 @@ namespace WMS_BE.Controllers.Api
                             COA = detail.COA,
                             StatusPo = detail.StatusPo,
                             ReceivedBy = detail.ReceivedBy,
-                            ReceivedOn = detail.ReceivedOn,
+                            ReceivedOn = detail.ReceivedOn.ToString("yyyy-MM-dd HH:mm:ss"),
                             QtyPutaway = Helper.FormatThousand(detail.QtyPutaway),
-                            PutawayBy = detail.ReceivedBy,
-                            PutawayOn = detail.PutawayOn,
+                            PutawayBy = detail.PutawayBy,
+                            PutawayOn = detail.PutawayOn.ToString(),
                             Area = detail.Area != null ? detail.Area : "",
                             RackNo = detail.RackNo != null ? detail.RackNo : "",
                             Status = detail.Status,
@@ -786,6 +789,87 @@ namespace WMS_BE.Controllers.Api
             obj.Add("recordsTotal", recordsTotal);
             obj.Add("recordsFiltered", recordsFiltered);
             obj.Add("data", pagedData);
+            obj.Add("status", status);
+            obj.Add("message", message);
+
+            return Ok(obj);
+        }
+
+        [HttpPost]
+        public async Task<IHttpActionResult> DatatableHistoryReceiving()
+        {
+            Dictionary<string, object> obj = new Dictionary<string, object>();
+            string message = "";
+            bool status = false;
+            HttpRequest request = HttpContext.Current.Request;
+            string id = request["id"].ToString();
+
+            IEnumerable<vReceivingReport4> list = Enumerable.Empty<vReceivingReport4>();
+            List<ReceivingDetailDTOReport4> data = new List<ReceivingDetailDTOReport4>();
+            try
+            {
+                IQueryable<vReceivingReport4> query = db.vReceivingReport4.Where(s => s.ID.Equals(id)).AsQueryable();
+
+                list = query.ToList();
+                if (list != null && list.Count() > 0)
+                {
+                    foreach (vReceivingReport4 detail in list)
+                    {
+                        ReceivingDetailDTOReport4 dat = new ReceivingDetailDTOReport4
+                        {
+                            PONo = detail.PONo,
+                            Supplier = detail.Supplier,
+                            MaterialCode = detail.MaterialCode,
+                            MaterialName = detail.MaterialName,
+                            Schedule = Helper.NullDateToString2(detail.Schedule),
+                            TotalQtyPo = detail.TotalQtyPo.ToString(),
+                            InDate = Helper.NullDateToString2(detail.InDate),
+                            ExpDate = Helper.NullDateToString2(detail.ExpDate),
+                            LotNo = detail.LotNo != null ? detail.LotNo : "",
+                            QtyPerBag = detail.QtyPerBag.ToString("#,0.00"),
+                            QtyBag = Convert.ToDecimal(detail.QtyBag).ToString("#,0.00") ?? "0",
+                            Total = detail.Total.ToString("#,0.00"),
+                            DoNo = detail.DoNo,
+                            Ok = Convert.ToDecimal(detail.Ok).ToString("#,0.00") ?? "0",
+                            NgDamage = detail.NgDamage.ToString("#,0.00"),
+                            NgWet = detail.NgWet.ToString("#,0.00"),
+                            NgContamination = detail.NgContamination.ToString("#,0.00"),
+                            COA = detail.COA,
+                            StatusPo = detail.StatusPo,
+                            ReceivedBy = detail.ReceivedBy,
+                            ReceivedOn = detail.ReceivedOn.ToString("yyyy-MM-dd HH:mm:ss"),
+                            QtyPutaway = detail.QtyPutaway.ToString(),
+                            PutawayBy = detail.PutawayBy ?? "",
+                            PutawayOn = detail.PutawayOn.ToString(),
+                            Area = detail.Area != null ? detail.Area : "",
+                            RackNo = detail.RackNo != null ? detail.RackNo : "",
+                            Status = detail.Status,
+                            Remarks = detail.Remarks ?? "",
+                        };
+
+                        data.Add(dat);
+                    }
+                }
+
+                status = true;
+                message = "Fetch data succeeded.";
+            }
+            catch (HttpRequestException reqpEx)
+            {
+                message = reqpEx.Message;
+                return BadRequest();
+            }
+            catch (HttpResponseException respEx)
+            {
+                message = respEx.Message;
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
+                        
+            obj.Add("data", data);
             obj.Add("status", status);
             obj.Add("message", message);
 
@@ -1177,7 +1261,7 @@ namespace WMS_BE.Controllers.Api
         }
 
         [HttpGet]
-        public async Task<IHttpActionResult>GetDataReportReceiving4(string date, string enddate, string warehouse, string sourcetype)
+        public async Task<IHttpActionResult>GetDataReportReceiving4(string date, string enddate, string warehouseName, string sourceType)
         {
             Dictionary<string, object> obj = new Dictionary<string, object>();
             string message = "";
@@ -1185,7 +1269,7 @@ namespace WMS_BE.Controllers.Api
             HttpRequest request = HttpContext.Current.Request;
 
 
-            if (string.IsNullOrEmpty(date) && string.IsNullOrEmpty(enddate) && string.IsNullOrEmpty(warehouse) && string.IsNullOrEmpty(sourcetype))
+            if (string.IsNullOrEmpty(date) && string.IsNullOrEmpty(enddate) && string.IsNullOrEmpty(warehouseName) && string.IsNullOrEmpty(sourceType))
             {
                 throw new Exception("Parameter is required.");
             }
@@ -1197,32 +1281,35 @@ namespace WMS_BE.Controllers.Api
             DateTime endfilterDate = Convert.ToDateTime(enddate);
             IQueryable<vReceivingReport4> query;
 
-            if (!string.IsNullOrEmpty(sourcetype) && !string.IsNullOrEmpty(warehouse))
+            IEnumerable<BinRack> listWHName = Enumerable.Empty<BinRack>();
+           
+            // Ambil data dari BinRack untuk mendapatkan WHName sesuai warehousecode
+            listWHName = db.BinRacks.Where(br => br.WarehouseCode.Equals(warehouseName)).ToList();
+
+            var warehouseNames = listWHName.Select(br => br.WarehouseName).ToList();
+            if (!string.IsNullOrEmpty(sourceType) && !string.IsNullOrEmpty(warehouseName))
             {
-                query = db.vReceivingReport4.Where(s => DbFunctions.TruncateTime(s.Schedule) >= DbFunctions.TruncateTime(filterDate)
-                        && DbFunctions.TruncateTime(s.Schedule) <= DbFunctions.TruncateTime(endfilterDate)
-                        && s.DestinationName.Equals(warehouse)
-                        && s.SourceType.Equals(sourcetype));
+                query = db.vReceivingReport4.Where(s => DbFunctions.TruncateTime(s.ReceivedOn) >= DbFunctions.TruncateTime(filterDate)
+                        && DbFunctions.TruncateTime(s.ReceivedOn) <= DbFunctions.TruncateTime(endfilterDate)
+                        && warehouseNames.Contains(s.DestinationName)
+                        && s.SourceType.Equals(sourceType));
+            }
+            else if (!string.IsNullOrEmpty(sourceType) && string.IsNullOrEmpty(warehouseName))
+            {
+                query = db.vReceivingReport4.Where(s => DbFunctions.TruncateTime(s.ReceivedOn) >= DbFunctions.TruncateTime(filterDate)
+                            && DbFunctions.TruncateTime(s.ReceivedOn) <= DbFunctions.TruncateTime(endfilterDate)
+                            && s.SourceType.Equals(sourceType));
+            }
+            else if (string.IsNullOrEmpty(sourceType) && !string.IsNullOrEmpty(warehouseName))
+            {
+                query = db.vReceivingReport4.Where(s => DbFunctions.TruncateTime(s.ReceivedOn) >= DbFunctions.TruncateTime(filterDate)
+                            && DbFunctions.TruncateTime(s.ReceivedOn) <= DbFunctions.TruncateTime(endfilterDate)
+                            && warehouseNames.Contains(s.DestinationName));
             }
             else
             {
-                if (!string.IsNullOrEmpty(sourcetype))
-                {
-                    query = db.vReceivingReport4.Where(s => DbFunctions.TruncateTime(s.Schedule) >= DbFunctions.TruncateTime(filterDate)
-                            && DbFunctions.TruncateTime(s.Schedule) <= DbFunctions.TruncateTime(endfilterDate)
-                            && s.SourceType.Equals(sourcetype));
-                }
-                else if (!string.IsNullOrEmpty(warehouse))
-                {
-                    query = db.vReceivingReport4.Where(s => DbFunctions.TruncateTime(s.Schedule) >= DbFunctions.TruncateTime(filterDate)
-                            && DbFunctions.TruncateTime(s.Schedule) <= DbFunctions.TruncateTime(endfilterDate)
-                            && s.DestinationName.Equals(warehouse));
-                }
-                else
-                {
-                    query = db.vReceivingReport4.Where(s => DbFunctions.TruncateTime(s.Schedule) >= DbFunctions.TruncateTime(filterDate)
-                            && DbFunctions.TruncateTime(s.Schedule) <= DbFunctions.TruncateTime(endfilterDate));
-                }
+                query = db.vReceivingReport4.Where(s => DbFunctions.TruncateTime(s.ReceivedOn) >= DbFunctions.TruncateTime(filterDate)
+                           && DbFunctions.TruncateTime(s.ReceivedOn) <= DbFunctions.TruncateTime(endfilterDate));
             }
 
             int recordsTotal = query.Count();
@@ -1288,10 +1375,10 @@ namespace WMS_BE.Controllers.Api
                             COA = detail.COA,
                             StatusPo = detail.StatusPo,
                             ReceivedBy = detail.ReceivedBy,
-                            ReceivedOn = detail.ReceivedOn,
+                            ReceivedOn = detail.ReceivedOn.ToString("yyyy-MM-dd HH:mm:ss"),
                             QtyPutaway = Helper.FormatThousand(detail.QtyPutaway),
                             PutawayBy = detail.ReceivedBy,
-                            PutawayOn = detail.PutawayOn,
+                            PutawayOn = detail.PutawayOn.ToString(),
                             Area = detail.Area != null ? detail.Area : "",
                             RackNo = detail.RackNo != null ? detail.RackNo : "",
                             Status = detail.Status,
@@ -3178,38 +3265,29 @@ namespace WMS_BE.Controllers.Api
 
                             List<PrinterDTO> printers = new List<PrinterDTO>();
 
-                            PrinterDTO printer = new PrinterDTO();
-                            printer.PrinterIP = ConfigurationManager.AppSettings["printer_1_ip"].ToString();
-                            printer.PrinterName = ConfigurationManager.AppSettings["printer_1_name"].ToString();
+                            // Ambil jumlah printer dari AppSettings
+                            int printerCount = int.Parse(ConfigurationManager.AppSettings["printer_count"] ?? "0");
 
-                            printers.Add(printer);
-
-                            printer = new PrinterDTO();
-                            printer.PrinterIP = ConfigurationManager.AppSettings["printer_2_ip"].ToString();
-                            printer.PrinterName = ConfigurationManager.AppSettings["printer_2_name"].ToString();
-
-                            printers.Add(printer);
-
-                            printer = new PrinterDTO();
-                            printer.PrinterIP = ConfigurationManager.AppSettings["printer_3_ip"].ToString();
-                            printer.PrinterName = ConfigurationManager.AppSettings["printer_3_name"].ToString();
-
-                            printers.Add(printer);
-
-                            printer = new PrinterDTO();
-                            printer.PrinterIP = ConfigurationManager.AppSettings["printer_4_ip"].ToString();
-                            printer.PrinterName = ConfigurationManager.AppSettings["printer_4_name"].ToString();
-
-                            printers.Add(printer);
-
-                            string folder_name = "";
-                            foreach (PrinterDTO printerDTO in printers)
+                            for (int i = 1; i <= printerCount; i++)
                             {
-                                if (printerDTO.PrinterIP.Equals(receivingPrintVM.Printer))
+                                string printerIpKey = $"printer_{i}_ip";
+                                string printerNameKey = $"printer_{i}_name";
+
+                                // Periksa apakah kunci untuk printer tersedia di AppSettings
+                                if (ConfigurationManager.AppSettings[printerIpKey] != null && ConfigurationManager.AppSettings[printerNameKey] != null)
                                 {
-                                    folder_name = printerDTO.PrinterName;
+                                    PrinterDTO printer = new PrinterDTO
+                                    {
+                                        PrinterIP = ConfigurationManager.AppSettings[printerIpKey],
+                                        PrinterName = ConfigurationManager.AppSettings[printerNameKey]
+                                    };
+
+                                    printers.Add(printer);
                                 }
                             }
+
+                            // Mencari folder_name berdasarkan PrinterIP yang dipilih
+                            string folder_name = printers.FirstOrDefault(printerDTO => printerDTO.PrinterIP.Equals(receivingPrintVM.Printer))?.PrinterName ?? string.Empty;
 
                             string file_name = string.Format("{0}.pdf", DateTime.Now.ToString("yyyyMMddHHmmss"));
 

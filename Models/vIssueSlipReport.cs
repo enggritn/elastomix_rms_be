@@ -30,5 +30,6 @@ namespace WMS_BE.Models
         public string Header_Code { get; set; }
         public string Header_Name { get; set; }
         public System.DateTime Header_ProductionDate { get; set; }
+        public string ID { get; set; }
     }
 }

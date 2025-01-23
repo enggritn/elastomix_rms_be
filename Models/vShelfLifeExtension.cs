@@ -16,13 +16,15 @@ namespace WMS_BE.Models
     {
         public string RMCode { get; set; }
         public string RMName { get; set; }
-        public System.DateTime InDate { get; set; }
+        public string InDate { get; set; }
         public string LotNo { get; set; }
-        public decimal Qty { get; set; }
-        public System.DateTime ExpiredDate { get; set; }
+        public Nullable<decimal> Qty { get; set; }
+        public string ExpiredDate { get; set; }
         public string Extension { get; set; }
         public string Remark { get; set; }
         public string ShelfLifeBaseOnCOA { get; set; }
         public string Note { get; set; }
+        public Nullable<System.DateTime> CreatedOn { get; set; }
+        public string InspectedOn { get; set; }
     }
 }

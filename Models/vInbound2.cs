@@ -32,5 +32,6 @@ namespace WMS_BE.Models
         public string BinRack { get; set; }
         public string Status { get; set; }
         public string Memo { get; set; }
+        public string ID { get; set; }
     }
 }

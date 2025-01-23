@@ -109,7 +109,7 @@ namespace WMS_BE.Models
         public string OriginTotal { get; set; }
         public string OriginBinRack { get; set; }
         public string PutawayBy { get; set; }
-        public DateTime PutawayOn { get; set; }
+        public string PutawayOn { get; set; }
         public string DestinationBag { get; set; }
         public string DestinationFullBag { get; set; }
         public string DestinationTotal { get; set; }

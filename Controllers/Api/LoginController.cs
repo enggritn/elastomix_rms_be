@@ -65,6 +65,7 @@ namespace WMS_BE.Controllers.Api
                         obj.Add("full_name", user.FullName);
                         obj.Add("token", token);
                         obj.Add("login_date", LoginVM.LoginDate);
+                        obj.Add("area_type", user.AreaType);
                         status = true;
                     }                 
                 }

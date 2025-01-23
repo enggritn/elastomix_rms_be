@@ -811,11 +811,18 @@ namespace WMS_BE.Controllers.Api
             DateTime endfilterDate = Convert.ToDateTime(enddate);
             IQueryable<vMovement> query;
 
+            IEnumerable<BinRack> listWHName = Enumerable.Empty<BinRack>();
+
+            // Ambil data dari BinRack untuk mendapatkan WHName sesuai warehousecode
+            listWHName = db.BinRacks.Where(br => br.WarehouseCode.Equals(warehouseCode)).ToList();
+
+            var warehouseNames = listWHName.Select(br => br.WarehouseName).ToList();
+
             if (!string.IsNullOrEmpty(warehouseCode))
             {
                 query = db.vMovements.Where(s => DbFunctions.TruncateTime(s.PutawayOn) >= DbFunctions.TruncateTime(filterDate)
                         && DbFunctions.TruncateTime(s.PutawayOn) <= DbFunctions.TruncateTime(endfilterDate)
-                        && s.WHName.Equals(warehouseCode));
+                        && warehouseNames.Contains(s.WHName));
             }
             else
             {
@@ -850,8 +857,6 @@ namespace WMS_BE.Controllers.Api
                 cols.Add("DestinationFullBag", x => x.DestinationFullBag);
                 cols.Add("DestinationTotal", x => x.DestinationTotal);
                 cols.Add("DestinationBinRack", x => x.DestinationBinRack);
-                cols.Add("Status", x => x.Status);
-                cols.Add("Memo", x => x.Memo);
 
                 if (sortDirection.Equals("asc"))
                     list = query.OrderBy(cols[sortName]);
@@ -878,13 +883,11 @@ namespace WMS_BE.Controllers.Api
                             OriginTotal = Helper.FormatThousand(detail.OriginTotal),
                             OriginBinRack = detail.OriginBinRack,
                             PutawayBy = detail.PutawayBy,
-                            PutawayOn = Convert.ToDateTime(detail.PutawayOn),
+                            PutawayOn = detail.PutawayOn.ToString(),
                             DestinationBag = Helper.FormatThousand(detail.DestinationBag),
                             DestinationFullBag = Helper.FormatThousand(detail.DestinationFullBag),
                             DestinationTotal = Helper.FormatThousand(detail.DestinationTotal),
                             DestinationBinRack = detail.DestinationBinRack,
-                            Status = detail.Status,
-                            Memo = detail.Memo,
                         };
                 }
 
@@ -938,11 +941,18 @@ namespace WMS_BE.Controllers.Api
             DateTime endfilterDate = Convert.ToDateTime(enddate);
             IQueryable<vMovement> query;
 
+            IEnumerable<BinRack> listWHName = Enumerable.Empty<BinRack>();
+
+            // Ambil data dari BinRack untuk mendapatkan WHName sesuai warehousecode
+            listWHName = db.BinRacks.Where(br => br.WarehouseCode.Equals(warehouse)).ToList();
+
+            var warehouseNames = listWHName.Select(br => br.WarehouseName).ToList();
+
             if (!string.IsNullOrEmpty(warehouse))
             {
                 query = db.vMovements.Where(s => DbFunctions.TruncateTime(s.PutawayOn) >= DbFunctions.TruncateTime(filterDate)
                         && DbFunctions.TruncateTime(s.PutawayOn) <= DbFunctions.TruncateTime(endfilterDate)
-                        && s.WHName.Equals(warehouse));
+                        && warehouseNames.Contains(s.WHName));
             }
             else
             {
@@ -972,8 +982,6 @@ namespace WMS_BE.Controllers.Api
                 cols.Add("DestinationFullBag", x => x.DestinationFullBag);
                 cols.Add("DestinationTotal", x => x.DestinationTotal);
                 cols.Add("DestinationBinRack", x => x.DestinationBinRack);
-                cols.Add("Status", x => x.Status);
-                cols.Add("Memo", x => x.Memo);
 
                 recordsFiltered = list.Count();
                 list = query.ToList();
@@ -994,13 +1002,11 @@ namespace WMS_BE.Controllers.Api
                             OriginTotal = Helper.FormatThousand(Convert.ToInt32(detail.OriginTotal)),
                             OriginBinRack = detail.OriginBinRack,
                             PutawayBy = detail.PutawayBy,
-                            PutawayOn = Convert.ToDateTime(detail.PutawayOn),
+                            PutawayOn = detail.PutawayOn.ToString(),
                             DestinationBag = Helper.FormatThousand(detail.DestinationBag),
                             DestinationFullBag = Helper.FormatThousand(detail.DestinationFullBag),
                             DestinationTotal = Helper.FormatThousand(detail.DestinationTotal),
                             DestinationBinRack = detail.DestinationBinRack,
-                            Status = detail.Status,
-                            Memo = detail.Memo,
                         };
                 }
 

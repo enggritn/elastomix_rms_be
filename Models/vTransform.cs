@@ -29,7 +29,7 @@ namespace WMS_BE.Models
         public decimal SourceFullBag { get; set; }
         public decimal SourceTotal { get; set; }
         public string PickingBy { get; set; }
-        public Nullable<System.DateTime> PickingOn { get; set; }
+        public System.DateTime PickingOn { get; set; }
         public string TargetBinRack { get; set; }
         public System.DateTime TargetInDate { get; set; }
         public System.DateTime TargetExpDate { get; set; }
@@ -38,7 +38,7 @@ namespace WMS_BE.Models
         public decimal TargetFullBag { get; set; }
         public decimal TargetTotal { get; set; }
         public string PutawayBy { get; set; }
-        public Nullable<System.DateTime> PutawayOn { get; set; }
+        public System.DateTime PutawayOn { get; set; }
         public string Status { get; set; }
         public string Memo { get; set; }
     }

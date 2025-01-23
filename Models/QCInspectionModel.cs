@@ -87,6 +87,7 @@ namespace WMS_BE.Models
         public bool JudgementAction { get; set; }
         public bool DisposeAction { get; set; }
         public bool PickingAction { get; set; }
+        public bool PutawayWaitingAction { get; set; }
         public bool PutawayExtendAction { get; set; }
         public bool PrintPutawayExtendAction { get; set; }
         public bool PickingDisposeAction { get; set; }
@@ -109,9 +110,34 @@ namespace WMS_BE.Models
         public string PickedOn { get; set; }
         public string PutawayBagQty { get; set; }
         public string OutstandingPutawayBagQty { get; set; }
+        public string MaterialCode { get; set; }
+        public string MaterialName { get; set; }
+        public string LotNo { get; set; }
+        public string InDate { get; set; }
+        public string ExpDate { get; set; }
+        public string LastSeries { get; set; }
+        public string PutawayMethod { get; set; }
 
         public bool PickingAction { get; set; }
         public bool PutawayAction { get; set; }
+    }
+
+    public class QCExtendDTO
+    {
+        public string ID { get; set; }
+        public string InspectionID { get; set; }
+        public string StockCode { get; set; }
+        public string MaterialCode { get; set; }
+        public string MaterialName { get; set; }
+        public string LotNo { get; set; }
+        public string InDate { get; set; }
+        public string ExpDate { get; set; }
+        public string Qty { get; set; }
+        public string QtyPerBag { get; set; }
+        public string BagQty { get; set; }
+        public string LastSeries { get; set; }
+        public string PutawayMethod { get; set; }
+        public string BinRackCode { get; set; }
     }
 
     public class QCPutawayDTO
@@ -241,26 +267,26 @@ namespace WMS_BE.Models
         public string FullBag { get; set; }
         public string Total { get; set; }
         public string CreatedBy { get; set; }
-        public DateTime CreatedOn { get; set; }
+        public string CreatedOn { get; set; }
         public string PickingBag { get; set; }
         public string PickingFullBag { get; set; }
         public string PickingTotal { get; set; }
         public string PickingBinRack { get; set; }
         public string PickingBy { get; set; }
-        public DateTime PickingOn { get; set; }
+        public string PickingOn { get; set; }
         public string ActionExtendDuration { get; set; }
         public string ActionExpDate { get; set; }
         public string ActionDispose { get; set; }
         public string ApproveBy { get; set; }
-        public DateTime ApproveOn { get; set; }
+        public string ApproveOn { get; set; }
         public string PrintLabelBy { get; set; }
-        public DateTime PrintLabelOn { get; set; }
+        public string PrintLabelOn { get; set; }
         public string PutawayBag { get; set; }
         public string PutawayFullBag { get; set; }
         public string PutawayTotal { get; set; }
         public string PutawayBinRack { get; set; }
         public string PutawayBy { get; set; }
-        public DateTime PutawayOn { get; set; }
+        public string PutawayOn { get; set; }
         public string Status { get; set; }
         public string Memo { get; set; }
     }
@@ -277,5 +303,7 @@ namespace WMS_BE.Models
         public string Remark { get; set; }
         public string ShelfLifeBaseOnCOA { get; set; }
         public string Note { get; set; }
+        public string CreatedOn { get; set; }
+        public string InspectedOn { get; set; }
     }
 }

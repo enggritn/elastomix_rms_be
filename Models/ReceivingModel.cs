@@ -406,10 +406,10 @@ namespace WMS_BE.Models
         public string COA { get; set; }
         public string StatusPo { get; set; }
         public string ReceivedBy { get; set; }
-        public DateTime ReceivedOn { get; set; }
+        public string ReceivedOn { get; set; }
         public string QtyPutaway { get; set; }
         public string PutawayBy { get; set; }
-        public DateTime PutawayOn { get; set; }
+        public string PutawayOn { get; set; }
         public string Area { get; set; }
         public string RackNo { get; set; }
         public string Status { get; set; }

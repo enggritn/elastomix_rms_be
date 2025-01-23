@@ -1942,38 +1942,29 @@ namespace WMS_BE.Controllers.Api
 
                             List<PrinterDTO> printers = new List<PrinterDTO>();
 
-                            PrinterDTO printer = new PrinterDTO();
-                            printer.PrinterIP = ConfigurationManager.AppSettings["printer_1_ip"].ToString();
-                            printer.PrinterName = ConfigurationManager.AppSettings["printer_1_name"].ToString();
+                            // Ambil jumlah printer dari AppSettings
+                            int printerCount = int.Parse(ConfigurationManager.AppSettings["printer_count"] ?? "0");
 
-                            printers.Add(printer);
-
-                            printer = new PrinterDTO();
-                            printer.PrinterIP = ConfigurationManager.AppSettings["printer_2_ip"].ToString();
-                            printer.PrinterName = ConfigurationManager.AppSettings["printer_2_name"].ToString();
-
-                            printers.Add(printer);
-
-                            printer = new PrinterDTO();
-                            printer.PrinterIP = ConfigurationManager.AppSettings["printer_3_ip"].ToString();
-                            printer.PrinterName = ConfigurationManager.AppSettings["printer_3_name"].ToString();
-
-                            printers.Add(printer);
-
-                            printer = new PrinterDTO();
-                            printer.PrinterIP = ConfigurationManager.AppSettings["printer_4_ip"].ToString();
-                            printer.PrinterName = ConfigurationManager.AppSettings["printer_4_name"].ToString();
-
-                            printers.Add(printer);
-
-                            string folder_name = "";
-                            foreach (PrinterDTO printerDTO in printers)
+                            for (int i = 1; i <= printerCount; i++)
                             {
-                                if (printerDTO.PrinterIP.Equals(req.Printer))
+                                string printerIpKey = $"printer_{i}_ip";
+                                string printerNameKey = $"printer_{i}_name";
+
+                                // Periksa apakah kunci untuk printer tersedia di AppSettings
+                                if (ConfigurationManager.AppSettings[printerIpKey] != null && ConfigurationManager.AppSettings[printerNameKey] != null)
                                 {
-                                    folder_name = printerDTO.PrinterName;
+                                    PrinterDTO printer = new PrinterDTO
+                                    {
+                                        PrinterIP = ConfigurationManager.AppSettings[printerIpKey],
+                                        PrinterName = ConfigurationManager.AppSettings[printerNameKey]
+                                    };
+
+                                    printers.Add(printer);
                                 }
                             }
+
+                            // Mencari folder_name berdasarkan PrinterIP yang dipilih
+                            string folder_name = printers.FirstOrDefault(printerDTO => printerDTO.PrinterIP.Equals(req.Printer))?.PrinterName ?? string.Empty;
 
                             string file_name = string.Format("{0}.pdf", DateTime.Now.ToString("yyyyMMddHHmmss"));
 
@@ -2296,7 +2287,7 @@ namespace WMS_BE.Controllers.Api
                                     SourceFullBag = Helper.FormatThousand(detail.SourceFullBag),
                                     SourceTotal = Helper.FormatThousand(detail.SourceTotal),
                                     PickingBy = detail.PickingBy,
-                                    PickingOn = Convert.ToDateTime(detail.PickingOn),
+                                    PickingOn = detail.PickingOn.ToString(),
                                     TargetBinRack = detail.TargetBinRack,
                                     TargetInDate = Helper.NullDateToString2(detail.TargetInDate),
                                     TargetExpDate = Helper.NullDateToString2(detail.TargetExpDate),
@@ -2305,7 +2296,7 @@ namespace WMS_BE.Controllers.Api
                                     TargetFullBag = Helper.FormatThousand(detail.TargetFullBag),
                                     TargetTotal = Helper.FormatThousand(detail.TargetTotal),
                                     PutawayBy = detail.PutawayBy,
-                                    PutawayOn = Convert.ToDateTime(detail.PutawayOn),
+                                    PutawayOn = detail.PutawayOn.ToString(),
                                     Status = detail.Status,
                                     Memo = detail.Memo,
                                 };
@@ -2429,7 +2420,7 @@ namespace WMS_BE.Controllers.Api
                                     SourceFullBag = Helper.FormatThousand(detail.SourceFullBag),
                                     SourceTotal = Helper.FormatThousand(detail.SourceTotal),
                                     PickingBy = detail.PickingBy,
-                                    PickingOn = Convert.ToDateTime(detail.PickingOn),
+                                    PickingOn = detail.PickingOn.ToString(),
                                     TargetBinRack = detail.TargetBinRack,
                                     TargetInDate = Helper.NullDateToString2(detail.TargetInDate),
                                     TargetExpDate = Helper.NullDateToString2(detail.TargetExpDate),
@@ -2438,7 +2429,7 @@ namespace WMS_BE.Controllers.Api
                                     TargetFullBag = Helper.FormatThousand(detail.TargetFullBag),
                                     TargetTotal = Helper.FormatThousand(detail.TargetTotal),
                                     PutawayBy = detail.PutawayBy,
-                                    PutawayOn = Convert.ToDateTime(detail.PutawayOn),
+                                    PutawayOn = detail.PutawayOn.ToString(),
                                     Status = detail.Status,
                                     Memo = detail.Memo,
                                 };

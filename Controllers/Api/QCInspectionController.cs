@@ -16,6 +16,27 @@ namespace WMS_BE.Controllers.Api
     {
         private EIN_WMSEntities db = new EIN_WMSEntities();
 
+        [HttpGet]
+        public async Task<IHttpActionResult> AreaList()
+        {
+            List<Dictionary<string, string>> obj = new List<Dictionary<string, string>>();
+            IEnumerable<BinRackArea> tempList = await db.BinRackAreas.OrderBy(m => m.Code).ToListAsync();
+            var list = tempList.Select(x => new BinRackAreaDTO()
+            {
+                ID = x.ID,
+                Code = x.Code,
+                Name = x.Name,
+                Type = x.Type,
+                IsActive = x.IsActive,
+                CreatedBy = x.CreatedBy,
+                CreatedOn = x.CreatedOn.ToString(),
+                ModifiedBy = x.ModifiedBy != null ? x.ModifiedBy : "",
+                ModifiedOn = x.ModifiedOn.ToString()
+            });
+
+            return Ok(list);
+        }
+
         [HttpPost]
         public async Task<IHttpActionResult> Create(QCInspectionVM dataVM)
         {
@@ -776,19 +797,19 @@ namespace WMS_BE.Controllers.Api
                     query = db.vQCInspectExpired2.Where(s => s.TransactionStatus.Equals("OPEN") || s.TransactionStatus.Equals("PROGRESS") || s.TransactionStatus.Equals("CONFIRMED")).AsQueryable();
                 }
             }
-            else if (transactionStatus.Equals("OPEN/PROGRESS"))
+            else if (transactionStatus.Equals("OPEN/PROGRESS/CONFIRMED"))
             {
                 if (filter1.Equals("EXPIRED"))
                 {
-                    query = db.vQCInspectExpired2.Where(s => (s.TransactionStatus.Equals("OPEN") || s.TransactionStatus.Equals("PROGRESS")) && s.ExpirationDay < 0).AsQueryable();
+                    query = db.vQCInspectExpired2.Where(s => (s.TransactionStatus.Equals("OPEN") || s.TransactionStatus.Equals("PROGRESS") || s.TransactionStatus.Equals("CONFIRMED")) && s.ExpirationDay < 0).AsQueryable();
                 }
                 else if (filter1.Equals("NONEXPIRED"))
                 {
-                    query = db.vQCInspectExpired2.Where(s => (s.TransactionStatus.Equals("OPEN") || s.TransactionStatus.Equals("PROGRESS")) && s.ExpirationDay >= 0).AsQueryable();
+                    query = db.vQCInspectExpired2.Where(s => (s.TransactionStatus.Equals("OPEN") || s.TransactionStatus.Equals("PROGRESS") || s.TransactionStatus.Equals("CONFIRMED")) && s.ExpirationDay >= 0).AsQueryable();
                 }
                 else
                 {
-                    query = db.vQCInspectExpired2.Where(s => s.TransactionStatus.Equals("OPEN") || s.TransactionStatus.Equals("PROGRESS")).AsQueryable();
+                    query = db.vQCInspectExpired2.Where(s => s.TransactionStatus.Equals("OPEN") || s.TransactionStatus.Equals("PROGRESS") || s.TransactionStatus.Equals("CONFIRMED")).AsQueryable();
                 }
             }
             else if (transactionStatus.Equals("CONFIRMED"))
@@ -850,6 +871,7 @@ namespace WMS_BE.Controllers.Api
                 cols.Add("InDate", x => x.InDate);
                 cols.Add("ExpDate", x => x.ExpiredDate);
                 cols.Add("ExpirationDay", x => x.ExpirationDay);
+                cols.Add("NewExpDate", x => x.NewExpDate);
                 cols.Add("CreatedBy", x => x.CreatedBy);
                 cols.Add("CreatedOn", x => x.CreatedOn);
                 cols.Add("TransactionStatus", x => x.TransactionStatus);
@@ -891,6 +913,7 @@ namespace WMS_BE.Controllers.Api
                                     InDate = Helper.NullDateToString(x.InDate),
                                     ExpDate = Helper.NullDateToString(x.ExpiredDate),
                                     ExpirationDay = Helper.FormatThousand(x.ExpirationDay),
+                                    NewExpDate = Helper.NullDateToString(x.NewExpDate),
                                     TransactionStatus = x.TransactionStatus,
                                     CreatedBy = x.CreatedBy,
                                     CreatedOn = Helper.NullDateTimeToString(x.CreatedOn),
@@ -900,6 +923,7 @@ namespace WMS_BE.Controllers.Api
                                     InspectedOn = Helper.NullDateTimeToString(x.InspectedOn),
                                     //JudgementAction =   string.IsNullOrEmpty(x.InspectionStatus) && Convert.ToDateTime(x.ExpiredDate) < DateTime.Now,
                                     PickingAction = db.QCPickings.Any(p => p.QCInspectionID == x.ID && p.PickedMethod == null),
+                                    PutawayWaitingAction = db.QCPutaways.Any(p => p.QCPickingID == db.QCPickings.Where(q => q.QCInspectionID == x.ID).Select(q => q.ID).FirstOrDefault()),
                                     JudgementAction = !string.IsNullOrEmpty(x.ID),
                                     DisposeAction = !string.IsNullOrEmpty(x.ID),
                                 };
@@ -1063,6 +1087,7 @@ namespace WMS_BE.Controllers.Api
                 cols.Add("InDate", x => x.InDate);
                 cols.Add("ExpDate", x => x.ExpiredDate);
                 cols.Add("ExpirationDay", x => x.ExpirationDay);
+                cols.Add("NewExpDate", x => x.NewExpDate);
                 cols.Add("CreatedBy", x => x.CreatedBy);
                 cols.Add("CreatedOn", x => x.CreatedOn);
                 cols.Add("TransactionStatus", x => x.TransactionStatus);
@@ -1103,6 +1128,7 @@ namespace WMS_BE.Controllers.Api
                                     LotNo = x.LotNumber,
                                     InDate = Helper.NullDateToString(x.InDate),
                                     ExpDate = Helper.NullDateToString(x.ExpiredDate),
+                                    NewExpDate = Helper.NullDateToString(x.NewExpDate),
                                     TransactionStatus = x.TransactionStatus,
                                     CreatedBy = x.CreatedBy,
                                     CreatedOn = Helper.NullDateTimeToString(x.CreatedOn),
@@ -1476,6 +1502,232 @@ namespace WMS_BE.Controllers.Api
         }
 
         [HttpPost]
+        public async Task<IHttpActionResult> DatatableExtend()
+        {
+            Dictionary<string, object> obj = new Dictionary<string, object>();
+            string message = "";
+            bool status = false;
+            HttpRequest request = HttpContext.Current.Request;
+
+            string MaterialCode = request["MaterialCode"].ToString();
+            string MaterialName = request["MaterialName"].ToString();
+            string QCInspectionID = request["QCInspectionID"].ToString();
+
+            IEnumerable<QCExtend> list = Enumerable.Empty<QCExtend>();
+            List<QCExtendDTO> data = new List<QCExtendDTO>();
+
+            IEnumerable<QCPicking> list2 = Enumerable.Empty<QCPicking>();
+            List<QCPickingDTO> data2 = new List<QCPickingDTO>();
+
+            try
+            {
+                QCInspection header = new QCInspection();
+                header = await db.QCInspections.Where(s => s.ID.Equals(QCInspectionID)).FirstOrDefaultAsync();
+                if (header == null)
+                {
+                    throw new Exception("Data tidak dikenali.");
+                }
+
+                if (header.TransactionStatus.Equals("CLOSED"))
+                {
+                    throw new Exception("Picking sudah tidak dapat dilakukan lagi.");
+                }                          
+
+                if (header.TransactionStatus.Equals("PROGRESS"))
+                {
+                    // Picking Waiting
+                    IQueryable<QCPicking> query = db.QCPickings.Where(s => s.QCInspectionID.Equals(QCInspectionID)).AsQueryable();
+
+                    list2 = query.ToList();
+                    if (list2 != null && list2.Count() > 0)
+                    {
+                        foreach (QCPicking detail in list2)
+                        {
+                            decimal totstockqty = 0;
+                            decimal QtyActualAvailable = 0;
+                            int count = 1;
+                            IEnumerable<QCPicking> listreceive = Enumerable.Empty<QCPicking>();
+                            IQueryable<QCPicking> querya = db.QCPickings.Where(s => s.StockCode.Equals(detail.StockCode) && s.Qty.Equals(detail.Qty)).OrderByDescending(s => s.BinRackCode).AsQueryable();
+                            listreceive = querya.ToList();
+                            if (listreceive != null && listreceive.Count() > 0)
+                            {
+                                foreach (QCPicking stocka in listreceive)
+                                {
+                                    if (count == 1)
+                                    {
+                                        QtyActualAvailable = stocka.Qty;
+                                        count++;
+                                    }
+                                }
+                            }
+
+                            IEnumerable<QCPutaway> liststock = Enumerable.Empty<QCPutaway>();
+                            IQueryable<QCPutaway> querystock = db.QCPutaways.Where(s => s.QCPickingID.Equals(detail.ID) && s.StockCode.Equals(detail.StockCode) && s.PutawayQty.Equals(detail.Qty)).OrderByDescending(s => s.InDate).AsQueryable();
+                            liststock = querystock.ToList();
+                            if (liststock != null && liststock.Count() > 0)
+                            {
+                                foreach (QCPutaway stock in liststock)
+                                {
+                                    if (stock.PutawayQty >= 0)
+                                    {
+                                        totstockqty = totstockqty + stock.PutawayQty;
+                                    }
+                                }
+                            }
+
+                            QtyActualAvailable = QtyActualAvailable - totstockqty;
+
+                            if (QtyActualAvailable > 0)
+                            {
+                                QCPickingDTO dat = new QCPickingDTO
+                                {
+                                    StockCode = detail.StockCode,
+                                    MaterialCode = MaterialCode,
+                                    MaterialName = MaterialName,
+                                    InDate = Helper.NullDateToString(detail.QCInspection.InDate),
+                                    ExpDate = Helper.NullDateToString(detail.QCInspection.ExpDate),
+                                    LotNo = detail.QCInspection.LotNo,
+                                    Qty = Helper.FormatThousand(detail.Qty),
+                                    QtyPerBag = Helper.FormatThousand(detail.QtyPerBag),
+                                    BinRackCode = detail.BinRackCode,
+                                };
+
+                                data2.Add(dat);
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    // Picking Extend
+                    IQueryable<QCExtend> query = db.QCExtends.Where(s => s.QCInspectionID.Equals(QCInspectionID)).AsQueryable();
+
+                    list = query.ToList();
+                    if (list != null && list.Count() > 0)
+                    {
+                        foreach (QCExtend detail2 in list)
+                        {
+                            decimal totstockqty = 0;
+                            decimal QtyActualAvailable = 0;
+                            int count = 1;
+                            IEnumerable<QCExtend> listreceive = Enumerable.Empty<QCExtend>();
+                            IQueryable<QCExtend> querya = db.QCExtends.Where(s => s.StockCode.Equals(detail2.StockCode) && s.Qty.Equals(detail2.Qty)).OrderByDescending(s => s.InDate).AsQueryable();
+                            listreceive = querya.ToList();
+                            if (listreceive != null && listreceive.Count() > 0)
+                            {
+                                foreach (QCExtend stocka in listreceive)
+                                {
+                                    if (count == 1)
+                                    {
+                                        QtyActualAvailable = stocka.LastSeries * stocka.QtyPerBag;
+                                        count++;
+                                    }
+                                }
+                            }
+
+                            QCPutaway putaway = new QCPutaway();
+                            putaway = await db.QCPutaways.Where(s => s.NewStockCode.Equals(detail2.StockCode) && s.PutawayQty.Equals(detail2.Qty) && s.PickedMethod == null).FirstOrDefaultAsync();
+
+                            QCReturn qcreturn = new QCReturn();
+                            qcreturn = await db.QCReturns.Where(s => s.NewStockCode.Equals(detail2.StockCode) && s.PutawayQty.Equals(detail2.Qty)).FirstOrDefaultAsync();
+
+                            if (qcreturn == null)
+                            {
+                                if (putaway != null)
+                                {
+                                    if (putaway.QCPicking.QCInspection.MaterialType.Equals("RM"))
+                                    {
+                                        IEnumerable<StockRM> liststock = Enumerable.Empty<StockRM>();
+                                        IQueryable<StockRM> querystock = db.StockRMs.Where(s => s.Code.Equals(detail2.StockCode) && s.Quantity.Equals(detail2.Qty)).OrderByDescending(s => s.InDate).AsQueryable();
+                                        liststock = querystock.ToList();
+                                        if (liststock != null && liststock.Count() > 0)
+                                        {
+                                            foreach (StockRM stock in liststock)
+                                            {
+                                                if (stock.Quantity >= 0)
+                                                {
+                                                    totstockqty = totstockqty + stock.Quantity;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        IEnumerable<StockSFG> liststock = Enumerable.Empty<StockSFG>();
+                                        IQueryable<StockSFG> querystock = db.StockSFGs.Where(s => s.Code.Equals(detail2.StockCode) && s.Quantity.Equals(detail2.Qty)).OrderByDescending(s => s.InDate).AsQueryable();
+                                        liststock = querystock.ToList();
+                                        if (liststock != null && liststock.Count() > 0)
+                                        {
+                                            foreach (StockSFG stock in liststock)
+                                            {
+                                                if (stock.Quantity >= 0)
+                                                {
+                                                    totstockqty = totstockqty + stock.Quantity;
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    QtyActualAvailable = QtyActualAvailable - totstockqty;
+
+                                    if (QtyActualAvailable > 0)
+                                    {
+                                        QCExtendDTO dat = new QCExtendDTO
+                                        {
+                                            StockCode = detail2.StockCode,
+                                            MaterialCode = MaterialCode,
+                                            MaterialName = MaterialName,
+                                            InDate = Helper.NullDateToString(detail2.InDate),
+                                            ExpDate = Helper.NullDateToString(detail2.ExpDate),
+                                            LotNo = detail2.LotNo,
+                                            Qty = Helper.FormatThousand(detail2.Qty),
+                                            QtyPerBag = Helper.FormatThousand(detail2.QtyPerBag),
+                                            BinRackCode = putaway.BinRackCode,
+                                        };
+
+                                        data.Add(dat);
+                                    }
+                                }
+                            }                     
+                        }
+                    }
+                }                
+
+                status = true;
+                message = "Fetch data succeeded.";
+
+                // Menentukan data berdasarkan kondisi
+                if (header.TransactionStatus.Equals("PROGRESS"))
+                {
+                    obj.Add("data", data2);  
+                }
+                else
+                {
+                    obj.Add("data", data);  
+                }
+            }
+            catch (HttpRequestException reqpEx)
+            {
+                message = reqpEx.Message;
+                return BadRequest();
+            }
+            catch (HttpResponseException respEx)
+            {
+                message = respEx.Message;
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
+
+            obj.Add("status", status);
+            obj.Add("message", message);
+
+            return Ok(obj);
+        }
+
+        [HttpPost]
         public async Task<IHttpActionResult> DatatableExtendPutaway(string InspectionId)
         {
             //int draw = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("draw")[0]);
@@ -1577,6 +1829,7 @@ namespace WMS_BE.Controllers.Api
 
             return Ok(obj);
         }
+
         [HttpGet]
         public async Task<IHttpActionResult> GetPickingList(string id)
         {
@@ -1594,9 +1847,7 @@ namespace WMS_BE.Controllers.Api
                     throw new Exception("Id is required.");
                 }
 
-
                 QCInspection header = await db.QCInspections.Where(m => m.ID.Equals(id)).FirstOrDefaultAsync();
-
 
                 if (header == null)
                 {
@@ -2729,11 +2980,9 @@ namespace WMS_BE.Controllers.Api
                         }
                     }
 
-
-                    //update in stock
-                    //decrease stock
-                    //create new row
-
+                    ////update in stock
+                    ////decrease stock
+                    ////create new row
                     //if (vProductMaster.ProdType.Equals("RM"))
                     //{
                     //    IQueryable<StockRM> query = query = db.StockRMs.Where(m => m.MaterialCode.Equals(inspection.MaterialCode) && m.LotNumber.Equals(inspection.LotNo) && m.InDate.Value.Equals(inspection.InDate) && m.ExpiredDate.Value.Equals(inspection.ExpDate) && m.Quantity > 0).AsQueryable();
@@ -2741,32 +2990,12 @@ namespace WMS_BE.Controllers.Api
                     //    {
                     //        string StockCode = Helper.StockCode(inspection.MaterialCode, stock.QtyPerBag, inspection.LotNo, inspection.InDate, newExpiredDate);
 
-                    //        StockRM stockRM = await db.StockRMs.Where(m => m.Code.Equals(StockCode) && m.BinRackCode.Equals(stock.BinRackCode)).FirstOrDefaultAsync();
+                    //        StockRM stockRM = await db.StockRMs.Where(m => m.Code.Equals(StockCode) && m.BinRackCode.Equals(stock.BinRackCode) && m.Quantity > 0).FirstOrDefaultAsync();
                     //        if (stockRM != null)
                     //        {
-                    //            stockRM.Quantity += stock.Quantity;
-                    //        }
-                    //        else
-                    //        {
-                    //            stockRM = new StockRM();
-                    //            stockRM.ID = Helper.CreateGuid("S");
-                    //            stockRM.MaterialCode = vProductMaster.MaterialCode;
-                    //            stockRM.MaterialName = vProductMaster.MaterialName;
                     //            stockRM.Code = StockCode;
-                    //            stockRM.LotNumber = inspection.LotNo;
-                    //            stockRM.InDate = inspection.InDate;
                     //            stockRM.ExpiredDate = newExpiredDate;
-                    //            stockRM.Quantity = stock.Quantity;
-                    //            stockRM.QtyPerBag = stock.QtyPerBag;
-                    //            stockRM.BinRackID = stock.BinRackID;
-                    //            stockRM.BinRackCode = stock.BinRackCode;
-                    //            stockRM.BinRackName = stock.BinRackName;
-                    //            stockRM.ReceivedAt = DateTime.Now;
                     //        }
-
-                    //        db.StockRMs.Add(stockRM);
-
-                    //        stock.Quantity = 0;
                     //    }
 
                     //}
@@ -2777,32 +3006,12 @@ namespace WMS_BE.Controllers.Api
                     //    {
                     //        string StockCode = Helper.StockCode(inspection.MaterialCode, stock.QtyPerBag, inspection.LotNo, inspection.InDate, newExpiredDate);
 
-                    //        StockSFG stockSFG = await db.StockSFGs.Where(m => m.Code.Equals(StockCode) && m.BinRackCode.Equals(stock.BinRackCode)).FirstOrDefaultAsync();
+                    //        StockSFG stockSFG = await db.StockSFGs.Where(m => m.Code.Equals(StockCode) && m.BinRackCode.Equals(stock.BinRackCode) && m.Quantity > 0).FirstOrDefaultAsync();
                     //        if (stockSFG != null)
                     //        {
-                    //            stockSFG.Quantity += stock.Quantity;
-                    //        }
-                    //        else
-                    //        {
-                    //            stockSFG = new StockSFG();
-                    //            stockSFG.ID = Helper.CreateGuid("S");
-                    //            stockSFG.MaterialCode = vProductMaster.MaterialCode;
-                    //            stockSFG.MaterialName = vProductMaster.MaterialName;
                     //            stockSFG.Code = StockCode;
-                    //            stockSFG.LotNumber = inspection.LotNo;
-                    //            stockSFG.InDate = inspection.InDate;
                     //            stockSFG.ExpiredDate = newExpiredDate;
-                    //            stockSFG.Quantity = stock.Quantity;
-                    //            stockSFG.QtyPerBag = stock.QtyPerBag;
-                    //            stockSFG.BinRackID = stock.BinRackID;
-                    //            stockSFG.BinRackCode = stock.BinRackCode;
-                    //            stockSFG.BinRackName = stock.BinRackName;
-                    //            stockSFG.ReceivedAt = DateTime.Now;
                     //        }
-
-                    //        db.StockSFGs.Add(stockSFG);
-
-                    //        stock.Quantity = 0;
                     //    }
                     //}
 
@@ -3771,6 +3980,410 @@ namespace WMS_BE.Controllers.Api
         }
 
         [HttpPost]
+        public async Task<IHttpActionResult> Putaway()
+        {
+            Dictionary<string, object> obj = new Dictionary<string, object>();
+            List<CustomValidationMessage> customValidationMessages = new List<CustomValidationMessage>();
+
+            string message = "";
+            bool status = false;
+            HttpRequest request = HttpContext.Current.Request;
+
+            string InspectionID = request["InspectionID"].ToString();
+            string MaterialCode = request["ProductCode"].ToString();
+            string BinRackID = request["BinRackID"].ToString();
+            string StockCode = request["StockCode"].ToString();
+            string PrevBinRackCode = request["PrevBinRackCode"].ToString();
+            int PutAwayQty = Convert.ToInt32(request["PutAwayQty"]);
+            decimal QtyPutaway = Convert.ToDecimal(request["Quantity"].Replace('.', ','));
+
+            var re = Request;
+            var headers = re.Headers;
+
+            try
+            {
+                string token = "";
+
+                if (headers.Contains("token"))
+                {
+                    token = headers.GetValues("token").First();
+                }
+
+                string activeUser = await db.Users.Where(x => x.Token.Equals(token) && x.IsActive).Select(x => x.Username).FirstOrDefaultAsync();
+                if (activeUser != null)
+                {
+                    if (string.IsNullOrEmpty(InspectionID))
+                    {
+                        throw new Exception("Inspection ID is required.");
+                    }
+
+                    QCInspection header = new QCInspection();
+                    header = await db.QCInspections.Where(s => s.ID.Equals(InspectionID)).FirstOrDefaultAsync();
+                    if (header == null)
+                    {
+                        throw new Exception("Data tidak dikenali.");
+                    }
+
+                    if (header.TransactionStatus.Equals("CLOSED"))
+                    {
+                        throw new Exception("Picking sudah tidak dapat dilakukan lagi.");
+                    }
+
+                    BinRack binRack = null;
+                    if (string.IsNullOrEmpty(BinRackID))
+                    {
+                        throw new Exception("BinRack harus diisi.");
+                    }
+                    else
+                    {
+                        binRack = await db.BinRacks.Where(m => m.ID.Equals(BinRackID)).FirstOrDefaultAsync();
+                        if (binRack == null)
+                        {
+                            throw new Exception("BinRack tidak ditemukan.");
+                        }
+                    }
+
+                    QCPicking picking = await db.QCPickings.Where(s => s.QCInspectionID.Equals(InspectionID) && s.StockCode.Equals(StockCode) && s.BinRackCode.Equals(PrevBinRackCode)).FirstOrDefaultAsync();
+                    if (header.TransactionStatus.Equals("PROGRESS"))
+                    {
+                        // Putaway Waiting
+                        vProductMaster vProductMaster = await db.vProductMasters.Where(m => m.MaterialCode.Equals(MaterialCode)).FirstOrDefaultAsync();
+                        if (vProductMaster == null)
+                        {
+                            throw new Exception("Material tidak dikenali.");
+                        }
+                       
+                        if (string.IsNullOrEmpty(picking.PickedMethod))
+                        {
+                            throw new Exception("Stock belum diambil.");
+                        }
+
+                        //do stock movement in here
+                        //insert to qc putaway
+                        //update stock location
+                        if (picking.BinRackCode.Equals(binRack.Code))
+                        {
+                            throw new Exception("Bin/Rack baru tidak bisa sama dengan Bin/Rack sebelumnya.");
+                        }
+
+                        if (PutAwayQty <= 0)
+                        {
+                            throw new Exception("Bag Qty tidak boleh kosong atau tidak boleh kurang dari 1.");
+                        }
+                        else
+                        {
+                            int pickedBagQty = Convert.ToInt32(picking.Qty / picking.QtyPerBag);
+                            int putBagQty = Convert.ToInt32(picking.QCPutaways.Sum(s => s.PutawayQty / s.QtyPerBag));
+                            int availableBagQty = pickedBagQty - putBagQty;
+                            if (PutAwayQty > availableBagQty)
+                            {
+                                throw new Exception(string.Format("Bag Qty melewati jumlah tersedia. Bag Qty tersedia : {0}", Helper.FormatThousand(availableBagQty)));
+                            }
+                        }
+
+                        vStockAll stockAll = db.vStockAlls.Where(m => m.Code.Equals(picking.StockCode) && m.BinRackCode.Equals(picking.BinRackCode)).FirstOrDefault();
+                        if (stockAll == null)
+                        {
+                            throw new Exception("Stock tidak ditemukan.");
+                        }
+
+                        if (vProductMaster.ProdType.Equals("RM"))
+                        {
+                            //update stock
+                            StockRM stock = db.StockRMs.Where(m => m.ID.Equals(stockAll.ID)).FirstOrDefault();
+                            stock.Quantity -= PutAwayQty * stockAll.QtyPerBag;
+                            stock.OnInspect = false;
+
+                            //insert to Stock if not exist, update quantity if barcode, indate and location is same
+                            StockRM stockRM = await db.StockRMs.Where(m => m.Code.Equals(picking.StockCode) && m.BinRackCode.Equals(binRack.Code)).FirstOrDefaultAsync();
+                            if (stockRM != null)
+                            {
+                                stockRM.Quantity += PutAwayQty * stockAll.QtyPerBag;
+                            }
+                            else
+                            {
+                                stockRM = new StockRM();
+                                stockRM.ID = Helper.CreateGuid("S");
+                                stockRM.MaterialCode = vProductMaster.MaterialCode;
+                                stockRM.MaterialName = vProductMaster.MaterialName;
+                                stockRM.Code = stockAll.Code;
+                                stockRM.LotNumber = stockAll.LotNumber;
+                                stockRM.InDate = stockAll.InDate;
+                                stockRM.ExpiredDate = stockAll.ExpiredDate;
+                                stockRM.Quantity = PutAwayQty * stockAll.QtyPerBag;
+                                stockRM.QtyPerBag = stockAll.QtyPerBag;
+                                stockRM.BinRackID = binRack.ID;
+                                stockRM.BinRackCode = binRack.Code;
+                                stockRM.BinRackName = binRack.Name;
+                                stockRM.ReceivedAt = DateTime.Now;
+                                stockRM.OnInspect = true;
+
+                                db.StockRMs.Add(stockRM);
+                            }
+                        }
+                        else
+                        {
+                            StockSFG stock = db.StockSFGs.Where(m => m.ID.Equals(stockAll.ID)).FirstOrDefault();
+                            stock.Quantity -= PutAwayQty * stockAll.QtyPerBag;
+                            stock.OnInspect = false;
+
+                            //insert to Stock if not exist, update quantity if barcode, indate and location is same
+
+                            StockSFG stockSFG = await db.StockSFGs.Where(m => m.Code.Equals(picking.StockCode) && m.BinRackCode.Equals(binRack.Code)).FirstOrDefaultAsync();
+                            if (stockSFG != null)
+                            {
+                                stockSFG.Quantity += PutAwayQty * stockAll.QtyPerBag;
+                            }
+                            else
+                            {
+                                stockSFG = new StockSFG();
+                                stockSFG.ID = Helper.CreateGuid("S");
+                                stockSFG.MaterialCode = vProductMaster.MaterialCode;
+                                stockSFG.MaterialName = vProductMaster.MaterialName;
+                                stockSFG.Code = stockAll.Code;
+                                stockSFG.LotNumber = stockAll.LotNumber;
+                                stockSFG.InDate = stockAll.InDate;
+                                stockSFG.ExpiredDate = stockAll.ExpiredDate;
+                                stockSFG.Quantity = PutAwayQty * stockAll.QtyPerBag;
+                                stockSFG.QtyPerBag = stockAll.QtyPerBag;
+                                stockSFG.BinRackID = binRack.ID;
+                                stockSFG.BinRackCode = binRack.Code;
+                                stockSFG.BinRackName = binRack.Name;
+                                stockSFG.ReceivedAt = DateTime.Now;
+                                stockSFG.OnInspect = true;
+
+                                db.StockSFGs.Add(stockSFG);
+                            }
+                        }
+
+                        QCPutaway putaway = new QCPutaway();
+                        putaway.ID = Helper.CreateGuid("QCp");
+                        putaway.QCPickingID = picking.ID;
+                        putaway.StockCode = stockAll.Code;
+                        putaway.LotNo = stockAll.LotNumber;
+                        putaway.InDate = stockAll.InDate.Value;
+                        putaway.ExpDate = stockAll.ExpiredDate.Value;
+                        putaway.PrevBinRackID = picking.BinRackID;
+                        putaway.PrevBinRackCode = picking.BinRackCode;
+                        putaway.PrevBinRackName = picking.BinRackName;
+                        putaway.BinRackID = binRack.ID;
+                        putaway.BinRackCode = binRack.Code;
+                        putaway.BinRackName = binRack.Name;
+                        putaway.PutawayQty = PutAwayQty * stockAll.QtyPerBag;
+                        putaway.QtyPerBag = stockAll.QtyPerBag;
+                        putaway.PutawayMethod = "SCAN";
+                        putaway.PutOn = DateTime.Now;
+                        putaway.PutBy = activeUser;
+
+                        db.QCPutaways.Add(putaway);
+
+                        await db.SaveChangesAsync();
+                    }
+                    else
+                    {
+                        // Putaway Extend
+                        QCPutaway putaway = await db.QCPutaways.Where(s => s.NewStockCode.Equals(StockCode) && s.BinRackCode.Equals(PrevBinRackCode) && s.PutawayQty.Equals(QtyPutaway)).FirstOrDefaultAsync();
+                        if (putaway == null)
+                        {
+                            throw new Exception("Data putaway tidak dikenali.");
+                        }
+
+                        if (putaway.QCPicking.QCInspection.TransactionStatus.Equals("CLOSED"))
+                        {
+                            throw new Exception("Putaway sudah tidak dapat dilakukan lagi.");
+                        }
+
+                        QCExtend extend = await db.QCExtends.Where(s => s.QCInspectionID.Equals(InspectionID)).FirstOrDefaultAsync();
+                        if (extend == null)
+                        {
+                            throw new Exception("Data extend tidak dikenali.");
+                        }
+
+                        vProductMaster vProductMaster = await db.vProductMasters.Where(m => m.MaterialCode.Equals(putaway.QCPicking.QCInspection.MaterialCode)).FirstOrDefaultAsync();
+                        if (vProductMaster == null)
+                        {
+                            throw new Exception("Material tidak dikenali.");
+                        }                                                 
+                                                
+                        //do stock movement in here
+                        //insert to qc putaway
+                        //update stock location
+                        vStockAll stockAll = db.vStockAlls.Where(m => m.Code.Equals(putaway.StockCode) && m.BinRackCode.Equals(putaway.BinRackCode)).FirstOrDefault();
+                        if (stockAll == null)
+                        {
+                            throw new Exception("Stock tidak ditemukan.");
+                        }
+
+                        //check if old stock, dont allow stock movement
+                        if (putaway.PutawayMethod.Equals("INSPECT"))
+                        {
+                            //same location with previous
+                            if (!putaway.BinRackCode.Equals(binRack.Code))
+                            {
+                                throw new Exception("Bin/Rack harus diisi sesuai dengan Bin/Rack sebelumnya.");
+                            }
+                        }
+                        else
+                        {
+                            //new location, cannot same with old location
+                            if (putaway.BinRackCode.Equals(binRack.Code))
+                            {
+                                throw new Exception("Bin/Rack baru tidak bisa sama dengan Bin/Rack sebelumnya.");
+                            }
+
+                            if (PutAwayQty <= 0)
+                            {
+                                throw new Exception("Bag Qty tidak boleh kosong atau tidak boleh kurang dari 1.");
+                            }
+                            else
+                            {
+                                int putBagQty = Convert.ToInt32(putaway.PutawayQty / putaway.QtyPerBag);
+                                int returnBagQty = Convert.ToInt32(putaway.QCReturns.Sum(s => s.PutawayQty / s.QtyPerBag));
+                                int availableBagQty = putBagQty - returnBagQty;
+                                if (PutAwayQty > availableBagQty)
+                                {
+                                    throw new Exception(string.Format("Bag Qty melewati jumlah tersedia. Bag Qty tersedia : {0}", Helper.FormatThousand(availableBagQty)));
+                                }
+                            }
+                        }
+
+                        if (putaway.PutawayMethod.Equals("INSPECT"))
+                        {
+                            putaway.PutawayQty = Convert.ToInt32(putaway.PutawayQty / putaway.QtyPerBag);
+                        }
+
+                        if (vProductMaster.ProdType.Equals("RM"))
+                        {
+                            //update stock
+                            StockRM stock = db.StockRMs.Where(m => m.ID.Equals(stockAll.ID)).FirstOrDefault();
+                            stock.Quantity -= PutAwayQty * stockAll.QtyPerBag;
+                            stock.OnInspect = false;
+
+                            //insert to Stock if not exist, update quantity if barcode, indate and location is same
+                            StockRM stockRM = await db.StockRMs.Where(m => m.Code.Equals(putaway.NewStockCode) && m.BinRackCode.Equals(binRack.Code)).FirstOrDefaultAsync();
+                            if (stockRM != null)
+                            {
+                                stockRM.Quantity += PutAwayQty * putaway.QtyPerBag;
+                            }
+                            else
+                            {
+                                stockRM = new StockRM();
+                                stockRM.ID = Helper.CreateGuid("S");
+                                stockRM.MaterialCode = vProductMaster.MaterialCode;
+                                stockRM.MaterialName = vProductMaster.MaterialName;
+                                stockRM.Code = putaway.NewStockCode;
+                                stockRM.LotNumber = stockAll.LotNumber;
+                                stockRM.InDate = stockAll.InDate;
+                                stockRM.ExpiredDate = putaway.NewExpDate.Value;
+                                stockRM.Quantity = PutAwayQty * putaway.QtyPerBag;
+                                stockRM.QtyPerBag = putaway.QtyPerBag;
+                                stockRM.BinRackID = binRack.ID;
+                                stockRM.BinRackCode = binRack.Code;
+                                stockRM.BinRackName = binRack.Name;
+                                stockRM.ReceivedAt = DateTime.Now;
+
+                                db.StockRMs.Add(stockRM);
+                            }
+                        }
+                        else
+                        {
+                            StockSFG stock = db.StockSFGs.Where(m => m.ID.Equals(stockAll.ID)).FirstOrDefault();
+                            stock.Quantity -= PutAwayQty * stockAll.QtyPerBag;
+                            stock.OnInspect = false;
+
+                            //insert to Stock if not exist, update quantity if barcode, indate and location is same
+                            StockSFG stockSFG = await db.StockSFGs.Where(m => m.Code.Equals(putaway.NewStockCode) && m.BinRackCode.Equals(binRack.Code)).FirstOrDefaultAsync();
+                            if (stockSFG != null)
+                            {
+                                stockSFG.Quantity += PutAwayQty * putaway.QtyPerBag;
+                            }
+                            else
+                            {
+                                stockSFG = new StockSFG();
+                                stockSFG.ID = Helper.CreateGuid("S");
+                                stockSFG.MaterialCode = vProductMaster.MaterialCode;
+                                stockSFG.MaterialName = vProductMaster.MaterialName;
+                                stockSFG.Code = putaway.NewStockCode;
+                                stockSFG.LotNumber = stockAll.LotNumber;
+                                stockSFG.InDate = stockAll.InDate;
+                                stockSFG.ExpiredDate = putaway.NewExpDate.Value;
+                                stockSFG.Quantity = PutAwayQty * putaway.QtyPerBag;
+                                stockSFG.QtyPerBag = putaway.QtyPerBag;
+                                stockSFG.BinRackID = binRack.ID;
+                                stockSFG.BinRackCode = binRack.Code;
+                                stockSFG.BinRackName = binRack.Name;
+                                stockSFG.ReceivedAt = DateTime.Now;
+
+                                db.StockSFGs.Add(stockSFG);
+                            }
+                        }
+
+                        QCReturn _return = new QCReturn();
+                        _return.ID = Helper.CreateGuid("QCr");
+                        _return.QCPutawayID = putaway.ID;
+                        _return.StockCode = putaway.StockCode;
+                        _return.NewStockCode = putaway.NewStockCode;
+                        _return.LotNo = stockAll.LotNumber;
+                        _return.InDate = stockAll.InDate.Value;
+                        _return.ExpDate = stockAll.ExpiredDate.Value;
+                        _return.NewExpDate = putaway.NewExpDate.Value;
+                        _return.PrevBinRackID = putaway.BinRackID;
+                        _return.PrevBinRackCode = putaway.BinRackCode;
+                        _return.PrevBinRackName = putaway.BinRackName;
+                        _return.BinRackID = binRack.ID;
+                        _return.BinRackCode = binRack.Code;
+                        _return.BinRackName = binRack.Name;
+                        _return.PutawayQty = PutAwayQty * putaway.QtyPerBag;
+                        _return.QtyPerBag = putaway.QtyPerBag;
+                        _return.PutawayMethod = "SCAN";
+                        _return.PutOn = DateTime.Now;
+                        _return.PutBy = activeUser;
+
+                        db.QCReturns.Add(_return);
+
+                        putaway.PickedMethod = "SCAN";
+                        putaway.PickedBy = activeUser;
+                        putaway.PickedOn = DateTime.Now;                        
+
+                        await db.SaveChangesAsync(); 
+                        
+                        QCPutaway ptaway = await db.QCPutaways.Where(s => s.NewStockCode.Equals(StockCode) && s.PickedMethod == null).FirstOrDefaultAsync();
+                        if (ptaway == null)
+                        {
+                            extend.QCInspection.TransactionStatus = "CLOSED";
+                            await db.SaveChangesAsync();
+                        }
+                    }                                       
+
+                    status = true;
+                    message = "Putaway berhasil.";
+                }
+                else
+                {
+                    message = "Token sudah berakhir, silahkan login kembali.";
+                }
+            }
+            catch (HttpRequestException reqpEx)
+            {
+                message = reqpEx.Message;
+            }
+            catch (HttpResponseException respEx)
+            {
+                message = respEx.Message;
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
+
+            obj.Add("status", status);
+            obj.Add("message", message);
+            obj.Add("error_validation", customValidationMessages);
+
+            return Ok(obj);
+        }
+
+        [HttpPost]
         public async Task<IHttpActionResult> DatatableReceivingRawMaterial()
         {
             int draw = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("draw")[0]);
@@ -3823,7 +4436,6 @@ namespace WMS_BE.Controllers.Api
                 cols.Add("ReceivedBy", x => x.ReceivedBy);
                 cols.Add("ReceivedOn", x => x.ReceivedOn);
 
-
                 if (sortDirection.Equals("asc"))
                     list = query.OrderBy(cols[sortName]);
                 else
@@ -3835,7 +4447,6 @@ namespace WMS_BE.Controllers.Api
 
                 if (list != null && list.Count() > 0)
                 {
-
                     pagedData = from detail in list
                                 select new ReceivingDetailDTO
                                 {
@@ -3896,6 +4507,7 @@ namespace WMS_BE.Controllers.Api
 
             return Ok(obj);
         }
+
         [HttpPost]
         public async Task<IHttpActionResult> PickingWaiting(PickingWaitingWebReq req)
         {
@@ -3919,7 +4531,7 @@ namespace WMS_BE.Controllers.Api
 
                 if (activeUser != null)
                 {
-                    if (string.IsNullOrEmpty(req.InspectionId))
+                    if (string.IsNullOrEmpty(req.InspectionId) || string.IsNullOrEmpty(req.PickingType))
                     {
                         throw new Exception("Inspection Id is required.");
                     }
@@ -3932,7 +4544,7 @@ namespace WMS_BE.Controllers.Api
                         throw new Exception("Data tidak dikenali.");
                     }
 
-                    if (!string.IsNullOrEmpty(header.InspectionStatus))
+                    if ((!string.IsNullOrEmpty(header.InspectionStatus) && req.PickingType.Equals("Waiting")) || header.TransactionStatus.Equals("CLOSED"))
                     {
                         throw new Exception("Picking sudah tidak dapat dilakukan lagi.");
                     }
@@ -3943,47 +4555,62 @@ namespace WMS_BE.Controllers.Api
                         throw new Exception("Material tidak dikenali.");
                     }
 
-                    //string MaterialCode = header.MaterialCode;
-                    //string QtyPerBag = req.QtyPerBag.ToString().Replace(',', '.');
-                    //string LotNumber = req.LotNumber;
-                    //string ExpiredDate = Convert.ToDateTime(req.ExpDate).ToString("yyyyMMdd").Substring(2);
-                    //string InDate = Convert.ToDateTime(req.InDate).ToString("yyyyMMdd").Substring(1);
-
-                    //string StockCode = string.Format("{0}{1}{2}{3}{4}", MaterialCode.Trim(), QtyPerBag, LotNumber, InDate, ExpiredDate);
-
-                    //BinRack binRack = null;
-                    //if (string.IsNullOrEmpty(req.BinRackCode))
-                    //{
-                    //    throw new Exception("BinRack harus diisi.");
-                    //}
-                    //else
-                    //{
-                    //    binRack = await db.BinRacks.Where(m => m.Code.Equals(req.BinRackCode)).FirstOrDefaultAsync();
-                    //    if (binRack == null)
-                    //    {
-                    //        throw new Exception("BinRack tidak ditemukan.");
-                    //    }
-                    //}
-
                     IQueryable<QCPicking> query = db.QCPickings.Where(m => m.QCInspectionID.Equals(req.InspectionId)).AsQueryable();
                     IEnumerable<QCPicking> list = query.ToList();
 
                     int recordsTotal = query.Count();
                     if (recordsTotal > 0)
                     {
-                        foreach (QCPicking rec in list)
+                        if (req.PickingType == "Waiting")
                         {
-                            rec.PickedMethod = "SCAN";
-                            rec.PickedOn = DateTime.Now;
-                            rec.PickedBy = activeUser;
+                            foreach (QCPicking rec in list)
+                            {
+                                rec.PickedMethod = "SCAN";
+                                rec.PickedOn = DateTime.Now;
+                                rec.PickedBy = activeUser;
+                            }
+                            await db.SaveChangesAsync();
+                        }
+                        else
+                        {
+                            foreach (QCPicking rec in list)
+                            {
+                                vStockAll stockAll = db.vStockAlls.Where(m => m.Code.Equals(rec.StockCode) && m.BinRackCode.Equals(rec.BinRackCode)).FirstOrDefault();
+                                if (stockAll == null)
+                                {
+                                    throw new Exception("Stock tidak ditemukan.");
+                                }
+
+                                int bagQty = Convert.ToInt32(rec.Qty / rec.QtyPerBag);
+
+                                if (stockAll.Type.Equals("RM"))
+                                {
+                                    StockRM stock = db.StockRMs.Where(m => m.ID.Equals(stockAll.ID)).FirstOrDefault();
+                                    stock.Quantity -= bagQty * stockAll.QtyPerBag;
+                                    if (stock.Quantity == 0)
+                                    {
+                                        stock.OnInspect = false;
+                                    }
+                                }
+                                else if (stockAll.Type.Equals("SFG"))
+                                {
+                                    StockSFG stock = db.StockSFGs.Where(m => m.ID.Equals(stockAll.ID)).FirstOrDefault();
+                                    stock.Quantity -= bagQty * stockAll.QtyPerBag;
+                                    if (stock.Quantity == 0)
+                                    {
+                                        stock.OnInspect = false;
+                                    }
+                                }
+                            }
+
+                            header.TransactionStatus = "CLOSED";
+                            await db.SaveChangesAsync();
                         }
                     }
                     else
                     {
                         throw new Exception("Stock tidak ditemukan.");
                     }
-
-                    await db.SaveChangesAsync();
 
                     status = true;
                     message = "Picking berhasil.";
@@ -4011,6 +4638,7 @@ namespace WMS_BE.Controllers.Api
 
             return Ok(obj);
         }
+
         [HttpPost]
         public async Task<IHttpActionResult> PickingDispose(PickingDisposeWebReq req)
         {
@@ -4034,8 +4662,6 @@ namespace WMS_BE.Controllers.Api
 
                 if (activeUser != null)
                 {
-
-
                     if (string.IsNullOrEmpty(req.InspectionId))
                     {
                         throw new Exception("Inspection Id is required.");
@@ -4047,7 +4673,6 @@ namespace WMS_BE.Controllers.Api
                     {
                         throw new Exception("Data tidak dikenali.");
                     }
-
 
                     if (header.TransactionStatus.Equals("CLOSED"))
                     {
@@ -4071,7 +4696,6 @@ namespace WMS_BE.Controllers.Api
                     if (string.IsNullOrEmpty(req.BinRackCode))
                     {
                         throw new Exception("BinRack harus diisi.");
-
                     }
                     else
                     {
@@ -4080,7 +4704,6 @@ namespace WMS_BE.Controllers.Api
                         {
                             throw new Exception("BinRack tidak ditemukan.");
                         }
-
                     }
 
                     vStockAll stockAll = db.vStockAlls.Where(m => m.Code.Equals(StockCode) && m.BinRackCode.Equals(binRack.Code)).FirstOrDefault();
@@ -4123,13 +4746,9 @@ namespace WMS_BE.Controllers.Api
                         stock.Quantity -= req.BagQty * stockAll.QtyPerBag;
                     }
 
-
-
                     await db.SaveChangesAsync();
 
                     IQueryable<vStockAll> query = query = db.vStockAlls.Where(m => m.MaterialCode.Equals(header.MaterialCode) && m.LotNumber.Equals(header.LotNo) && m.InDate.Equals(header.InDate) && m.ExpiredDate.Equals(header.ExpDate) && m.Quantity > 0).AsQueryable();
-
-
                     IEnumerable<vStockAll> tempList = await query.ToListAsync();
 
                     if (tempList.Count() < 1)
@@ -4140,7 +4759,6 @@ namespace WMS_BE.Controllers.Api
 
                     status = true;
                     message = "Picking berhasil.";
-
                 }
                 else
                 {
@@ -4169,6 +4787,7 @@ namespace WMS_BE.Controllers.Api
         {
             return value / 1.000000000000000000000000000000000m;
         }
+
         [HttpPost]
         public async Task<IHttpActionResult> PutawayExtend(PutawayExtendWebReq req)
         {
@@ -4189,11 +4808,8 @@ namespace WMS_BE.Controllers.Api
                 }
 
                 string activeUser = await db.Users.Where(x => x.Token.Equals(token)).Select(x => x.Username).FirstOrDefaultAsync();
-
                 if (activeUser != null)
                 {
-
-
                     if (string.IsNullOrEmpty(req.PutawayId))
                     {
                         throw new Exception("Putaway Id is required.");
@@ -4206,7 +4822,6 @@ namespace WMS_BE.Controllers.Api
                         throw new Exception("Data tidak dikenali.");
                     }
 
-
                     if (putaway.QCPicking.QCInspection.TransactionStatus.Equals("CLOSED"))
                     {
                         throw new Exception("Putaway sudah tidak dapat dilakukan lagi.");
@@ -4217,7 +4832,6 @@ namespace WMS_BE.Controllers.Api
                     {
                         throw new Exception("Material tidak dikenali.");
                     }
-
 
                     string MaterialCode = vProductMaster.MaterialCode;
                     string QtyPerBag = decimal.Round(putaway.QtyPerBag, 2).ToString().Replace(',', '.');
@@ -4244,9 +4858,7 @@ namespace WMS_BE.Controllers.Api
                         {
                             throw new Exception("BinRack tidak ditemukan.");
                         }
-
                     }
-
 
                     //if (!putaway.NewStockCode.Equals(StockCode))
                     //{
@@ -4257,14 +4869,11 @@ namespace WMS_BE.Controllers.Api
                     //insert to qc putaway
                     //update stock location
 
-
-
                     vStockAll stockAll = db.vStockAlls.Where(m => m.Code.Equals(StockCode) && m.BinRackCode.Equals(putaway.BinRackCode)).FirstOrDefault();
                     if (stockAll == null)
                     {
                         throw new Exception("Stock tidak ditemukan.");
                     }
-
 
                     //check if old stock, dont allow stock movement
                     if (putaway.PutawayMethod.Equals("INSPECT"))
@@ -4297,9 +4906,7 @@ namespace WMS_BE.Controllers.Api
                                 throw new Exception(string.Format("Bag Qty melewati jumlah tersedia. Bag Qty tersedia : {0}", Helper.FormatThousand(availableBagQty)));
                             }
                         }
-
                     }
-
 
                     if (putaway.PutawayMethod.Equals("INSPECT"))
                     {
@@ -4371,7 +4978,6 @@ namespace WMS_BE.Controllers.Api
                         }
                     }
 
-
                     QCReturn _return = new QCReturn();
                     _return.ID = Helper.CreateGuid("QCr");
                     _return.QCPutawayID = putaway.ID;
@@ -4393,15 +4999,12 @@ namespace WMS_BE.Controllers.Api
                     _return.PutOn = DateTime.Now;
                     _return.PutBy = activeUser;
 
-
                     db.QCReturns.Add(_return);
-
 
                     await db.SaveChangesAsync();
 
                     status = true;
                     message = "Putaway berhasil.";
-
                 }
                 else
                 {
@@ -4450,8 +5053,6 @@ namespace WMS_BE.Controllers.Api
 
                 if (activeUser != null)
                 {
-
-
                     if (string.IsNullOrEmpty(req.PickingId))
                     {
                         throw new Exception("Picking Id is required.");
@@ -4463,7 +5064,6 @@ namespace WMS_BE.Controllers.Api
                     {
                         throw new Exception("Data tidak dikenali.");
                     }
-
 
                     if (!string.IsNullOrEmpty(picking.QCInspection.InspectionStatus))
                     {
@@ -4487,7 +5087,6 @@ namespace WMS_BE.Controllers.Api
                     if (string.IsNullOrEmpty(req.BinRackCode))
                     {
                         throw new Exception("BinRack harus diisi.");
-
                     }
                     else
                     {
@@ -4496,7 +5095,6 @@ namespace WMS_BE.Controllers.Api
                         {
                             throw new Exception("BinRack tidak ditemukan.");
                         }
-
                     }
 
                     if (!picking.BinRackCode.Equals(binRack.Code) && !picking.StockCode.Equals(StockCode))
@@ -4509,16 +5107,13 @@ namespace WMS_BE.Controllers.Api
                         throw new Exception("Stock belum diambil.");
                     }
 
-
                     //do stock movement in here
                     //insert to qc putaway
                     //update stock location
-
                     if (picking.BinRackCode.Equals(req.BinRackCode))
                     {
                         throw new Exception("Bin/Rack baru tidak bisa sama dengan Bin/Rack sebelumnya.");
                     }
-
 
                     if (req.BagQty <= 0)
                     {
@@ -4540,7 +5135,6 @@ namespace WMS_BE.Controllers.Api
                     {
                         throw new Exception("Stock tidak ditemukan.");
                     }
-
 
                     if (vProductMaster.ProdType.Equals("RM"))
                     {
@@ -4630,15 +5224,10 @@ namespace WMS_BE.Controllers.Api
 
                     db.QCPutaways.Add(putaway);
 
-                    //
-
-
                     await db.SaveChangesAsync();
-
 
                     status = true;
                     message = "Putaway berhasil.";
-
                 }
                 else
                 {
@@ -4742,7 +5331,6 @@ namespace WMS_BE.Controllers.Api
             return Ok(obj);
         }
 
-
         [HttpPost]
         public async Task<IHttpActionResult> DatatableDetailInspection()
         {
@@ -4770,11 +5358,18 @@ namespace WMS_BE.Controllers.Api
             DateTime endfilterDate = Convert.ToDateTime(enddate);
             IQueryable<vQCInspection> query;
 
+            IEnumerable<BinRack> listWHName = Enumerable.Empty<BinRack>();
+
+            // Ambil data dari BinRack untuk mendapatkan WHName sesuai warehousecode
+            listWHName = db.BinRacks.Where(br => br.WarehouseCode.Equals(warehouseCode)).ToList();
+
+            var warehouseNames = listWHName.Select(br => br.WarehouseName).ToList();
+
             if (!string.IsNullOrEmpty(warehouseCode))
             {
                 query = db.vQCInspections.Where(s => DbFunctions.TruncateTime(s.CreatedOn) >= DbFunctions.TruncateTime(filterDate)
                         && DbFunctions.TruncateTime(s.CreatedOn) <= DbFunctions.TruncateTime(endfilterDate)
-                        && s.WHName.Equals(warehouseCode));
+                        && warehouseNames.Contains(s.WHName));
             }
             else
             {
@@ -4852,26 +5447,26 @@ namespace WMS_BE.Controllers.Api
                                     FullBag = Helper.FormatThousand(detail.FullBag),
                                     Total = Helper.FormatThousand(detail.Total),
                                     CreatedBy = detail.CreatedBy,
-                                    CreatedOn = detail.CreatedOn,
+                                    CreatedOn = detail.CreatedOn.ToString(),
                                     PickingBag = Helper.FormatThousand(detail.PickingBag),
                                     PickingFullBag = Helper.FormatThousand(detail.PickingFullBag),
                                     PickingTotal = Helper.FormatThousand(detail.PickingTotal),
                                     PickingBinRack = detail.PickingBinRack,
                                     PickingBy = detail.PickingBy,
-                                    PickingOn = Convert.ToDateTime(detail.PickingOn),
+                                    PickingOn = detail.PickingOn.ToString(),
                                     ActionExtendDuration = Helper.FormatThousand(detail.ActionExtendDuration),
                                     ActionExpDate = Helper.NullDateToString2(detail.ActionExpDate),
                                     ActionDispose = detail.ActionDispose,
                                     ApproveBy = detail.ApproveBy,
-                                    ApproveOn = Convert.ToDateTime(detail.ApproveOn),
+                                    ApproveOn = detail.ApproveOn.ToString(),
                                     PrintLabelBy = detail.PrintLabelBy,
-                                    PrintLabelOn = detail.PrintLabelOn,
+                                    PrintLabelOn = detail.PrintLabelOn.ToString(),
                                     PutawayBag = Helper.FormatThousand(detail.PutawayBag),
                                     PutawayFullBag = Helper.FormatThousand(detail.PutawayFullBag),
                                     PutawayTotal = Helper.FormatThousand(detail.PutawayTotal),
                                     PutawayBinRack = detail.PutawayBinRack,
                                     PutawayBy = detail.PutawayBy,
-                                    PutawayOn = detail.PutawayOn,
+                                    PutawayOn = detail.PutawayOn.ToString(),
                                     Status = detail.Status,
                                     Memo = detail.Memo,
                                 };
@@ -4926,11 +5521,18 @@ namespace WMS_BE.Controllers.Api
             DateTime endfilterDate = Convert.ToDateTime(enddate);
             IQueryable<vQCInspection> query;
 
+            IEnumerable<BinRack> listWHName = Enumerable.Empty<BinRack>();
+
+            // Ambil data dari BinRack untuk mendapatkan WHName sesuai warehousecode
+            listWHName = db.BinRacks.Where(br => br.WarehouseCode.Equals(warehouse)).ToList();
+
+            var warehouseNames = listWHName.Select(br => br.WarehouseName).ToList();
+
             if (!string.IsNullOrEmpty(warehouse))
             {
                 query = db.vQCInspections.Where(s => DbFunctions.TruncateTime(s.CreatedOn) >= DbFunctions.TruncateTime(filterDate)
                         && DbFunctions.TruncateTime(s.CreatedOn) <= DbFunctions.TruncateTime(endfilterDate)
-                        && s.WHName.Equals(warehouse));
+                        && warehouseNames.Contains(s.WHName));
             }
             else
             {
@@ -4997,26 +5599,26 @@ namespace WMS_BE.Controllers.Api
                                     FullBag = Helper.FormatThousand(detail.FullBag),
                                     Total = Helper.FormatThousand(detail.Total),
                                     CreatedBy = detail.CreatedBy,
-                                    CreatedOn = detail.CreatedOn,
+                                    CreatedOn = detail.CreatedOn.ToString(),
                                     PickingBag = Helper.FormatThousand(detail.PickingBag),
                                     PickingFullBag = Helper.FormatThousand(detail.PickingFullBag),
                                     PickingTotal = Helper.FormatThousand(detail.PickingTotal),
                                     PickingBinRack = detail.PickingBinRack,
                                     PickingBy = detail.PickingBy,
-                                    PickingOn = Convert.ToDateTime(detail.PickingOn),
+                                    PickingOn = detail.PickingOn.ToString(),
                                     ActionExtendDuration = Helper.FormatThousand(detail.ActionExtendDuration),
                                     ActionExpDate = Helper.NullDateToString2(detail.ActionExpDate),
                                     ActionDispose = detail.ActionDispose,
                                     ApproveBy = detail.ApproveBy,
-                                    ApproveOn = Convert.ToDateTime(detail.ApproveOn),
+                                    ApproveOn = detail.ApproveOn.ToString(),
                                     PrintLabelBy = detail.PrintLabelBy,
-                                    PrintLabelOn = detail.PrintLabelOn,
+                                    PrintLabelOn = detail.PrintLabelOn.ToString(),
                                     PutawayBag = Helper.FormatThousand(detail.PutawayBag),
                                     PutawayFullBag = Helper.FormatThousand(detail.PutawayFullBag),
                                     PutawayTotal = Helper.FormatThousand(detail.PutawayTotal),
                                     PutawayBinRack = detail.PutawayBinRack,
                                     PutawayBy = detail.PutawayBy,
-                                    PutawayOn = detail.PutawayOn,
+                                    PutawayOn = detail.PutawayOn.ToString(),
                                     Status = detail.Status,
                                     Memo = detail.Memo,
                                 };
@@ -5074,8 +5676,8 @@ namespace WMS_BE.Controllers.Api
             DateTime endfilterDate = Convert.ToDateTime(enddate);
             IQueryable<vShelfLifeExtension> query;
                        
-            query = db.vShelfLifeExtensions.Where(s => DbFunctions.TruncateTime(s.ExpiredDate) >= DbFunctions.TruncateTime(filterDate)
-                        && DbFunctions.TruncateTime(s.ExpiredDate) <= DbFunctions.TruncateTime(endfilterDate));
+            query = db.vShelfLifeExtensions.Where(s => DbFunctions.TruncateTime(s.CreatedOn) >= DbFunctions.TruncateTime(filterDate)
+                        && DbFunctions.TruncateTime(s.CreatedOn) <= DbFunctions.TruncateTime(endfilterDate));
 
             int recordsTotal = query.Count();
             int recordsFiltered = 0;
@@ -5098,6 +5700,8 @@ namespace WMS_BE.Controllers.Api
                 cols.Add("Remark", x => x.Remark);
                 cols.Add("ShelfLifeBaseOnCOA", x => x.ShelfLifeBaseOnCOA);
                 cols.Add("Note", x => x.Note);
+                cols.Add("CreatedOn", x => x.CreatedOn);
+                cols.Add("InspectedOn", x => x.InspectedOn);
 
                 if (sortDirection.Equals("asc"))
                     list = query.OrderBy(cols[sortName]);
@@ -5115,14 +5719,16 @@ namespace WMS_BE.Controllers.Api
                                 {
                                     RMCode = detail.RMCode,
                                     RMName = detail.RMName,
-                                    InDate = Helper.NullDateToString2(detail.InDate),
+                                    InDate = detail.InDate,
                                     LotNo = detail.LotNo,
                                     Qty = Helper.FormatThousand(detail.Qty),
-                                    ExpiredDate = Helper.NullDateToString2(detail.ExpiredDate),
+                                    ExpiredDate = detail.ExpiredDate,
                                     Extension = detail.Extension,
                                     Remark = detail.Remark,
                                     ShelfLifeBaseOnCOA = detail.ShelfLifeBaseOnCOA,
                                     Note = detail.Note,
+                                    CreatedOn = detail.CreatedOn.ToString(),
+                                    InspectedOn = detail.InspectedOn,
                                 };
                 }
 
@@ -5175,8 +5781,8 @@ namespace WMS_BE.Controllers.Api
             DateTime endfilterDate = Convert.ToDateTime(enddate);
             IQueryable<vShelfLifeExtension> query;
 
-            query = db.vShelfLifeExtensions.Where(s => DbFunctions.TruncateTime(s.ExpiredDate) >= DbFunctions.TruncateTime(filterDate)
-                        && DbFunctions.TruncateTime(s.ExpiredDate) <= DbFunctions.TruncateTime(endfilterDate));
+            query = db.vShelfLifeExtensions.Where(s => DbFunctions.TruncateTime(s.CreatedOn) >= DbFunctions.TruncateTime(filterDate)
+                        && DbFunctions.TruncateTime(s.CreatedOn) <= DbFunctions.TruncateTime(endfilterDate));
 
             int recordsTotal = query.Count();
             int recordsFiltered = 0;
@@ -5194,6 +5800,8 @@ namespace WMS_BE.Controllers.Api
                 cols.Add("Remark", x => x.Remark);
                 cols.Add("ShelfLifeBaseOnCOA", x => x.ShelfLifeBaseOnCOA);
                 cols.Add("Note", x => x.Note);
+                cols.Add("CreatedOn", x => x.CreatedOn);
+                cols.Add("InspectedOn", x => x.InspectedOn);
 
                 recordsFiltered = list.Count();
                 list = query.ToList();
@@ -5205,14 +5813,16 @@ namespace WMS_BE.Controllers.Api
                                 {
                                     RMCode = detail.RMCode,
                                     RMName = detail.RMName,
-                                    InDate = Helper.NullDateToString2(detail.InDate),
+                                    InDate = detail.InDate,
                                     LotNo = detail.LotNo,
                                     Qty = Helper.FormatThousand(detail.Qty),
-                                    ExpiredDate = Helper.NullDateToString2(detail.ExpiredDate),
+                                    ExpiredDate = detail.ExpiredDate,
                                     Extension = detail.Extension,
                                     Remark = detail.Remark,
                                     ShelfLifeBaseOnCOA = detail.ShelfLifeBaseOnCOA,
                                     Note = detail.Note,
+                                    CreatedOn = detail.CreatedOn.ToString(),
+                                    InspectedOn = detail.InspectedOn,
                                 };
                 }
 
@@ -5237,6 +5847,211 @@ namespace WMS_BE.Controllers.Api
             obj.Add("list2", pagedData);
             obj.Add("status", status);
             obj.Add("message", message);
+
+            return Ok(obj);
+        }
+
+        [HttpGet]
+        public async Task<IHttpActionResult> GetBarcode(string StockCode)
+        {
+            decimal totstockqty = 0;
+            decimal QtyActualAvailable = 0;
+            decimal QtyBagAvailable = 0;
+            decimal QtyPerBag = 0;
+            int count = 1;
+            Dictionary<string, object> obj = new Dictionary<string, object>();
+            string message = "";
+            bool status = false;
+
+            try
+            {
+                IEnumerable<QCExtend> lista = Enumerable.Empty<QCExtend>();
+                IQueryable<QCExtend> querya = db.QCExtends.Where(s => s.StockCode.Equals(StockCode)).OrderByDescending(s => s.InDate).AsQueryable();
+                lista = querya.ToList();
+                if (lista != null && lista.Count() > 0)
+                {
+                    foreach (QCExtend stocka in lista)
+                    {
+                        if (count == 1)
+                        {
+                            QtyActualAvailable = stocka.LastSeries * stocka.QtyPerBag;
+                            QtyPerBag = stocka.QtyPerBag;
+                            count++;
+                        }
+                    }
+                }
+
+                IEnumerable<StockRM> list = Enumerable.Empty<StockRM>();
+                IQueryable<StockRM> query = db.StockRMs.Where(s => s.Code.Equals(StockCode)).OrderByDescending(s => s.InDate).AsQueryable();
+                list = query.ToList();
+                if (list != null && list.Count() > 0)
+                {
+                    foreach (StockRM stock in list)
+                    {
+                        if (stock.Quantity >= 0)
+                        {
+                            totstockqty = totstockqty + stock.Quantity;
+                        }
+                    }
+                }
+
+                QtyActualAvailable = QtyActualAvailable - totstockqty;
+                QtyBagAvailable = QtyActualAvailable / QtyPerBag;
+
+                status = true;
+                message = "Fetch data succeeded.";
+            }
+            catch (HttpRequestException reqpEx)
+            {
+                message = reqpEx.Message;
+                return BadRequest();
+            }
+            catch (HttpResponseException respEx)
+            {
+                message = respEx.Message;
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
+
+            obj.Add("status", status);
+            obj.Add("message", message);
+            obj.Add("QtyActualAvailable", QtyActualAvailable);
+            obj.Add("QtyBagAvailable", QtyBagAvailable);
+            obj.Add("QtyPerBag", QtyPerBag);
+
+            return Ok(obj);
+        }
+
+        [HttpGet]
+        public async Task<IHttpActionResult> GetDataPutaway(string StockCode, string BinRackCode, string QCInspectionID, string Qty)
+        {
+            decimal totstockqty = 0;
+            decimal QtyActualAvailable = 0;
+            decimal QtyBagAvailable = 0;
+            decimal QtyPerBag = 0;
+            int count = 1;
+            Dictionary<string, object> obj = new Dictionary<string, object>();
+            string message = "";
+            bool status = false;
+
+            decimal qtyDecimal = Convert.ToDecimal(Qty.Replace('.',','));
+
+            try
+            {
+                QCInspection header = new QCInspection();
+                header = await db.QCInspections.Where(s => s.ID.Equals(QCInspectionID)).FirstOrDefaultAsync();
+                if (header.TransactionStatus.Equals("PROGRESS"))
+                {
+                    IEnumerable<QCPutaway> lista = Enumerable.Empty<QCPutaway>();
+                    IQueryable<QCPutaway> querya = db.QCPutaways.Where(s => s.StockCode.Equals(StockCode) && s.PrevBinRackCode.Equals(BinRackCode) && s.PutawayQty.Equals(qtyDecimal)).OrderByDescending(s => s.InDate).AsQueryable();
+                    lista = querya.ToList();
+                    if (lista != null && lista.Count() > 0)
+                    {
+                        foreach (QCPutaway stocka in lista)
+                        {
+                            if (count == 1)
+                            {
+                                QtyActualAvailable = stocka.PutawayQty;
+                                count++;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    IEnumerable<QCPutaway> lista = Enumerable.Empty<QCPutaway>();
+                    IQueryable<QCPutaway> querya = db.QCPutaways.Where(s => s.NewStockCode.Equals(StockCode) && s.BinRackCode.Equals(BinRackCode) && s.PutawayQty.Equals(qtyDecimal)).OrderByDescending(s => s.InDate).AsQueryable();
+                    lista = querya.ToList();
+                    if (lista != null && lista.Count() > 0)
+                    {
+                        foreach (QCPutaway stocka in lista)
+                        {
+                            if (count == 1)
+                            {
+                                QtyActualAvailable = stocka.PutawayQty;
+                                count++;
+                            }
+                        }
+                    }
+                }
+
+                QCPicking picking = new QCPicking();
+                picking = await db.QCPickings.Where(s => s.StockCode.Equals(StockCode) && s.BinRackCode.Equals(BinRackCode)).FirstOrDefaultAsync();
+
+                QCPutaway putaway = new QCPutaway();
+                putaway = await db.QCPutaways.Where(s => s.NewStockCode.Equals(StockCode) && s.BinRackCode.Equals(BinRackCode)).FirstOrDefaultAsync();
+                if (picking != null)
+                {
+                    QtyPerBag = picking.QtyPerBag;
+                }
+                else if (putaway != null)
+                {
+                    QtyPerBag = putaway.QtyPerBag;
+                }
+
+                if (header.MaterialType.Equals("RM"))
+                {
+                    IEnumerable<StockRM> list = Enumerable.Empty<StockRM>();
+                    IQueryable<StockRM> query = db.StockRMs.Where(s => s.Code.Equals(StockCode) && s.BinRackCode.Equals(BinRackCode)).OrderByDescending(s => s.InDate).AsQueryable();
+                    list = query.ToList();
+                    if (list != null && list.Count() > 0)
+                    {
+                        foreach (StockRM stock in list)
+                        {
+                            if (stock.Quantity >= 0)
+                            {
+                                totstockqty = totstockqty + stock.Quantity;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    IEnumerable<StockSFG> list = Enumerable.Empty<StockSFG>();
+                    IQueryable<StockSFG> query = db.StockSFGs.Where(s => s.Code.Equals(StockCode) && s.BinRackCode.Equals(BinRackCode)).OrderByDescending(s => s.InDate).AsQueryable();
+                    list = query.ToList();
+                    if (list != null && list.Count() > 0)
+                    {
+                        foreach (StockSFG stock in list)
+                        {
+                            if (stock.Quantity >= 0)
+                            {
+                                totstockqty = totstockqty + stock.Quantity;
+                                QtyPerBag = picking.QtyPerBag;
+                            }
+                        }
+                    }
+                }
+
+                QtyActualAvailable = QtyActualAvailable - totstockqty;
+                QtyBagAvailable = Math.Abs(QtyActualAvailable) / QtyPerBag;
+
+                status = true;
+                message = "Fetch data succeeded.";
+            }
+            catch (HttpRequestException reqpEx)
+            {
+                message = reqpEx.Message;
+                return BadRequest();
+            }
+            catch (HttpResponseException respEx)
+            {
+                message = respEx.Message;
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
+
+            obj.Add("status", status);
+            obj.Add("message", message);
+            obj.Add("QtyActualAvailable", Math.Abs(QtyActualAvailable));
+            obj.Add("QtyBagAvailable", QtyBagAvailable);
+            obj.Add("QtyPerBag", QtyPerBag);
 
             return Ok(obj);
         }

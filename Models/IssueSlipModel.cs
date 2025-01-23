@@ -223,8 +223,9 @@ namespace WMS_BE.Models
 
     public class IssueSlipDTOReport
     {
-        public string ID_Header { get; set; }
+        public string ID { get; set; }
         public string ID_Order { get; set; }
+        public string ID_Header { get; set; }
         public string Header_Code { get; set; }
         public string Header_Name { get; set; }
         public string Header_ProductionDate { get; set; }
@@ -254,6 +255,7 @@ namespace WMS_BE.Models
 
     public class ListTransactionDTOReport
     {
+        public string Id { get; set; }
         public string RMCode { get; set; }
         public string RMName { get; set; }
         public string WHName { get; set; }
@@ -264,6 +266,6 @@ namespace WMS_BE.Models
         public string InventoryQty { get; set; }
         public string InOutType { get; set; }
         public string CreateBy { get; set; }
-        public DateTime CreateOn { get; set; }
+        public String CreateOn { get; set; }
     }
 }

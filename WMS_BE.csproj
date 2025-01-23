@@ -586,6 +586,9 @@
     <Compile Include="Models\vInbound2.cs">
       <DependentUpon>AppModels.tt</DependentUpon>
     </Compile>
+    <Compile Include="Models\vInbound3.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
     <Compile Include="Models\vIssueSlipListTransaction.cs">
       <DependentUpon>AppModels.tt</DependentUpon>
     </Compile>
@@ -683,6 +686,9 @@
       <DependentUpon>AppModels.tt</DependentUpon>
     </Compile>
     <Compile Include="Models\vReceivingReport4.cs">
+      <DependentUpon>AppModels.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vReceivingReport5.cs">
       <DependentUpon>AppModels.tt</DependentUpon>
     </Compile>
     <Compile Include="Models\vReceivingSFG.cs">

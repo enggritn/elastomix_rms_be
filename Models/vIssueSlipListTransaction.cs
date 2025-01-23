@@ -25,5 +25,6 @@ namespace WMS_BE.Models
         public string InOutType { get; set; }
         public string CreateBy { get; set; }
         public System.DateTime CreateOn { get; set; }
+        public string Id { get; set; }
     }
 }

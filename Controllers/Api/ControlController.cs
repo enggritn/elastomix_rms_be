@@ -101,31 +101,60 @@ namespace WMS_BE.Controllers.Api
 
             try
             {
+                //List<PrinterDTO> printers = new List<PrinterDTO>();
+
+                //PrinterDTO printer = new PrinterDTO();
+                //printer.PrinterIP = ConfigurationManager.AppSettings["printer_1_ip"].ToString();
+                //printer.PrinterName = ConfigurationManager.AppSettings["printer_1_name"].ToString();
+
+                //printers.Add(printer);
+
+                //printer = new PrinterDTO();
+                //printer.PrinterIP = ConfigurationManager.AppSettings["printer_2_ip"].ToString();
+                //printer.PrinterName = ConfigurationManager.AppSettings["printer_2_name"].ToString();
+
+                //printers.Add(printer);
+
+                //printer = new PrinterDTO();
+                //printer.PrinterIP = ConfigurationManager.AppSettings["printer_3_ip"].ToString();
+                //printer.PrinterName = ConfigurationManager.AppSettings["printer_3_name"].ToString();
+
+                //printers.Add(printer);
+
+                //printer = new PrinterDTO();
+                //printer.PrinterIP = ConfigurationManager.AppSettings["printer_4_ip"].ToString();
+                //printer.PrinterName = ConfigurationManager.AppSettings["printer_4_name"].ToString();
+
+                //printers.Add(printer);
+
+                //printer = new PrinterDTO();
+                //printer.PrinterIP = ConfigurationManager.AppSettings["printer_5_ip"].ToString();
+                //printer.PrinterName = ConfigurationManager.AppSettings["printer_5_name"].ToString();
+
+                //printers.Add(printer);
+
                 List<PrinterDTO> printers = new List<PrinterDTO>();
 
-                PrinterDTO printer = new PrinterDTO();
-                printer.PrinterIP = ConfigurationManager.AppSettings["printer_1_ip"].ToString();
-                printer.PrinterName = ConfigurationManager.AppSettings["printer_1_name"].ToString();
+                // Ambil jumlah printer dari AppSettings
+                int printerCount = int.Parse(ConfigurationManager.AppSettings["printer_count"] ?? "0");
 
-                printers.Add(printer);
+                for (int i = 1; i <= printerCount; i++)
+                {
+                    string printerIpKey = $"printer_{i}_ip";
+                    string printerNameKey = $"printer_{i}_name";
 
-                printer = new PrinterDTO();
-                printer.PrinterIP = ConfigurationManager.AppSettings["printer_2_ip"].ToString();
-                printer.PrinterName = ConfigurationManager.AppSettings["printer_2_name"].ToString();
+                    // Periksa apakah kunci untuk printer tersedia di AppSettings
+                    if (ConfigurationManager.AppSettings[printerIpKey] != null && ConfigurationManager.AppSettings[printerNameKey] != null)
+                    {
+                        PrinterDTO printer = new PrinterDTO
+                        {
+                            PrinterIP = ConfigurationManager.AppSettings[printerIpKey],
+                            PrinterName = ConfigurationManager.AppSettings[printerNameKey]
+                        };
 
-                printers.Add(printer);
-
-                printer = new PrinterDTO();
-                printer.PrinterIP = ConfigurationManager.AppSettings["printer_3_ip"].ToString();
-                printer.PrinterName = ConfigurationManager.AppSettings["printer_3_name"].ToString();
-
-                printers.Add(printer);
-
-                printer = new PrinterDTO();
-                printer.PrinterIP = ConfigurationManager.AppSettings["printer_4_ip"].ToString();
-                printer.PrinterName = ConfigurationManager.AppSettings["printer_4_name"].ToString();
-
-                printers.Add(printer);
+                        printers.Add(printer);
+                    }
+                }
 
                 //Dictionary<string, object> printers = new Dictionary<string, object>();
                 //printers.Add(ConfigurationManager.AppSettings["printer_1_ip"].ToString(), ConfigurationManager.AppSettings["printer_1_name"].ToString());
@@ -170,29 +199,27 @@ namespace WMS_BE.Controllers.Api
             {
                 List<PrinterDTO> printers = new List<PrinterDTO>();
 
-                PrinterDTO printer = new PrinterDTO();
-                printer.PrinterIP = ConfigurationManager.AppSettings["printer_1_ip"].ToString();
-                printer.PrinterName = ConfigurationManager.AppSettings["printer_1_name"].ToString();
+                // Ambil jumlah printer dari AppSettings
+                int printerCount = int.Parse(ConfigurationManager.AppSettings["printer_count"] ?? "0");
 
-                printers.Add(printer);
+                for (int i = 1; i <= printerCount; i++)
+                {
+                    string printerIpKey = $"printer_{i}_ip";
+                    string printerNameKey = $"printer_{i}_name";
 
-                printer = new PrinterDTO();
-                printer.PrinterIP = ConfigurationManager.AppSettings["printer_2_ip"].ToString();
-                printer.PrinterName = ConfigurationManager.AppSettings["printer_2_name"].ToString();
+                    // Periksa apakah kunci untuk printer tersedia di AppSettings
+                    if (ConfigurationManager.AppSettings[printerIpKey] != null && ConfigurationManager.AppSettings[printerNameKey] != null)
+                    {
+                        PrinterDTO printer = new PrinterDTO
+                        {
+                            PrinterIP = ConfigurationManager.AppSettings[printerIpKey],
+                            PrinterName = ConfigurationManager.AppSettings[printerNameKey]
+                        };
 
-                printers.Add(printer);
+                        printers.Add(printer);
+                    }
+                }
 
-                printer = new PrinterDTO();
-                printer.PrinterIP = ConfigurationManager.AppSettings["printer_3_ip"].ToString();
-                printer.PrinterName = ConfigurationManager.AppSettings["printer_3_name"].ToString();
-
-                printers.Add(printer);
-
-                printer = new PrinterDTO();
-                printer.PrinterIP = ConfigurationManager.AppSettings["printer_4_ip"].ToString();
-                printer.PrinterName = ConfigurationManager.AppSettings["printer_4_name"].ToString();
-
-                printers.Add(printer);
                 obj.Add("printers", printers);
                 status = true;
                 message = "Printer found.";

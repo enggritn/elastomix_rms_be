@@ -80,7 +80,7 @@ namespace WMS_BE.Models
         public string SourceFullBag { get; set; }
         public string SourceTotal { get; set; }
         public string PickingBy { get; set; }
-        public DateTime PickingOn { get; set; }
+        public string PickingOn { get; set; }
         public string TargetBinRack { get; set; }
         public string TargetInDate { get; set; }
         public string TargetExpDate { get; set; }
@@ -89,7 +89,7 @@ namespace WMS_BE.Models
         public string TargetFullBag { get; set; }
         public string TargetTotal { get; set; }
         public string PutawayBy { get; set; }
-        public DateTime PutawayOn { get; set; }
+        public string PutawayOn { get; set; }
         public string Status { get; set; }
         public string Memo { get; set; }
     }

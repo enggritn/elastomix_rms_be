@@ -45,19 +45,135 @@ namespace WMS_BE.Controllers.Api
             IQueryable<StockOpnameHeader> query = null;
 
             int recordsTotal = 0;
-            if (string.IsNullOrEmpty(transactionStatus))
-            {
-                query = db.StockOpnameHeaders.Where(s => !s.TransactionStatus.Equals("CANCELLED")).AsQueryable();
-
-                recordsTotal = db.StockOpnameHeaders.Where(s => !s.TransactionStatus.Equals("CANCELLED")).Count();
-            }
-            else if (transactionStatus.Equals("OPEN/CONFIRMED"))
+            if (transactionStatus.Equals("OPEN/CONFIRMED"))
             {
                 query = db.StockOpnameHeaders.Where(s => s.TransactionStatus.Equals("OPEN") || s.TransactionStatus.Equals("CONFIRMED") || s.TransactionStatus.Equals("CLOSED")).AsQueryable();
             }
-            else
+            else if (transactionStatus.Equals("OPEN"))
             {
-                query = db.StockOpnameHeaders.Where(s => s.TransactionStatus.Equals(transactionStatus)).AsQueryable();
+                query = db.StockOpnameHeaders.Where(s => s.TransactionStatus.Equals("OPEN")).AsQueryable();
+            }
+            else if (transactionStatus.Equals("CONFIRMED"))
+            {
+                query = db.StockOpnameHeaders.Where(s => s.TransactionStatus.Equals("CONFIRMED")).AsQueryable();
+            }
+            else if (transactionStatus.Equals("CLOSED"))
+            {
+                query = db.StockOpnameHeaders.Where(s => s.TransactionStatus.Equals("CLOSED")).AsQueryable();
+            }
+
+            recordsTotal = query.Count();
+            int recordsFiltered = 0;
+
+            try
+            {
+                query = query
+                        .Where(m => m.Code.Contains(search)
+                        || m.WarehouseCode.Contains(search)
+                        || m.WarehouseName.Contains(search)
+                        || m.Remarks.Contains(search)
+                        || m.CreatedBy.Contains(search)
+                        || m.ModifiedBy.Contains(search)
+                        );
+
+                Dictionary<string, Func<StockOpnameHeader, object>> cols = new Dictionary<string, Func<StockOpnameHeader, object>>();
+                cols.Add("Code", x => x.Code);
+                cols.Add("WarehouseCode", x => x.WarehouseCode);
+                cols.Add("WarehouseName", x => x.WarehouseName);
+                cols.Add("Remarks", x => x.Remarks);
+                cols.Add("TransactionStatus", x => x.TransactionStatus);
+                cols.Add("CreatedBy", x => x.CreatedBy);
+                cols.Add("CreatedOn", x => x.CreatedOn);
+                cols.Add("ModifiedBy", x => x.ModifiedBy);
+                cols.Add("ModifiedOn", x => x.ModifiedOn);
+
+                if (sortDirection.Equals("asc"))
+                    list = query.OrderBy(cols[sortName]);
+                else
+                    list = query.OrderByDescending(cols[sortName]);
+
+                recordsFiltered = list.Count();
+
+                list = list.Skip(start).Take(length).ToList();
+
+                if (list != null && list.Count() > 0)
+                {
+
+                    pagedData = from x in list
+                                select new StockOpnameHeaderDTO
+                                {
+                                    ID = x.ID,
+                                    Code = x.Code,
+                                    Remarks = x.Remarks,
+                                    WarehouseCode = x.WarehouseCode,
+                                    WarehouseName = x.WarehouseName,
+                                    CreatedBy = x.CreatedBy,
+                                    TransactionStatus = x.TransactionStatus,
+                                    CreatedOn = Helper.NullDateTimeToString(x.CreatedOn),
+                                    ModifiedBy = x.ModifiedBy ?? "",
+                                    ModifiedOn = Helper.NullDateTimeToString(x.ModifiedOn)
+                                };
+                }
+
+                status = true;
+                message = "Fetch data succeeded.";
+            }
+            catch (HttpRequestException reqpEx)
+            {
+                message = reqpEx.Message;
+                return BadRequest();
+            }
+            catch (HttpResponseException respEx)
+            {
+                message = respEx.Message;
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
+
+            obj.Add("draw", draw);
+            obj.Add("recordsTotal", recordsTotal);
+            obj.Add("recordsFiltered", recordsFiltered);
+            obj.Add("data", pagedData);
+            obj.Add("status", status);
+            obj.Add("message", message);
+
+            return Ok(obj);
+        }
+
+        public async Task<IHttpActionResult> DatatableHeaderReport(string transactionStatus)
+        {
+            int draw = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("draw")[0]);
+            int start = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("start")[0]);
+            int length = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("length")[0]);
+            string search = HttpContext.Current.Request.Form.GetValues("search[value]")[0];
+            string orderCol = HttpContext.Current.Request.Form.GetValues("order[0][column]")[0];
+            string sortName = HttpContext.Current.Request.Form.GetValues("columns[" + orderCol + "][name]")[0];
+            string sortDirection = HttpContext.Current.Request.Form.GetValues("order[0][dir]")[0];
+
+            Dictionary<string, object> obj = new Dictionary<string, object>();
+            string message = "";
+            bool status = false;
+            HttpRequest request = HttpContext.Current.Request;
+
+            string date = request["date"].ToString();
+            string enddate = request["enddate"].ToString();
+
+            IEnumerable<StockOpnameHeader> list = Enumerable.Empty<StockOpnameHeader>();
+            IEnumerable<StockOpnameHeaderDTO> pagedData = Enumerable.Empty<StockOpnameHeaderDTO>();
+
+            DateTime filterDate = Convert.ToDateTime(date);
+            DateTime endfilterDate = Convert.ToDateTime(enddate);
+            IQueryable<StockOpnameHeader> query = null;
+
+            int recordsTotal = 0;
+            if (transactionStatus.Equals("OPEN/CONFIRMED"))
+            {
+                query = db.StockOpnameHeaders.Where(s => (s.TransactionStatus.Equals("OPEN") || s.TransactionStatus.Equals("CONFIRMED") || s.TransactionStatus.Equals("CLOSED"))
+                        && DbFunctions.TruncateTime(s.CreatedOn) >= DbFunctions.TruncateTime(filterDate)
+                        && DbFunctions.TruncateTime(s.CreatedOn) <= DbFunctions.TruncateTime(endfilterDate)).AsQueryable();
             }
 
             recordsTotal = query.Count();

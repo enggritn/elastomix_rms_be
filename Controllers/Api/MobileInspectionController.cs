@@ -702,6 +702,10 @@ namespace WMS_BE.Controllers.Api
                         {
                             throw new Exception(string.Format("Bag Qty melewati jumlah tersedia. Bag Qty tersedia : {0}", Helper.FormatThousand(availableBagQty)));
                         }
+                        if (req.BagQty != availableBagQty)
+                        {
+                            throw new Exception(string.Format("Bag Qty tidak sesuai jumlah tersedia. Bag Qty tersedia : {0}", Helper.FormatThousand(availableBagQty)));
+                        }
                     }
 
                     vStockAll stockAll = db.vStockAlls.Where(m => m.Code.Equals(StockCode) && m.BinRackCode.Equals(picking.BinRackCode)).FirstOrDefault();
@@ -715,8 +719,9 @@ namespace WMS_BE.Controllers.Api
                         //update stock
                         StockRM stock = db.StockRMs.Where(m => m.ID.Equals(stockAll.ID)).FirstOrDefault();
                         stock.Quantity -= req.BagQty * stockAll.QtyPerBag;
-                        //insert to Stock if not exist, update quantity if barcode, indate and location is same
+                        stock.OnInspect = false;
 
+                        //insert to Stock if not exist, update quantity if barcode, indate and location is same
                         StockRM stockRM = await db.StockRMs.Where(m => m.Code.Equals(picking.StockCode) && m.BinRackCode.Equals(binRack.Code)).FirstOrDefaultAsync();
                         if (stockRM != null)
                         {
@@ -747,9 +752,9 @@ namespace WMS_BE.Controllers.Api
                     {
                         StockSFG stock = db.StockSFGs.Where(m => m.ID.Equals(stockAll.ID)).FirstOrDefault();
                         stock.Quantity -= req.BagQty * stockAll.QtyPerBag;
+                        stock.OnInspect = false;
 
                         //insert to Stock if not exist, update quantity if barcode, indate and location is same
-
                         StockSFG stockSFG = await db.StockSFGs.Where(m => m.Code.Equals(picking.StockCode) && m.BinRackCode.Equals(binRack.Code)).FirstOrDefaultAsync();
                         if (stockSFG != null)
                         {
@@ -1500,10 +1505,10 @@ namespace WMS_BE.Controllers.Api
 
                         db.StockRMs.Add(stockRM);
 
-                        StockRM StockRM = await db.StockRMs.Where(m => m.Code.Equals(putaway.StockCode) && m.Quantity.Equals(req.BagQty * putaway.QtyPerBag) && m.OnInspect).FirstOrDefaultAsync();
+                        StockRM StockRM = await db.StockRMs.Where(m => m.Code.Equals(putaway.StockCode) && m.BinRackCode.Equals(putaway.BinRackCode) && m.Quantity > 0 && m.OnInspect).FirstOrDefaultAsync();
                         if (StockRM != null)
                         {
-                            StockRM.Quantity = 0;
+                            StockRM.Quantity -= req.BagQty * putaway.QtyPerBag;
                         }
                     }
                     else
@@ -1525,10 +1530,10 @@ namespace WMS_BE.Controllers.Api
 
                         db.StockSFGs.Add(stockSFG);
 
-                        StockSFG StockSFG = await db.StockSFGs.Where(m => m.Code.Equals(putaway.StockCode) && m.Quantity.Equals(req.BagQty * putaway.QtyPerBag) && m.OnInspect).FirstOrDefaultAsync();
+                        StockSFG StockSFG = await db.StockSFGs.Where(m => m.Code.Equals(putaway.StockCode) && m.BinRackCode.Equals(putaway.BinRackCode) && m.Quantity > 0 && m.OnInspect).FirstOrDefaultAsync();
                         if (StockSFG != null)
                         {
-                            StockSFG.Quantity = 0;
+                            StockSFG.Quantity -= req.BagQty * putaway.QtyPerBag;
                         }
                     }
 
@@ -1555,15 +1560,33 @@ namespace WMS_BE.Controllers.Api
 
                     db.QCReturns.Add(_return);
 
-                    putaway.PutawayMethod = "SCAN";
-                    putaway.PutBy = activeUser;
-                    putaway.PutOn = DateTime.Now;
+                    putaway.PickedMethod = "SCAN";
+                    putaway.PickedBy = activeUser;
+                    putaway.PickedOn = DateTime.Now;
 
                     QCExtend extend = await db.QCExtends.Where(s => s.StockCode.Equals(putaway.NewStockCode)).FirstOrDefaultAsync();
-                    QCPutaway ptaway = await db.QCPutaways.Where(s => s.QCPicking.QCInspectionID.Equals(putaway.QCPicking.QCInspection.ID) && !s.PutawayMethod.Equals("SCAN")).FirstOrDefaultAsync();
+                    QCPutaway ptaway = await db.QCPutaways.Where(s => s.NewStockCode.Equals(putaway.NewStockCode) && s.PickedMethod == null).FirstOrDefaultAsync();
                     if (ptaway == null)
                     {
                         extend.QCInspection.TransactionStatus = "CLOSED";
+                        if (vProductMaster.ProdType.Equals("RM"))
+                        {
+                            StockRM StockRM = await db.StockRMs.Where(m => m.Code.Equals(putaway.StockCode) && m.BinRackCode.Equals(putaway.BinRackCode) && m.Quantity > 0 && m.OnInspect).FirstOrDefaultAsync();
+                            if (StockRM != null)
+                            {
+                                StockRM.Quantity = 0;
+                                StockRM.OnInspect = false;
+                            }
+                        }
+                        else
+                        {
+                            StockSFG StockSFG = await db.StockSFGs.Where(m => m.Code.Equals(putaway.StockCode) && m.BinRackCode.Equals(putaway.BinRackCode) && m.Quantity > 0 && m.OnInspect).FirstOrDefaultAsync();
+                            if (StockSFG != null)
+                            {
+                                StockSFG.Quantity = 0;
+                                StockSFG.OnInspect = false;
+                            }
+                        }
                     }
 
                     await db.SaveChangesAsync();
@@ -1980,40 +2003,72 @@ namespace WMS_BE.Controllers.Api
                             output.Write(file, 0, file.Length);
                             output.Position = 0;
 
+                            //List<PrinterDTO> printers = new List<PrinterDTO>();
+
+                            //PrinterDTO printer = new PrinterDTO();
+                            //printer.PrinterIP = ConfigurationManager.AppSettings["printer_1_ip"].ToString();
+                            //printer.PrinterName = ConfigurationManager.AppSettings["printer_1_name"].ToString();
+
+                            //printers.Add(printer);
+
+                            //printer = new PrinterDTO();
+                            //printer.PrinterIP = ConfigurationManager.AppSettings["printer_2_ip"].ToString();
+                            //printer.PrinterName = ConfigurationManager.AppSettings["printer_2_name"].ToString();
+
+                            //printers.Add(printer);
+
+                            //printer = new PrinterDTO();
+                            //printer.PrinterIP = ConfigurationManager.AppSettings["printer_3_ip"].ToString();
+                            //printer.PrinterName = ConfigurationManager.AppSettings["printer_3_name"].ToString();
+
+                            //printers.Add(printer);
+
+                            //printer = new PrinterDTO();
+                            //printer.PrinterIP = ConfigurationManager.AppSettings["printer_4_ip"].ToString();
+                            //printer.PrinterName = ConfigurationManager.AppSettings["printer_4_name"].ToString();
+
+                            //printers.Add(printer);
+
+                            //printer = new PrinterDTO();
+                            //printer.PrinterIP = ConfigurationManager.AppSettings["printer_5_ip"].ToString();
+                            //printer.PrinterName = ConfigurationManager.AppSettings["printer_5_name"].ToString();
+
+                            //printers.Add(printer);
+
+                            //string folder_name = "";
+                            //foreach (PrinterDTO printerDTO in printers)
+                            //{
+                            //    if (printerDTO.PrinterIP.Equals(req.Printer))
+                            //    {
+                            //        folder_name = printerDTO.PrinterName;
+                            //    }
+                            //}
+
                             List<PrinterDTO> printers = new List<PrinterDTO>();
 
-                            PrinterDTO printer = new PrinterDTO();
-                            printer.PrinterIP = ConfigurationManager.AppSettings["printer_1_ip"].ToString();
-                            printer.PrinterName = ConfigurationManager.AppSettings["printer_1_name"].ToString();
+                            // Ambil jumlah printer dari AppSettings
+                            int printerCount = int.Parse(ConfigurationManager.AppSettings["printer_count"] ?? "0");
 
-                            printers.Add(printer);
-
-                            printer = new PrinterDTO();
-                            printer.PrinterIP = ConfigurationManager.AppSettings["printer_2_ip"].ToString();
-                            printer.PrinterName = ConfigurationManager.AppSettings["printer_2_name"].ToString();
-
-                            printers.Add(printer);
-
-                            printer = new PrinterDTO();
-                            printer.PrinterIP = ConfigurationManager.AppSettings["printer_3_ip"].ToString();
-                            printer.PrinterName = ConfigurationManager.AppSettings["printer_3_name"].ToString();
-
-                            printers.Add(printer);
-
-                            printer = new PrinterDTO();
-                            printer.PrinterIP = ConfigurationManager.AppSettings["printer_4_ip"].ToString();
-                            printer.PrinterName = ConfigurationManager.AppSettings["printer_4_name"].ToString();
-
-                            printers.Add(printer);
-
-                            string folder_name = "";
-                            foreach (PrinterDTO printerDTO in printers)
+                            for (int i = 1; i <= printerCount; i++)
                             {
-                                if (printerDTO.PrinterIP.Equals(req.Printer))
+                                string printerIpKey = $"printer_{i}_ip";
+                                string printerNameKey = $"printer_{i}_name";
+
+                                // Periksa apakah kunci untuk printer tersedia di AppSettings
+                                if (ConfigurationManager.AppSettings[printerIpKey] != null && ConfigurationManager.AppSettings[printerNameKey] != null)
                                 {
-                                    folder_name = printerDTO.PrinterName;
+                                    PrinterDTO printer = new PrinterDTO
+                                    {
+                                        PrinterIP = ConfigurationManager.AppSettings[printerIpKey],
+                                        PrinterName = ConfigurationManager.AppSettings[printerNameKey]
+                                    };
+
+                                    printers.Add(printer);
                                 }
                             }
+
+                            // Mencari folder_name berdasarkan PrinterIP yang dipilih
+                            string folder_name = printers.FirstOrDefault(printerDTO => printerDTO.PrinterIP.Equals(req.Printer))?.PrinterName ?? string.Empty;
 
                             string file_name = string.Format("{0}.pdf", DateTime.Now.ToString("yyyyMMddHHmmss"));
 
@@ -2237,38 +2292,29 @@ namespace WMS_BE.Controllers.Api
 
                             List<PrinterDTO> printers = new List<PrinterDTO>();
 
-                            PrinterDTO printer = new PrinterDTO();
-                            printer.PrinterIP = ConfigurationManager.AppSettings["printer_1_ip"].ToString();
-                            printer.PrinterName = ConfigurationManager.AppSettings["printer_1_name"].ToString();
+                            // Ambil jumlah printer dari AppSettings
+                            int printerCount = int.Parse(ConfigurationManager.AppSettings["printer_count"] ?? "0");
 
-                            printers.Add(printer);
-
-                            printer = new PrinterDTO();
-                            printer.PrinterIP = ConfigurationManager.AppSettings["printer_2_ip"].ToString();
-                            printer.PrinterName = ConfigurationManager.AppSettings["printer_2_name"].ToString();
-
-                            printers.Add(printer);
-
-                            printer = new PrinterDTO();
-                            printer.PrinterIP = ConfigurationManager.AppSettings["printer_3_ip"].ToString();
-                            printer.PrinterName = ConfigurationManager.AppSettings["printer_3_name"].ToString();
-
-                            printers.Add(printer);
-
-                            printer = new PrinterDTO();
-                            printer.PrinterIP = ConfigurationManager.AppSettings["printer_4_ip"].ToString();
-                            printer.PrinterName = ConfigurationManager.AppSettings["printer_4_name"].ToString();
-
-                            printers.Add(printer);
-
-                            string folder_name = "";
-                            foreach (PrinterDTO printerDTO in printers)
+                            for (int i = 1; i <= printerCount; i++)
                             {
-                                if (printerDTO.PrinterIP.Equals(req.Printer))
+                                string printerIpKey = $"printer_{i}_ip";
+                                string printerNameKey = $"printer_{i}_name";
+
+                                // Periksa apakah kunci untuk printer tersedia di AppSettings
+                                if (ConfigurationManager.AppSettings[printerIpKey] != null && ConfigurationManager.AppSettings[printerNameKey] != null)
                                 {
-                                    folder_name = printerDTO.PrinterName;
+                                    PrinterDTO printer = new PrinterDTO
+                                    {
+                                        PrinterIP = ConfigurationManager.AppSettings[printerIpKey],
+                                        PrinterName = ConfigurationManager.AppSettings[printerNameKey]
+                                    };
+
+                                    printers.Add(printer);
                                 }
                             }
+
+                            // Mencari folder_name berdasarkan PrinterIP yang dipilih
+                            string folder_name = printers.FirstOrDefault(printerDTO => printerDTO.PrinterIP.Equals(req.Printer))?.PrinterName ?? string.Empty;
 
                             string file_name = string.Format("{0}.pdf", DateTime.Now.ToString("yyyyMMddHHmmss"));
 

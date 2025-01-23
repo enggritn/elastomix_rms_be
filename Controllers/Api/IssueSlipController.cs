@@ -2556,14 +2556,17 @@ namespace WMS_BE.Controllers.Api
             HttpRequest request = HttpContext.Current.Request;
 
             string date = request["date"].ToString();
+            string enddate = request["enddate"].ToString();
 
             IEnumerable<vIssueSlipReport> list = Enumerable.Empty<vIssueSlipReport>();
             IEnumerable<IssueSlipDTOReport> pagedData = Enumerable.Empty<IssueSlipDTOReport>();
 
             DateTime filterDate = Convert.ToDateTime(date);
+            DateTime endfilterDate = Convert.ToDateTime(enddate);
             IQueryable<vIssueSlipReport> query;
 
-            query = db.vIssueSlipReports.Where(s => DbFunctions.TruncateTime(s.Header_ProductionDate) == DbFunctions.TruncateTime(filterDate));
+            query = db.vIssueSlipReports.Where(s => DbFunctions.TruncateTime(s.Header_ProductionDate) >= DbFunctions.TruncateTime(filterDate)
+                        && DbFunctions.TruncateTime(s.Header_ProductionDate) <= DbFunctions.TruncateTime(endfilterDate));
 
             int recordsTotal = query.Count();
             int recordsFiltered = 0;
@@ -2607,8 +2610,9 @@ namespace WMS_BE.Controllers.Api
                     pagedData = from detail in list
                                 select new IssueSlipDTOReport
                                 {
-                                    ID_Header = detail.ID_Header,
+                                    ID = detail.ID,
                                     ID_Order = detail.ID_Order,
+                                    ID_Header = detail.ID_Header,
                                     Header_Code = detail.Header_Code,
                                     Header_Name = detail.Header_Name,
                                     Header_ProductionDate = Helper.NullDateToString2(detail.Header_ProductionDate),
@@ -2655,6 +2659,77 @@ namespace WMS_BE.Controllers.Api
         }
 
         [HttpPost]
+        public async Task<IHttpActionResult> DatatableHistoryIssueSlip()
+        {
+            Dictionary<string, object> obj = new Dictionary<string, object>();
+            string message = "";
+            bool status = false;
+            HttpRequest request = HttpContext.Current.Request;
+
+            string id = request["id"].ToString();
+
+            IEnumerable<vIssueSlipReport> list = Enumerable.Empty<vIssueSlipReport>();
+            IEnumerable<IssueSlipDTOReport> pagedData = Enumerable.Empty<IssueSlipDTOReport>();
+
+            IQueryable<vIssueSlipReport> query;
+
+            query = db.vIssueSlipReports.Where(s => s.ID.Equals(id));
+
+            try
+            {
+                list = query.ToList();
+
+                if (list != null && list.Count() > 0)
+                {
+                    pagedData = from detail in list
+                                select new IssueSlipDTOReport
+                                {
+                                    ID = detail.ID,
+                                    ID_Order = detail.ID_Order,
+                                    ID_Header = detail.ID_Header,
+                                    Header_Code = detail.Header_Code,
+                                    Header_Name = detail.Header_Name,
+                                    Header_ProductionDate = Helper.NullDateToString2(detail.Header_ProductionDate),
+                                    RM_Code = detail.RM_Code,
+                                    RM_Name = detail.RM_Name,
+                                    RM_VendorName = detail.RM_VendorName,
+                                    Wt_Request = Helper.FormatThousand(detail.Wt_Request),
+                                    SupplyQty = Helper.FormatThousand(detail.SupplyQty),
+                                    FromBinRackCode = detail.FromBinRackCode != null ? detail.FromBinRackCode : "",
+                                    ExpDate = Helper.NullDateToString2(detail.ExpDate),
+                                    PickedBy = detail.PickedBy != null ? detail.PickedBy : "",
+                                    ReturnQty = Helper.FormatThousand(detail.ReturnQty),
+                                    ToBinRackCode = detail.ToBinRackCode != null ? detail.ToBinRackCode : "",
+                                    PutBy = detail.PutBy != null ? detail.PutBy : "",
+                                };
+                }
+
+                status = true;
+                message = "Fetch data succeeded.";
+            }
+            catch (HttpRequestException reqpEx)
+            {
+                message = reqpEx.Message;
+                return BadRequest();
+            }
+            catch (HttpResponseException respEx)
+            {
+                message = respEx.Message;
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
+                        
+            obj.Add("data", pagedData);
+            obj.Add("status", status);
+            obj.Add("message", message);
+
+            return Ok(obj);
+        }
+
+        [HttpPost]
         public async Task<IHttpActionResult> DatatableDataInOutSummary()
         {
             int draw = Convert.ToInt32(HttpContext.Current.Request.Form.GetValues("draw")[0]);
@@ -2674,20 +2749,42 @@ namespace WMS_BE.Controllers.Api
             string StartDate = request["filterStartDate"].ToString();
             string EndDate = request["filterEndDate"].ToString();
 
-            SemiFinishGood sfg = db.SemiFinishGoods.Where(m => m.MaterialCode.Equals(materialcode)).FirstOrDefault();
-            if (sfg == null)
+            if (string.IsNullOrEmpty(StartDate) && string.IsNullOrEmpty(EndDate) && string.IsNullOrEmpty(materialcode))
             {
-                throw new Exception("Material not recognized.");
-            }
+                throw new Exception("Parameter is required.");
+            }                      
 
             IEnumerable<vDataInOutSummary> list = Enumerable.Empty<vDataInOutSummary>();
             IEnumerable<DataInOutDTOReport> pagedData = Enumerable.Empty<DataInOutDTOReport>();
+
+            decimal previousTransferInventoryQty = 0;
+            decimal previousInventoryQty = 0;  // Variabel untuk menyimpan nilai InventoryQty sebelumnya
 
             DateTime filterStartDate = Convert.ToDateTime(StartDate);
             DateTime filterEndDate = Convert.ToDateTime(EndDate);
             IQueryable<vDataInOutSummary> query;
 
-            query = db.vDataInOutSummaries.Where(s => s.ItemCode.Equals(materialcode) && DbFunctions.TruncateTime(s.Date) >= DbFunctions.TruncateTime(filterStartDate) && DbFunctions.TruncateTime(s.Date) <= DbFunctions.TruncateTime(filterEndDate));
+            query = db.vDataInOutSummaries.Where(s => s.ItemCode.Equals(materialcode) 
+                        && DbFunctions.TruncateTime(s.Date) >= DbFunctions.TruncateTime(filterStartDate) 
+                        && DbFunctions.TruncateTime(s.Date) <= DbFunctions.TruncateTime(filterEndDate));
+
+            decimal transferstockqty = 0;
+            decimal totalInQty = 0;
+            decimal totalOutQty = 0;
+            if (!string.IsNullOrEmpty(materialcode))
+            {
+                transferstockqty = db.vStockAlls
+                    .Where(s => s.Quantity > 0 && DbFunctions.TruncateTime(s.InDate) < DbFunctions.TruncateTime(filterStartDate) && s.MaterialCode.Equals(materialcode))
+                    .Sum(s => (decimal?)s.Quantity) ?? 0; // Menggunakan nullable decimal untuk menghindari null
+
+                totalInQty = db.vDataInOutSummaries
+                   .Where(s => DbFunctions.TruncateTime(s.Date) >= DbFunctions.TruncateTime(filterStartDate) && DbFunctions.TruncateTime(s.Date) <= DbFunctions.TruncateTime(filterEndDate) && s.ItemCode.Equals(materialcode))
+                   .Sum(s => (decimal?)s.ReceiveQty) ?? 0; // Menggunakan nullable decimal untuk menghindari null
+
+                totalOutQty = db.vDataInOutSummaries
+                   .Where(s => DbFunctions.TruncateTime(s.Date) >= DbFunctions.TruncateTime(filterStartDate) && DbFunctions.TruncateTime(s.Date) <= DbFunctions.TruncateTime(filterEndDate) && s.ItemCode.Equals(materialcode))
+                   .Sum(s => (decimal?)s.IssueSlipQty) ?? 0; // Menggunakan nullable decimal untuk menghindari null
+            }
 
             int recordsTotal = query.Count();
             int recordsFiltered = 0;
@@ -2716,19 +2813,98 @@ namespace WMS_BE.Controllers.Api
 
                 list = list.Skip(start).Take(length).ToList();
 
-                if (list != null && list.Count() > 0)
+                if (!string.IsNullOrEmpty(materialcode))
                 {
-                    pagedData = from detail in list
-                                select new DataInOutDTOReport
-                                {
-                                    ItemCode = detail.ItemCode,
-                                    Date = Helper.NullDateToString2(detail.Date),
-                                    UserHanheld = detail.UserHanheld,
-                                    Type = detail.Type,
-                                    ReceiveQty = Helper.FormatThousand(detail.ReceiveQty),
-                                    IssueSlipQty = Helper.FormatThousand(detail.IssueSlipQty),
-                                    BalanceQty = Helper.FormatThousand(detail.BalanceQty),
-                                };
+                    if (transferstockqty > 0)
+                    {
+                        previousTransferInventoryQty = previousTransferInventoryQty + transferstockqty;
+                    }
+                    previousInventoryQty = previousTransferInventoryQty;
+
+                    // List untuk menampung hasil yang akan dipaging
+                    var reportData = new List<DataInOutDTOReport>();
+
+                    // Perhitungan InventoryQty per baris dan simpan semua data untuk halaman ini
+                    foreach (var detail in list)
+                    {
+                        // Update previousInventoryQty untuk setiap baris
+                        previousInventoryQty = CalculateInventoryQty(ref previousInventoryQty, Convert.ToDecimal(detail.ReceiveQty), Convert.ToDecimal(detail.IssueSlipQty));
+
+                        reportData.Add(new DataInOutDTOReport
+                        {
+                            ItemCode = detail.ItemCode,
+                            Date = Helper.NullDateToString2(detail.Date),
+                            UserHanheld = detail.UserHanheld,
+                            Type = detail.Type,
+                            ReceiveQty = Helper.FormatThousand(detail.ReceiveQty),
+                            IssueSlipQty = Helper.FormatThousand(detail.IssueSlipQty),
+                            BalanceQty = previousInventoryQty.ToString("#,0.00"),  
+                        });
+                    }
+
+                    // Cek apakah ini adalah halaman terakhir
+                    bool isLastPage = (start + length) >= recordsTotal;
+
+                    // Jika ini adalah halaman terakhir, tambahkan baris sum
+                    if (isLastPage)
+                    {
+                        // Ambil data dari baris terakhir
+                        var lastRow = list.LastOrDefault();
+
+                        // Cek apakah ada data terakhir
+                        if (lastRow != null)
+                        {
+                            var sumRow = new DataInOutDTOReport
+                            {
+                                ItemCode = materialcode,
+                                Date = "",
+                                UserHanheld = "",
+                                Type = "SUM",
+                                ReceiveQty = Helper.FormatThousand(totalInQty),
+                                IssueSlipQty = Helper.FormatThousand(totalOutQty),
+                                BalanceQty = previousInventoryQty.ToString("#,0.00"),
+                            };
+
+                            // Tambahkan row sum ke dalam data
+                            reportData.Add(sumRow);
+                        }
+                        else
+                        {
+                            var sumRow = new DataInOutDTOReport
+                            {
+                                ItemCode = materialcode,
+                                Date = "",
+                                UserHanheld = "",
+                                Type = "SUM",
+                                ReceiveQty = Helper.FormatThousand(totalInQty),
+                                IssueSlipQty = Helper.FormatThousand(totalOutQty),
+                                BalanceQty = previousTransferInventoryQty.ToString("#,0.00"),
+                            };
+
+                            // Tambahkan row sum ke dalam data
+                            reportData.Add(sumRow);
+                        }
+                    }
+
+                    // Jika ada transaksi sebelumnya, tambahkan ke response
+                    if (previousTransferInventoryQty >= 0 && start == 0)
+                    {
+                        // Tambahkan transaksi sebelumnya ke dalam report
+                        var previousTransactionRow = new DataInOutDTOReport
+                        {
+                            ItemCode = materialcode,
+                            Date = "",
+                            UserHanheld = "",
+                            Type = "TRANSFER",
+                            ReceiveQty = 0.ToString("#,0.00"),
+                            IssueSlipQty = 0.ToString("#,0.00"),
+                            BalanceQty = previousTransferInventoryQty.ToString("#,0.00"),
+                        };
+
+                        reportData.Insert(0, previousTransactionRow);  // Insert transaksi sebelumnya pada posisi pertama
+                    }
+
+                    pagedData = reportData;
                 }
 
                 status = true;
@@ -2760,7 +2936,7 @@ namespace WMS_BE.Controllers.Api
         }
 
         [HttpGet]
-        public async Task<IHttpActionResult> GetDataReportIssueSlip(string date)
+        public async Task<IHttpActionResult> GetDataReportIssueSlip(string date, string enddate)
         {
             Dictionary<string, object> obj = new Dictionary<string, object>();
             string message = "";
@@ -2768,7 +2944,7 @@ namespace WMS_BE.Controllers.Api
             HttpRequest request = HttpContext.Current.Request;
 
 
-            if (string.IsNullOrEmpty(date))
+            if (string.IsNullOrEmpty(date) && string.IsNullOrEmpty(enddate))
             {
                 throw new Exception("Parameter is required.");
             }
@@ -2777,9 +2953,11 @@ namespace WMS_BE.Controllers.Api
             IEnumerable<IssueSlipDTOReport> pagedData = Enumerable.Empty<IssueSlipDTOReport>();
 
             DateTime filterDate = Convert.ToDateTime(date);
+            DateTime endfilterDate = Convert.ToDateTime(enddate);
             IQueryable<vIssueSlipReport> query;
 
-            query = db.vIssueSlipReports.Where(s => DbFunctions.TruncateTime(s.Header_ProductionDate) == DbFunctions.TruncateTime(filterDate));
+            query = db.vIssueSlipReports.Where(s => DbFunctions.TruncateTime(s.Header_ProductionDate) >= DbFunctions.TruncateTime(filterDate)
+                        && DbFunctions.TruncateTime(s.Header_ProductionDate) <= DbFunctions.TruncateTime(endfilterDate));
 
             int recordsTotal = query.Count();
             int recordsFiltered = 0;
@@ -2952,8 +3130,10 @@ namespace WMS_BE.Controllers.Api
             string date = request["date"].ToString();
             string enddate = request["enddate"].ToString();
             string materialcode = request["materialcode"].ToString();
+            string inouttype = request["inouttype"].ToString();
+            string warehousecode = request["warehousecode"].ToString();
 
-            if (string.IsNullOrEmpty(date) && string.IsNullOrEmpty(enddate) && string.IsNullOrEmpty(materialcode))
+            if (string.IsNullOrEmpty(date) && string.IsNullOrEmpty(enddate) && string.IsNullOrEmpty(materialcode) && string.IsNullOrEmpty(inouttype))
             {
                 throw new Exception("Parameter is required.");
             }
@@ -2962,23 +3142,75 @@ namespace WMS_BE.Controllers.Api
             string message = "";
             bool status = false;
 
+            IEnumerable<BinRack> listWHName = Enumerable.Empty<BinRack>();
             IEnumerable<vIssueSlipListTransaction> list = Enumerable.Empty<vIssueSlipListTransaction>();
             IEnumerable<ListTransactionDTOReport> pagedData = Enumerable.Empty<ListTransactionDTOReport>();
+
+            decimal previousTransferInventoryQty = 0;
+            decimal previousInventoryQty = 0;  // Variabel untuk menyimpan nilai InventoryQty sebelumnya
 
             DateTime filterDate = Convert.ToDateTime(date);
             DateTime endfilterDate = Convert.ToDateTime(enddate);
             IQueryable<vIssueSlipListTransaction> query;
 
+            // Ambil data dari BinRack untuk mendapatkan WHName sesuai warehousecode
+            listWHName = db.BinRacks.Where(br => br.WarehouseCode.Equals(warehousecode)).ToList();
+
+            var warehouseNames = listWHName.Select(br => br.WarehouseName).Distinct().ToList();
+
+            query = db.vIssueSlipListTransactions.AsQueryable(); // Inisialisasi query agar dapat ditambah kondisi
+
+            if (!string.IsNullOrEmpty(warehousecode))
+            {
+                query = query.Where(s => warehouseNames.Contains(s.WHName));
+            }
+
+            if (inouttype != "ALL")
+            {
+                query = query.Where(s => s.InOutType.Equals(inouttype));
+            }
+
             if (!string.IsNullOrEmpty(materialcode))
             {
-                query = db.vIssueSlipListTransactions.Where(s => DbFunctions.TruncateTime(s.CreateOn) >= DbFunctions.TruncateTime(filterDate)
-                        && DbFunctions.TruncateTime(s.CreateOn) <= DbFunctions.TruncateTime(endfilterDate)
-                        && s.RMCode.Equals(materialcode));
+                query = query.Where(s => s.RMCode.Equals(materialcode));
             }
-            else
-            {
-                query = db.vIssueSlipListTransactions.Where(s => DbFunctions.TruncateTime(s.CreateOn) >= DbFunctions.TruncateTime(filterDate)
+
+            query = query.Where(s => s.RMCode.Equals(materialcode) && DbFunctions.TruncateTime(s.CreateOn) >= DbFunctions.TruncateTime(filterDate)
                         && DbFunctions.TruncateTime(s.CreateOn) <= DbFunctions.TruncateTime(endfilterDate));
+
+            decimal transferstockqty = 0;
+            decimal totalInQty = 0;
+            decimal totalOutQty = 0;
+            if (!string.IsNullOrEmpty(materialcode) && !string.IsNullOrEmpty(warehousecode))
+            {
+                transferstockqty = db.vStockAlls
+                    .Where(s => s.Quantity > 0 && DbFunctions.TruncateTime(s.InDate) < DbFunctions.TruncateTime(filterDate) && s.MaterialCode.Equals(materialcode) && warehouseNames.Contains(s.WarehouseName))
+                    .Sum(s => (decimal?)s.Quantity) ?? 0; // Menggunakan nullable decimal untuk menghindari null
+
+                if (inouttype != "ALL")
+                {
+                    totalInQty = db.vIssueSlipListTransactions
+                     .Where(s => DbFunctions.TruncateTime(s.CreateOn) >= DbFunctions.TruncateTime(filterDate) && DbFunctions.TruncateTime(s.CreateOn) <= DbFunctions.TruncateTime(endfilterDate)
+                           && warehouseNames.Contains(s.WHName) && s.InOutType.Equals(inouttype) && s.RMCode.Equals(materialcode))
+                     .Sum(s => (decimal?)s.InQty) ?? 0; // Menggunakan nullable decimal untuk menghindari null
+
+                    totalOutQty = db.vIssueSlipListTransactions
+                       .Where(s => DbFunctions.TruncateTime(s.CreateOn) >= DbFunctions.TruncateTime(filterDate) && DbFunctions.TruncateTime(s.CreateOn) <= DbFunctions.TruncateTime(endfilterDate)
+                            && warehouseNames.Contains(s.WHName) && s.InOutType.Equals(inouttype) && s.RMCode.Equals(materialcode))
+                       .Sum(s => (decimal?)s.OutQty) ?? 0; // Menggunakan nullable decimal untuk menghindari null
+                }
+                else
+                {
+                    totalInQty = db.vIssueSlipListTransactions
+                      .Where(s => DbFunctions.TruncateTime(s.CreateOn) >= DbFunctions.TruncateTime(filterDate) && DbFunctions.TruncateTime(s.CreateOn) <= DbFunctions.TruncateTime(endfilterDate)
+                            && warehouseNames.Contains(s.WHName) && s.RMCode.Equals(materialcode))
+                      .Sum(s => (decimal?)s.InQty) ?? 0; // Menggunakan nullable decimal untuk menghindari null
+
+                    totalOutQty = db.vIssueSlipListTransactions
+                       .Where(s => DbFunctions.TruncateTime(s.CreateOn) >= DbFunctions.TruncateTime(filterDate) && DbFunctions.TruncateTime(s.CreateOn) <= DbFunctions.TruncateTime(endfilterDate)
+                            && warehouseNames.Contains(s.WHName) && s.RMCode.Equals(materialcode))
+                       .Sum(s => (decimal?)s.OutQty) ?? 0; // Menggunakan nullable decimal untuk menghindari null
+                }
             }
 
             int recordsTotal = query.Count();
@@ -2992,6 +3224,7 @@ namespace WMS_BE.Controllers.Api
                         );
 
                 Dictionary<string, Func<vIssueSlipListTransaction, object>> cols = new Dictionary<string, Func<vIssueSlipListTransaction, object>>();
+                cols.Add("Id", x => x.Id);
                 cols.Add("RMCode", x => x.RMCode);
                 cols.Add("RMName", x => x.RMName);
                 cols.Add("WHName", x => x.WHName);
@@ -3010,26 +3243,117 @@ namespace WMS_BE.Controllers.Api
                     list = query.OrderByDescending(cols[sortName]);
 
                 recordsFiltered = list.Count();
-
                 list = list.Skip(start).Take(length).ToList();
 
-                if (list != null && list.Count() > 0)
+                if (!string.IsNullOrEmpty(materialcode) && !string.IsNullOrEmpty(warehousecode))
                 {
-                    pagedData = from detail in list
-                                select new ListTransactionDTOReport
-                                {
-                                    RMCode = detail.RMCode,
-                                    RMName = detail.RMName,
-                                    WHName = detail.WHName,
-                                    InOut = detail.InOut,
-                                    TransactionDate = Helper.NullDateToString2(detail.TransactionDate),
-                                    InQty = Helper.FormatThousand(detail.InQty),
-                                    OutQty = Helper.FormatThousand(detail.OutQty),
-                                    InventoryQty = Helper.FormatThousand(detail.InventoryQty),
-                                    InOutType = detail.InOutType,
-                                    CreateBy = detail.CreateBy,
-                                    CreateOn = Convert.ToDateTime(detail.CreateOn),
-                                };
+                    if (transferstockqty > 0)
+                    {
+                        previousTransferInventoryQty = previousTransferInventoryQty + transferstockqty;
+                    }
+                    previousInventoryQty = previousTransferInventoryQty;
+
+                    // List untuk menampung hasil yang akan dipaging
+                    var reportData = new List<ListTransactionDTOReport>();
+
+                    // Perhitungan InventoryQty per baris dan simpan semua data untuk halaman ini
+                    foreach (var detail in list)
+                    {
+                        // Update previousInventoryQty untuk setiap baris
+                        previousInventoryQty = CalculateInventoryQty(ref previousInventoryQty, Convert.ToDecimal(detail.InQty), Convert.ToDecimal(detail.OutQty));
+
+                        reportData.Add(new ListTransactionDTOReport
+                        {
+                            Id = detail.Id,
+                            RMCode = detail.RMCode,
+                            RMName = detail.RMName,
+                            WHName = detail.WHName,
+                            InOut = detail.InOut,
+                            TransactionDate = Helper.NullDateToString2(detail.TransactionDate),
+                            InQty = Helper.FormatThousand(detail.InQty),
+                            OutQty = Helper.FormatThousand(detail.OutQty),
+                            InventoryQty = previousInventoryQty.ToString("#,0.00"),  // Menggunakan previousInventoryQty
+                            InOutType = detail.InOutType,
+                            CreateBy = detail.CreateBy,
+                            CreateOn = detail.CreateOn.ToString("yyyy-MM-dd HH:mm:ss"),
+                        });
+                    }
+
+                    // Cek apakah ini adalah halaman terakhir
+                    bool isLastPage = (start + length) >= recordsTotal;
+
+                    // Jika ini adalah halaman terakhir, tambahkan baris sum
+                    if (isLastPage)
+                    {
+                        // Ambil data dari baris terakhir
+                        var lastRow = list.LastOrDefault();
+
+                        // Cek apakah ada data terakhir
+                        if (lastRow != null)
+                        {
+                            var sumRow = new ListTransactionDTOReport
+                            {
+                                Id = lastRow.Id,
+                                RMCode = lastRow.RMCode,
+                                RMName = lastRow.RMName,
+                                WHName = lastRow.WHName,
+                                InOut = "SUM",
+                                InQty = Helper.FormatThousand(totalInQty),
+                                OutQty = Helper.FormatThousand(totalOutQty),
+                                InventoryQty = previousInventoryQty.ToString("#,0.00"),
+                                InOutType = "",
+                                CreateBy = "",
+                                CreateOn = "",
+                            };
+
+                            // Tambahkan row sum ke dalam data
+                            reportData.Add(sumRow);
+                        }
+                        else
+                        {
+                            var sumRow = new ListTransactionDTOReport
+                            {
+                                Id = "1",
+                                RMCode = materialcode,
+                                RMName = "",
+                                WHName = "",
+                                InOut = "SUM",
+                                InQty = Helper.FormatThousand(totalInQty),
+                                OutQty = Helper.FormatThousand(totalOutQty),
+                                InventoryQty = previousTransferInventoryQty.ToString("#,0.00"),
+                                InOutType = "",
+                                CreateBy = "",
+                                CreateOn = "",
+                            };
+
+                            // Tambahkan row sum ke dalam data
+                            reportData.Add(sumRow);
+                        }
+                    }
+
+                    // Jika ada transaksi sebelumnya, tambahkan ke response
+                    if (previousTransferInventoryQty >= 0 && start == 0)
+                    {
+                        // Tambahkan transaksi sebelumnya ke dalam report
+                        var previousTransactionRow = new ListTransactionDTOReport
+                        {
+                            Id = "1",
+                            RMCode = materialcode,
+                            RMName = "",
+                            WHName = "",
+                            InOut = "TRANSFER",
+                            InQty = 0.ToString("#,0.00"),
+                            OutQty = 0.ToString("#,0.00"),
+                            InventoryQty = previousTransferInventoryQty.ToString("#,0.00"),
+                            InOutType = "",
+                            CreateBy = "",
+                            CreateOn = ""
+                        };
+
+                        reportData.Insert(0, previousTransactionRow);  // Insert transaksi sebelumnya pada posisi pertama
+                    }
+
+                    pagedData = reportData;
                 }
 
                 status = true;
@@ -3060,8 +3384,39 @@ namespace WMS_BE.Controllers.Api
             return Ok(obj);
         }
 
+        private decimal CalculateInventoryQty(ref decimal previousInventoryQty, decimal inQty, decimal outQty)
+        {
+            decimal inventoryQty = 0;
+
+            // Jika previousInventoryQty masih 0, berarti ini adalah baris pertama
+            if (previousInventoryQty == 0)
+            {
+                inventoryQty = inQty - outQty;  // InventoryQty pertama kali dihitung
+            }
+            else
+            {
+                if (inQty == 0)
+                {
+                    inventoryQty = previousInventoryQty - outQty;  // Kurangi InventoryQty dengan OutQty jika InQty = 0
+                }
+                else if (outQty == 0)
+                {
+                    inventoryQty = previousInventoryQty + inQty;  // Tambah InventoryQty dengan InQty jika OutQty = 0
+                }
+                else
+                {
+                    inventoryQty = previousInventoryQty + inQty - outQty;  // Default, tambahkan InQty dan kurangi OutQty
+                }
+            }
+
+            // Update previousInventoryQty untuk digunakan di baris berikutnya
+            previousInventoryQty = inventoryQty;
+
+            return inventoryQty;
+        }
+
         [HttpGet]
-        public async Task<IHttpActionResult> GetDataReportListTransaction(string date, string enddate, string materialcode)
+        public async Task<IHttpActionResult> GetDataReportListTransaction(string startdate, string enddate, string materialcode, string inouttype, string warehousecode)
         {
             Dictionary<string, object> obj = new Dictionary<string, object>();
             string message = "";
@@ -3069,7 +3424,7 @@ namespace WMS_BE.Controllers.Api
             HttpRequest request = HttpContext.Current.Request;
 
 
-            if (string.IsNullOrEmpty(date) && string.IsNullOrEmpty(enddate) && string.IsNullOrEmpty(materialcode))
+            if (string.IsNullOrEmpty(startdate) && string.IsNullOrEmpty(enddate) && string.IsNullOrEmpty(materialcode) && string.IsNullOrEmpty(inouttype))
             {
                 throw new Exception("Parameter is required.");
             }
@@ -3077,21 +3432,38 @@ namespace WMS_BE.Controllers.Api
             IEnumerable<vIssueSlipListTransaction> list = Enumerable.Empty<vIssueSlipListTransaction>();
             IEnumerable<ListTransactionDTOReport> pagedData = Enumerable.Empty<ListTransactionDTOReport>();
 
-            DateTime filterDate = Convert.ToDateTime(date);
+            decimal previousInventoryQty = 0;  // Variabel untuk menyimpan nilai InventoryQty sebelumnya
+
+            DateTime filterDate = Convert.ToDateTime(startdate);
             DateTime endfilterDate = Convert.ToDateTime(enddate);
             IQueryable<vIssueSlipListTransaction> query;
 
+            IEnumerable<BinRack> listWHName = Enumerable.Empty<BinRack>();
+
+            // Ambil data dari BinRack untuk mendapatkan WHName sesuai warehousecode
+            listWHName = db.BinRacks.Where(br => br.WarehouseCode.Equals(warehousecode)).ToList();
+
+            var warehouseNames = listWHName.Select(br => br.WarehouseName).ToList();
+
+            query = db.vIssueSlipListTransactions.AsQueryable(); // Inisialisasi query agar dapat ditambah kondisi
+
+            if (!string.IsNullOrEmpty(warehousecode))
+            {
+                query = query.Where(s => warehouseNames.Contains(s.WHName));
+            }
+
+            if (inouttype != "ALL")
+            {
+                query = query.Where(s => s.InOutType.Equals(inouttype));
+            }
+
             if (!string.IsNullOrEmpty(materialcode))
             {
-                query = db.vIssueSlipListTransactions.Where(s => DbFunctions.TruncateTime(s.CreateOn) >= DbFunctions.TruncateTime(filterDate)
-                        && DbFunctions.TruncateTime(s.CreateOn) <= DbFunctions.TruncateTime(endfilterDate)
-                        && s.RMCode.Equals(materialcode));
+                query = query.Where(s => s.RMCode.Equals(materialcode));
             }
-            else
-            {
-                query = db.vIssueSlipListTransactions.Where(s => DbFunctions.TruncateTime(s.CreateOn) >= DbFunctions.TruncateTime(filterDate)
+
+            query = query.Where(s => DbFunctions.TruncateTime(s.CreateOn) >= DbFunctions.TruncateTime(filterDate)
                         && DbFunctions.TruncateTime(s.CreateOn) <= DbFunctions.TruncateTime(endfilterDate));
-            }
 
             int recordsTotal = query.Count();
             int recordsFiltered = 0;
@@ -3126,10 +3498,11 @@ namespace WMS_BE.Controllers.Api
                                     TransactionDate = Helper.NullDateToString2(detail.TransactionDate),
                                     InQty = Helper.FormatThousand(detail.InQty),
                                     OutQty = Helper.FormatThousand(detail.OutQty),
-                                    InventoryQty = Helper.FormatThousand(detail.InventoryQty),
+                                    //InventoryQty = Helper.FormatThousand(detail.InventoryQty),
+                                    InventoryQty = CalculateInventoryQty(ref previousInventoryQty, Convert.ToDecimal(detail.InQty), Convert.ToDecimal(detail.OutQty)).ToString("#,0.00"),  // Panggil fungsi untuk menghitung InventoryQty
                                     InOutType = detail.InOutType,
                                     CreateBy = detail.CreateBy,
-                                    CreateOn = Convert.ToDateTime(detail.CreateOn),
+                                    CreateOn = detail.CreateOn.ToString("yyyy-MM-dd HH:mm:ss"),
                                 };
                 }
 

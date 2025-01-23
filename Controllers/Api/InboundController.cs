@@ -1956,38 +1956,30 @@ namespace WMS_BE.Controllers.Api
 
                             List<PrinterDTO> printers = new List<PrinterDTO>();
 
-                            PrinterDTO printer = new PrinterDTO();
-                            printer.PrinterIP = ConfigurationManager.AppSettings["printer_1_ip"].ToString();
-                            printer.PrinterName = ConfigurationManager.AppSettings["printer_1_name"].ToString();
+                            // Ambil jumlah printer dari AppSettings
+                            int printerCount = int.Parse(ConfigurationManager.AppSettings["printer_count"] ?? "0");
 
-                            printers.Add(printer);
-
-                            printer = new PrinterDTO();
-                            printer.PrinterIP = ConfigurationManager.AppSettings["printer_2_ip"].ToString();
-                            printer.PrinterName = ConfigurationManager.AppSettings["printer_2_name"].ToString();
-
-                            printers.Add(printer);
-
-                            printer = new PrinterDTO();
-                            printer.PrinterIP = ConfigurationManager.AppSettings["printer_3_ip"].ToString();
-                            printer.PrinterName = ConfigurationManager.AppSettings["printer_3_name"].ToString();
-
-                            printers.Add(printer);
-
-                            printer = new PrinterDTO();
-                            printer.PrinterIP = ConfigurationManager.AppSettings["printer_4_ip"].ToString();
-                            printer.PrinterName = ConfigurationManager.AppSettings["printer_4_name"].ToString();
-
-                            printers.Add(printer);
-
-                            string folder_name = "";
-                            foreach (PrinterDTO printerDTO in printers)
+                            for (int i = 1; i <= printerCount; i++)
                             {
-                                if (printerDTO.PrinterIP.Equals(req.Printer))
+                                string printerIpKey = $"printer_{i}_ip";
+                                string printerNameKey = $"printer_{i}_name";
+
+                                // Periksa apakah kunci untuk printer tersedia di AppSettings
+                                if (ConfigurationManager.AppSettings[printerIpKey] != null && ConfigurationManager.AppSettings[printerNameKey] != null)
                                 {
-                                    folder_name = printerDTO.PrinterName;
+                                    PrinterDTO printer = new PrinterDTO
+                                    {
+                                        PrinterIP = ConfigurationManager.AppSettings[printerIpKey],
+                                        PrinterName = ConfigurationManager.AppSettings[printerNameKey]
+                                    };
+
+                                    printers.Add(printer);
                                 }
                             }
+
+                            // Mencari folder_name berdasarkan PrinterIP yang dipilih
+                            string folder_name = printers.FirstOrDefault(printerDTO => printerDTO.PrinterIP.Equals(req.Printer))?.PrinterName ?? string.Empty;
+
 
                             string file_name = string.Format("{0}.pdf", DateTime.Now.ToString("yyyyMMddHHmmss"));
 
@@ -2406,14 +2398,23 @@ namespace WMS_BE.Controllers.Api
             DateTime endfilterDate = Convert.ToDateTime(enddate);
             IQueryable<vInbound2> query;
 
+            IEnumerable<BinRack> listWHName = Enumerable.Empty<BinRack>();
+
+            // Ambil data dari BinRack untuk mendapatkan WHName sesuai warehousecode
+            listWHName = db.BinRacks.Where(br => br.WarehouseCode.Equals(warehouseCode)).ToList();
+
+            var warehouseNames = listWHName.Select(br => br.WarehouseName).ToList();
+
             if (!string.IsNullOrEmpty(warehouseCode))
             {
-                query = db.vInbound2.Where(s => DbFunctions.TruncateTime(s.CreateOn) == DbFunctions.TruncateTime(filterDate)
-                        && s.WHName.Equals(warehouseCode));
+                query = db.vInbound2.Where(s => DbFunctions.TruncateTime(s.CreateOn) >= DbFunctions.TruncateTime(filterDate)
+                        && DbFunctions.TruncateTime(s.CreateOn) <= DbFunctions.TruncateTime(endfilterDate)
+                        && warehouseNames.Contains(s.WHName));
             }
             else
             {
-                query = db.vInbound2.Where(s => DbFunctions.TruncateTime(s.CreateOn) == DbFunctions.TruncateTime(filterDate));
+                query = db.vInbound2.Where(s => DbFunctions.TruncateTime(s.CreateOn) >= DbFunctions.TruncateTime(filterDate)
+                        && DbFunctions.TruncateTime(s.CreateOn) <= DbFunctions.TruncateTime(endfilterDate));
             }
 
             int recordsTotal = query.Count();
@@ -2471,10 +2472,10 @@ namespace WMS_BE.Controllers.Api
                                     FullBag = Helper.FormatThousand(detail.FullBag),
                                     Total = Helper.FormatThousand(detail.Total),
                                     CreateBy = detail.CreateBy,
-                                    CreateOn = detail.CreateOn,
+                                    CreateOn = detail.CreateOn.ToString("yyyy-MM-dd HH:mm:ss"),
                                     QtyPutaway = Helper.FormatThousand(detail.QtyPutaway),
                                     PutawayBy = detail.PutawayBy,
-                                    PutawayOn = Convert.ToDateTime(detail.PutawayOn),
+                                    PutawayOn = detail.PutawayOn.ToString(),
                                     BinRack = detail.BinRack != null ? detail.BinRack : "",
                                     Status = detail.Status,
                                     Memo = detail.Memo,
@@ -2509,6 +2510,77 @@ namespace WMS_BE.Controllers.Api
             return Ok(obj);
         }
 
+        [HttpPost]
+        public async Task<IHttpActionResult> DatatableHistoryOtherInbound()
+        {
+            Dictionary<string, object> obj = new Dictionary<string, object>();
+            string message = "";
+            bool status = false;
+            HttpRequest request = HttpContext.Current.Request;
+
+            string id = request["id"].ToString();
+
+            IEnumerable<vInbound2> list = Enumerable.Empty<vInbound2>();
+            IEnumerable<OtherInbound2DTOReport> pagedData = Enumerable.Empty<OtherInbound2DTOReport>();
+
+            IQueryable<vInbound2> query;
+
+            query = db.vInbound2.Where(s => s.ID.Equals(id));
+
+            try
+            {
+                list = query.ToList();
+
+                if (list != null && list.Count() > 0)
+                {
+                    pagedData = from detail in list
+                                select new OtherInbound2DTOReport
+                                {
+                                    DocumentNo = detail.DocumentNo,
+                                    WHName = detail.WHName,
+                                    RMCode = detail.RMCode,
+                                    RMName = detail.RMName,
+                                    InDate = Helper.NullDateToString2(detail.InDate) ?? "",
+                                    ExpDate = Helper.NullDateToString2(detail.ExpDate) ?? "",
+                                    LotNo = detail.LotNo != null ? detail.LotNo : "",
+                                    Bag = Helper.FormatThousand(detail.Bag),
+                                    FullBag = Helper.FormatThousand(detail.FullBag),
+                                    Total = Helper.FormatThousand(detail.Total),
+                                    CreateBy = detail.CreateBy,
+                                    CreateOn = detail.CreateOn.ToString("yyyy-MM-dd HH:mm:ss"),
+                                    QtyPutaway = Helper.FormatThousand(detail.QtyPutaway) ?? "",
+                                    PutawayBy = detail.PutawayBy ?? "",
+                                    PutawayOn = detail.PutawayOn.ToString() ?? "",
+                                    BinRack = detail.BinRack != null ? detail.BinRack : "",
+                                    Status = detail.Status,
+                                    Memo = detail.Memo,
+                                };
+                }
+
+                status = true;
+                message = "Fetch data succeeded.";
+            }
+            catch (HttpRequestException reqpEx)
+            {
+                message = reqpEx.Message;
+                return BadRequest();
+            }
+            catch (HttpResponseException respEx)
+            {
+                message = respEx.Message;
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
+                        
+            obj.Add("data", pagedData);
+            obj.Add("status", status);
+            obj.Add("message", message);
+
+            return Ok(obj);
+        }
         [HttpGet]
         public async Task<IHttpActionResult> GetDataReportOtherInbound2(string date, string enddate, string warehouse)
         {
@@ -2530,11 +2602,18 @@ namespace WMS_BE.Controllers.Api
             DateTime endfilterDate = Convert.ToDateTime(enddate);
             IQueryable<vInbound2> query;
 
+            IEnumerable<BinRack> listWHName = Enumerable.Empty<BinRack>();
+
+            // Ambil data dari BinRack untuk mendapatkan WHName sesuai warehousecode
+            listWHName = db.BinRacks.Where(br => br.WarehouseCode.Equals(warehouse)).ToList();
+
+            var warehouseNames = listWHName.Select(br => br.WarehouseName).ToList();
+
             if (!string.IsNullOrEmpty(warehouse))
             {
                 query = db.vInbound2.Where(s => DbFunctions.TruncateTime(s.CreateOn) >= DbFunctions.TruncateTime(filterDate)
                         && DbFunctions.TruncateTime(s.CreateOn) <= DbFunctions.TruncateTime(endfilterDate)
-                        && s.WHName.Equals(warehouse));
+                        && warehouseNames.Contains(s.WHName));
             }
             else
             {
@@ -2587,10 +2666,10 @@ namespace WMS_BE.Controllers.Api
                                     FullBag = Helper.FormatThousand(detail.FullBag),
                                     Total = Helper.FormatThousand(detail.Total),
                                     CreateBy = detail.CreateBy,
-                                    CreateOn = detail.CreateOn,
+                                    CreateOn = detail.CreateOn.ToString("yyyy-MM-dd HH:mm:ss"),
                                     QtyPutaway = Helper.FormatThousand(detail.QtyPutaway),
                                     PutawayBy = detail.PutawayBy,
-                                    PutawayOn = Convert.ToDateTime(detail.PutawayOn),
+                                    PutawayOn = detail.PutawayOn.ToString(),
                                     BinRack = detail.BinRack != null ? detail.BinRack : "",
                                     Status = detail.Status,
                                     Memo = detail.Memo,

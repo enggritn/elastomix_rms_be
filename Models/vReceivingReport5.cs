@@ -12,7 +12,7 @@ namespace WMS_BE.Models
     using System;
     using System.Collections.Generic;
     
-    public partial class vReceivingReport4
+    public partial class vReceivingReport5
     {
         public string ID { get; set; }
         public string DestinationName { get; set; }
@@ -23,25 +23,25 @@ namespace WMS_BE.Models
         public string MaterialCode { get; set; }
         public string MaterialName { get; set; }
         public Nullable<System.DateTime> Schedule { get; set; }
-        public Nullable<decimal> TotalQtyPo { get; set; }
+        public string TotalQtyPo { get; set; }
         public System.DateTime InDate { get; set; }
         public Nullable<System.DateTime> ExpDate { get; set; }
         public string LotNo { get; set; }
-        public decimal QtyPerBag { get; set; }
-        public Nullable<decimal> QtyBag { get; set; }
-        public decimal Total { get; set; }
+        public string QtyPerBag { get; set; }
+        public string QtyBag { get; set; }
+        public string Total { get; set; }
         public string DoNo { get; set; }
-        public Nullable<decimal> Ok { get; set; }
-        public decimal NgDamage { get; set; }
-        public decimal NgWet { get; set; }
-        public decimal NgContamination { get; set; }
+        public string Ok { get; set; }
+        public string NgDamage { get; set; }
+        public string NgWet { get; set; }
+        public string NgContamination { get; set; }
         public string COA { get; set; }
         public string StatusPo { get; set; }
         public string ReceivedBy { get; set; }
         public System.DateTime ReceivedOn { get; set; }
-        public Nullable<decimal> QtyPutaway { get; set; }
+        public string QtyPutaway { get; set; }
         public string PutawayBy { get; set; }
-        public Nullable<System.DateTime> PutawayOn { get; set; }
+        public System.DateTime PutawayOn { get; set; }
         public string Area { get; set; }
         public string RackNo { get; set; }
         public string Status { get; set; }
