@@ -14,22 +14,21 @@ namespace WMS_BE.Models
     
     public partial class vIssueSlipReport
     {
-        public string ID_Header { get; set; }
         public string ID_Order { get; set; }
+        public string ID_Header { get; set; }
+        public string Header_Code { get; set; }
+        public string Header_Name { get; set; }
+        public Nullable<System.DateTime> Header_ProductionDate { get; set; }
         public string RM_Code { get; set; }
         public string RM_Name { get; set; }
         public string RM_VendorName { get; set; }
         public decimal Wt_Request { get; set; }
-        public Nullable<decimal> SupplyQty { get; set; }
+        public decimal SupplyQty { get; set; }
         public string FromBinRackCode { get; set; }
         public Nullable<System.DateTime> ExpDate { get; set; }
         public string PickedBy { get; set; }
-        public Nullable<decimal> ReturnQty { get; set; }
+        public decimal ReturnQty { get; set; }
         public string ToBinRackCode { get; set; }
         public string PutBy { get; set; }
-        public string Header_Code { get; set; }
-        public string Header_Name { get; set; }
-        public System.DateTime Header_ProductionDate { get; set; }
-        public string ID { get; set; }
     }
 }

@@ -2610,7 +2610,7 @@ namespace WMS_BE.Controllers.Api
                     pagedData = from detail in list
                                 select new IssueSlipDTOReport
                                 {
-                                    ID = detail.ID,
+                                    ID = detail.ID_Order,
                                     ID_Order = detail.ID_Order,
                                     ID_Header = detail.ID_Header,
                                     Header_Code = detail.Header_Code,
@@ -2673,7 +2673,7 @@ namespace WMS_BE.Controllers.Api
 
             IQueryable<vIssueSlipReport> query;
 
-            query = db.vIssueSlipReports.Where(s => s.ID.Equals(id));
+            query = db.vIssueSlipReports.Where(s => s.ID_Order.Equals(id));
 
             try
             {
@@ -2684,7 +2684,7 @@ namespace WMS_BE.Controllers.Api
                     pagedData = from detail in list
                                 select new IssueSlipDTOReport
                                 {
-                                    ID = detail.ID,
+                                    ID = detail.ID_Order,
                                     ID_Order = detail.ID_Order,
                                     ID_Header = detail.ID_Header,
                                     Header_Code = detail.Header_Code,
