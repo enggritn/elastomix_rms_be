@@ -198,3 +198,12 @@ Models/AppModels.edmx
 Models/AppModels.edmx.diagram
 Models/AppModels.tt
 /Content/img/qr_codes
+
+# 🔐 Prevent sensitive config files from being committed
+Web.config
+App.config
+appsettings.json
+appsettings.*.json
+.env
+.env.*
+secrets.json
